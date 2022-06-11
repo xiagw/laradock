@@ -1,10 +1,10 @@
-FROM percona:5.7
+FROM percona/percona-server:8.0
 
 LABEL maintainer="DTUNES <diegotdai@gmai.com>"
 
 RUN chown -R mysql:root /var/lib/mysql/
 
-COPY my.cnf /etc/mysql/conf.d/my.cnf
+# COPY my.cnf /etc/mysql/conf.d/my.cnf
 
 CMD ["mysqld"]
 

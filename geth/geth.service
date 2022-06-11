@@ -1,0 +1,14 @@
+# sudo nano /etc/systemd/system/geth.service
+
+[Unit]
+Description=Geth
+
+[Service]
+Type=simple
+User=ubuntu
+Restart=always
+RestartSec=12
+ExecStart=/usr/bin/geth --rinkeby --syncmode "full" --rpc --rpcaddr "0.0.0.0"
+
+[Install]
+WantedBy=default.target

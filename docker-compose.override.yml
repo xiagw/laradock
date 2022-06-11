@@ -1,0 +1,422 @@
+version: '3.5'
+
+services:
+
+# docker tag laradock_php-fpm registry-intl.cn-hongkong.aliyuncs.com/9u/prod:php-fpm
+# docker login
+# docker push registry-intl.cn-hongkong.aliyuncs.com/9u/prod:php-fpm
+# docker pull registry-intl.cn-hongkong.aliyuncs.com/9u/prod:php-fpm
+# docker tag registry-intl.cn-hongkong.aliyuncs.com/9u/prod:php-fpm laradock_php-fpm
+### PHP-FPM ##############################################
+    php-fpm:
+      restart: always
+      build:
+        context: ./php-fpm
+        args:
+          - TZ=${WORKSPACE_TIMEZONE}
+      environment:
+        - TZ=${WORKSPACE_TIMEZONE}
+      depends_on:
+        - redis
+      links:
+        - redis
+      extra_hosts:
+        - "dockerhost:${DOCKER_HOST_IP}"
+        - "api1.nineuniverse.com:${DOCKER_HOST_IP_API}"
+        - "dbhost:${DOCKER_HOST_IP_DB}"
+      networks:
+        - backend
+        - frontend
+
+### NGINX Server #########################################
+    nginx:
+      restart: always
+      build:
+        context: ./nginx
+        args:
+          - TZ=${WORKSPACE_TIMEZONE}
+      extra_hosts:
+        - "dockerhost:${DOCKER_HOST_IP}"
+
+### MySQL ################################################
+    mysql:
+      restart: always
+      build:
+        args:
+          - TZ=${WORKSPACE_TIMEZONE}
+          - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      security_opt:
+        - seccomp:unconfined
+      environment:
+        - TZ=${WORKSPACE_TIMEZONE}
+      volumes:
+        - ${DATA_PATH_HOST}/mysql_backup:/backup
+      networks:
+        - backend
+        - frontend
+### Percona ################################################
+    percona:
+      restart: always
+      build:
+        args:
+          - TZ=${WORKSPACE_TIMEZONE}
+      volumes:
+        - ${DATA_PATH_HOST}/percona_backup:/backup
+      networks:
+        - backend
+        - frontend
+### Redis ################################################
+    redis:
+      restart: always
+      build:
+        context: ./redis
+        args:
+          - TZ=${WORKSPACE_TIMEZONE}
+
+### watchtower ################################################
+    gitlab:
+      depends_on:
+        - watchtower
+### watchtower ################################################
+    watchtower:
+      image: containrrr/watchtower
+      restart: always
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+      #- /home/ubuntu/.docker/config.json:/config.json
+      #command: --interval 300
+
+### awvs ################################################
+    awvs:
+      image: secfa/docker-awvs
+      ports:
+        - "3443:3443"
+      networks:
+        - backend
+        - frontend
+      restart: always
+
+### nexus ################################################
+    nexus:
+      image: sonatype/nexus3
+      # restart: always
+      hostname: ${NEXUS_DOMAIN}
+      # container_name: nexus
+      ports:
+        - "${NEXUS_HTTP_PORT}:8081"
+      volumes:
+        - ./nexus-data:/nexus-data
+      networks:
+        - backend
+        - frontend
+### acme.sh ################################################
+    acme.sh:
+      image: neilpang/acme.sh
+      # container_name: acme
+      command: daemon
+      volumes:
+        - ./acmeout:/acme.sh
+        - /var/run/docker.sock:/var/run/docker.sock
+      environment:
+        - DEPLOY_DOCKER_CONTAINER_LABEL=sh.acme.autoload.domain=${ACME_DOMAIN}
+        - DEPLOY_DOCKER_CONTAINER_KEY_FILE=/etc/nginx/ssl/${ACME_DOMAIN}/key.key
+        - DEPLOY_DOCKER_CONTAINER_CERT_FILE="/etc/nginx/ssl/${ACME_DOMAIN}/cert.crt"
+        - DEPLOY_DOCKER_CONTAINER_CA_FILE="/etc/nginx/ssl/${ACME_DOMAIN}/ca.crt"
+        - DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE="/etc/nginx/ssl/${ACME_DOMAIN}/fullchain.crt"
+        - DEPLOY_DOCKER_CONTAINER_RELOAD_CMD="service nginx force-reload"
+        - DEPLOY_SSH_USER=ubuntu
+        - DEPLOY_SSH_CMD=ssh
+        - DEPLOY_SSH_SERVER=${DEPLOY_SSH_SERVER}
+        - DEPLOY_SSH_KEYFILE=${DEPLOY_SSH_KEYFILE}
+        - DEPLOY_SSH_CERTFILE=${DEPLOY_SSH_CERTFILE}
+        - DEPLOY_SSH_CAFILE=${DEPLOY_SSH_CAFILE}
+        - DEPLOY_SSH_FULLCHAIN=${DEPLOY_SSH_FULLCHAIN}
+        # - DEPLOY_SSH_REMOTE_CMD=command to execute on remote host
+        # - DEPLOY_SSH_BACKUP=yes or no
+      networks:
+        - backend
+        - frontend
+### shop ####################################################
+    shop:
+      build:
+        context: ./shop
+      # ports:
+      #   - "${TOMCAT_HOST_HTTP_PORT}:8080"
+      networks:
+        - frontend
+        - backend
+      volumes:
+        - ${DATA_PATH_HOST}/shop/webapps:/usr/local/tomcat/webapps
+        - ${DATA_PATH_HOST}/shop/logs:/usr/local/tomcat/logs
+        # dce -u 0 shop chown -R 1000:1000 /usr/local/tomcat/
+        # dce shop cp /usr/local/tomcat/ROOT.war /usr/local/tomcat/webapps/
+      restart: always
+
+### geth-rinkeby ################################################
+    geth-rinkeby:
+      build:
+        context: ./geth
+      restart: always
+      healthcheck:
+        test: ["CMD", "geth", "--rinkeby", "attach", "-exec", "eth.syncing"]
+      ports:
+        - "8545:8545"
+        - "30303:30303"
+      ###########   sudo chown -R 1000:1000 ../../laradock-data/geth-data
+      volumes:
+        - ${DATA_PATH_HOST}/geth-data:/.ethereum
+      command:
+        - "--cache"
+        - "2048"
+        - "--syncmode"
+        - "full"
+        - "--rinkeby"
+        - "--http"
+        - "--http.port"
+        - "8545"
+        - "--http.addr"
+        - "0.0.0.0"
+        - "--http.api"
+        - "txpool,eth,web3,admin,personal,net"
+      networks:
+        - frontend
+        - backend
+
+### geth ################################################
+    geth:
+      # image: ethereum/client-go
+      build:
+        context: ./geth
+      restart: always
+      healthcheck:
+        test: ["CMD", "geth", "attach", "-exec", "eth.syncing"]
+      ports:
+        - "8545:8545"
+        - "30303:30303"
+      ###########   sudo chown -R 1000:1000 ../../laradock-data/geth-data
+      volumes:
+        - ${DATA_PATH_HOST}/geth-data:/.ethereum
+      command:
+        - "--cache"
+        - "2048"
+        - "--syncmode"
+        - "fast"
+        - "--networkid"
+        - "1"
+        - "--maxpeers"
+        - "50"
+        - "--http"
+        - "--http.port"
+        - "8545"
+        - "--http.addr"
+        - "0.0.0.0"
+        - "--http.api"
+        - "txpool,eth,web3,admin,personal,net"
+      networks:
+        - frontend
+        - backend
+
+### bitcoind ################################################
+    bitcoind:
+      # image: amacneil/bitcoin
+      build:
+        context: ./bitcoind
+      restart: always
+      # specify additional command line arguments here
+      # command:
+      #   - "--testnet"
+      healthcheck:
+        test: ["CMD", "bitcoin-cli", "-getinfo"]
+      ports:
+        # change to 18333 if running testnet
+        - "8332:8332"
+        - "8333:8333"
+        - "8546:8545"
+        - "18332:18332"
+        - "18333:18333"
+        - "18334:18334"
+      volumes:
+        - ${DATA_PATH_HOST}/bitcoind-data:/bitcoin
+
+# 日志存储和解析
+    loki:
+      image: grafana/loki
+      volumes:
+        - ./loki:/etc/loki
+      # 修改loki默认配置文件路径
+      # command: -config.file=/etc/loki/local-config.yml
+      ports:
+        - "3100:3100"
+      networks:
+        - backend
+        - frontend
+# 日志收集器
+    promtail:
+      image: grafana/promtail
+      volumes:
+        # 将需要收集的日志所在目录挂载到promtail容器中
+        - ${DATA_PATH_HOST}/app/mall-tiny-loki/logs:/var/log
+        - ./promtail:/etc/promtail
+      # 修改promtail默认配置文件路径
+      # command: -config.file=/etc/promtail/promtail.yml
+      networks:
+        - backend
+        - frontend
+
+##  git server: gogs
+    gogs:
+      image: gogs/gogs
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/gogs:/data
+      environment:
+        - TZ=${WORKSPACE_TIMEZONE}
+      ports:
+        - "3022:22"
+        - "3081:3000"
+      networks:
+        - backend
+        - frontend
+##  drone
+    drone:
+      image: drone/drone
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/drone:/data
+      environment:
+        - TZ=${WORKSPACE_TIMEZONE}
+        - DRONE_AGENTS_ENABLED=true
+        - DRONE_GOGS_SERVER=http://gogs:3000
+        - DRONE_RPC_SECRET=dronerpc666
+        - DRONE_SERVER_HOST=192.168.3.10:3080
+        - DRONE_SERVER_PROTO=http
+        - DRONE_USER_CREATE=username:macro,admin:true
+      ports:
+        - "3080:80"
+      networks:
+        - backend
+        - frontend
+##  drone-runner
+    drone-runner:
+      image: drone/drone-runner-docker
+      restart: always
+      # container_name: drone-runner
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - ${DATA_PATH_HOST}/drone:/data
+      environment:
+        - TZ=${WORKSPACE_TIMEZONE}
+        - DRONE_RPC_PROTO=http
+        - DRONE_RPC_HOST=192.168.3.10:3080
+        - DRONE_RPC_SECRET=dronerpc666
+        - DRONE_RUNNER_CAPACITY=2
+        - DRONE_RUNNER_NAME=drone-runner
+      ports:
+        - "3082:3000"
+      networks:
+        - backend
+        - frontend
+
+# git clone https://github.com/apache/apisix-docker.git ~/apisix-docker.git
+# rsync -av ~/apisix-docker.git/example/ ~/laradock-data/apisix/
+# mkdir -p ~/laradock-data/apisix/etcd_data/data
+# chmod 700 ~/laradock-data/apisix/etcd_data/data
+# chown -R 1000:1000 ~/laradock-data/apisix
+## apisix
+    apisix-dashboard:
+      image: apache/apisix-dashboard:2.7
+      restart: always
+      volumes:
+      - ${DATA_PATH_HOST}/apisix/dashboard_conf/conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml
+      ports:
+      - "9000:9000"
+      networks:
+        - backend
+        - frontend
+
+    apisix:
+      image: apache/apisix:2.6-alpine
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/apisix/apisix_log:/usr/local/apisix/logs
+        - ${DATA_PATH_HOST}/apisix/apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      depends_on:
+        - etcd
+      ##network_mode: host
+      ports:
+        - "${APISIX_HOST_HTTP_PORT}:9080/tcp"
+        - "${APISIX_HOST_HTTPS_PORT}:9443/tcp"
+      networks:
+        - backend
+        - frontend
+## etcd
+    etcd:
+      image: bitnami/etcd:3
+      user: root
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/apisix/etcd_data:/bitnami/etcd
+        # - ${DATA_PATH_HOST}/apisix/etcd_conf:/bitnami/etcd
+      environment:
+        ETCD_ENABLE_V2: "true"
+        ALLOW_NONE_AUTHENTICATION: "yes"
+        ETCD_ADVERTISE_CLIENT_URLS: "http://0.0.0.0:2379"
+        ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+      ports:
+        - "2379:2379/tcp"
+      networks:
+        - backend
+        - frontend
+
+## showdoc
+    showdoc:
+      image: star7th/showdoc
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/showdoc/html:/var/www/html
+      ports:
+        - "4999:80"
+      networks:
+        - backend
+        - frontend
+
+    wordpress:
+      depends_on:
+        - mysql
+      image: wordpress:latest
+      ports:
+        - "8001:80"
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/wordpress:/var/www/html
+      environment:
+        WORDPRESS_DB_HOST: mysql
+        WORDPRESS_DB_USER: wordpress
+        WORDPRESS_DB_PASSWORD: aephae4Ood
+        WORDPRESS_DB_NAME: wordpress
+      extra_hosts:
+        - "dockerhost:${DOCKER_HOST_IP}"
+      networks:
+        - frontend
+        - backend
+
+    watermark:
+      depends_on:
+        - mysql
+        - redis
+      image: watermark
+      ports:
+        - "8000:8000"
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/watermark:/var/www/html
+      environment:
+        WATERMARK_DB_HOST: mysql
+        WATERMARK_DB_USER: watermark
+        WATERMARK_DB_PASSWORD: Aethoise6V
+        WATERMARK_DB_NAME: watermark
+      extra_hosts:
+        - "dockerhost:${DOCKER_HOST_IP}"
+      networks:
+        - frontend
+        - backend

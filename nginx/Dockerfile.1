@@ -1,0 +1,20 @@
+FROM nginx:latest
+COPY nginx.conf /etc/nginx/
+# If you're in China, or you need to change sources, will be set CHANGE_SOURCE to true in .env.
+ARG CHANGE_SOURCE=false
+RUN if [ ${CHANGE_SOURCE} = true ]; then \
+    # Change application source from dl-cdn.alpinelinux.org to aliyun source
+    sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories \
+;fi
+RUN set -x ; \
+    groupmod -g 1000 www-data ; \
+    usermod -u 1000 www-data ; \
+    grep www-data /etc/passwd /etc/group
+
+ARG PHP_UPSTREAM_CONTAINER=php-fpm
+ARG PHP_UPSTREAM_PORT=9000
+ADD ./startup.sh /startup.sh
+RUN sed -i 's/\r//g' /startup.sh && chmod +x /startup.sh
+EXPOSE 80 81 443
+CMD ["/startup.sh"]
+
