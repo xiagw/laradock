@@ -21,9 +21,6 @@ case $docker_host_ip in
         -e "/NGINX_HOST_HTTPS_PORT=/s/=.*/=445/" \
         -e "/APISIX_HOST_HTTP_PORT=/s/=.*/=80/" \
         -e "/APISIX_HOST_HTTPS_PORT=/s/=.*/=443/" \
-        -e "/DOCKER_HOST_IP_API=/s/=.*/=192.168.3.24/" \
-        -e "/DOCKER_HOST_IP_WALLET=/s/=.*/=192.168.3.24/" \
-        -e "/DOCKER_HOST_IP_SIGN=/s/=.*/=192.168.3.24/" \
         -e "/DOCKER_HOST_IP_DB=/s/=.*/=192.168.3.24/" \
         .env
     ;;

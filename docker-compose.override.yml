@@ -22,8 +22,8 @@ services:
         - redis
       extra_hosts:
         - "dockerhost:${DOCKER_HOST_IP}"
-        - "api1.nineuniverse.com:${DOCKER_HOST_IP_API}"
-        - "dbhost:${DOCKER_HOST_IP_DB}"
+        - "api1.xxx.com:${DOCKER_HOST_IP}"
+        - "dbhost:${DOCKER_HOST_IP}"
       networks:
         - backend
         - frontend
