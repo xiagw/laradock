@@ -420,3 +420,15 @@ services:
       networks:
         - frontend
         - backend
+
+    watermark-front:
+      image: watermark-front
+      ports:
+        - "8005:80"
+      restart: always
+      depends_on:
+        - mysql
+        - redis
+      networks:
+        - frontend
+        - backend
