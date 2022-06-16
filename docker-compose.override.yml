@@ -432,3 +432,28 @@ services:
       networks:
         - frontend
         - backend
+
+    websvn:
+      image: elleflorio/svn-server
+      ports:
+        - "8081:80"
+        - "3690:3690"
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/svn:/home/svn
+      networks:
+        - frontend
+        - backend
+
+    usvn:
+      image: kempkensteffen/usvn
+      ports:
+        - "8081:80"
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/usvn/files:/var/www/usvn/files
+        - ${DATA_PATH_HOST}/usvn/config:/var/www/usvn/config
+      networks:
+        - frontend
+        - backend
+
