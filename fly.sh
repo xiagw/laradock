@@ -47,7 +47,9 @@ git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_inst
 
 ## change docker host ip
 docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
-sed -i -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" "$file_env"
+sed -i -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
+    -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" "$file_env"
+
 ## new password for mysql and redis
 pass_mysql=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
 pass_redis=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
