@@ -1,0 +1,35 @@
+FROM centos:7
+ENV TIME_ZOME Asia/Shanghai
+# COPY nginx/nginx.repo /etc/yum.repos.d/nginx.repo
+RUN set -xe \
+    && printf '[nginx]\nname=nginx.repo\nbaseurl=http://nginx.org/packages/centos/7/$basearch/\ngpgcheck=0\nenabled=1' >/etc/yum.repos.d/nginx.repo \
+    && yum -y install gcc gcc-c++ make openssl-devel pcre-devel zlib-devel yasm \
+    && yum -y install nginx \
+    && yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm \
+    && yum -y install php71 php71-php php71-php-fpm php71-php-gd php71-php-json \
+    php71-php-mbstring php71-php-mysqlnd php71-php-xml php71-php-xmlrpc \
+    php71-php-redis php71-php-pecl-mongodb php71-php-pecl-imagick \
+    php71-php-mcrypt php71-php-bcmath php71-php-gmp php71-php-pecl-mysql \
+    php71-php-pecl-zip php71-php-soap php71-php-process \
+    && yum clean all
+RUN set -xe \
+    && sed -i -e "s/apache/nginx/g" -e 's/^listen\ =\ 127.*/listen = 0.0.0.0:9000/' /etc/opt/remi/php71/php-fpm.d/www.conf \
+    && sed -i -e '/^listen.allowed_clients/d' /etc/opt/remi/php71/php-fpm.d/www.conf \
+    && sed -i "671c post_max_size = 100M" /etc/opt/remi/php71/php.ini \
+    && sed -i "824c upload_max_filesize = 100M" /etc/opt/remi/php71/php.ini \
+    && ln -s /opt/remi/php71/root/usr/bin/php /usr/bin/php \
+    && chmod -R 777 /var/opt/remi/php71/lib/php/session/ \
+    && printf '#!/bin/bash\ntrap "exit 0" HUP INT PIPE QUIT TERM\n/opt/remi/php71/root/sbin/php-fpm\nexec nginx -g "daemon off;"\n' >/run.sh \
+    # && printf '#!/bin/bash\ntrap "exit 0" HUP INT PIPE QUIT TERM\n/opt/remi/php71/root/sbin/php-fpm -F\n' >/run.sh \
+    && chmod +x /run.sh
+
+## copy nginx conf
+# COPY ./etc/ /etc/
+
+EXPOSE 80
+EXPOSE 443
+EXPOSE 9000
+
+WORKDIR /var/www/html
+
+CMD ["/run.sh"]
