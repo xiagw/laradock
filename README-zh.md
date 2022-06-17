@@ -1,5 +1,10 @@
 # Laradock
 
+```
+## sudo apt install curl
+curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
+```
+
 [![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://zalt.me)
 
 [![Gitter](https://badges.gitter.im/Laradock/laradock.svg)](https://gitter.im/Laradock/laradock?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
