@@ -26,21 +26,23 @@ if command -v apt; then
 elif command -v yum; then
     cmd="$prefix yum"
 else
-    echo "install command not found, exit 1"
+    echo "not found apt/yum, exit 1"
     exit 1
 fi
 
 ## install git
 echo "install git..."
-command -v git ||
-    $cmd install -y git
+command -v git || $cmd install -y git
+
+## install docker/compose
+echo "install docker"
+curl -fsSL https://get.docker.com | sudo bash
 
 ## clone laradock
 [ -d "$path_install" ] || mkdir -p "$path_install"
 git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_install"
 
 ## cp .env
-
 [ -f "$file_env" ] || cp -vf "$file_env".example "$file_env"
 
 ## change docker host ip
