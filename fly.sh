@@ -55,7 +55,11 @@ sed -i -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" -e "/REDIS_PASSWORD/s/=.*/=
 echo "use php 7.1"
 cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
 
-echo "cd $path_install && docker-compose up -d nginx mysql redis php-fpm"
+if command -v docker-compose; then
+    echo "cd $path_install && docker-compose up -d nginx mysql redis php-fpm"
+else
+    echo "cd $path_install && docker compose up -d nginx mysql redis php-fpm"
+fi
 
 # case $docker_host_ip in
 # '192.168.3.22') ## git
