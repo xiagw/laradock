@@ -36,7 +36,7 @@ command -v git || $cmd install -y git
 
 ## install docker/compose
 echo "install docker"
-curl -fsSL https://get.docker.com | sudo bash
+command -v docker || curl -fsSL https://get.docker.com | sudo bash
 
 ## clone laradock
 [ -d "$path_install" ] || mkdir -p "$path_install"
@@ -53,7 +53,10 @@ sed -i -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
 ## new password for mysql and redis
 pass_mysql=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
 pass_redis=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
-sed -i -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" "$file_env"
+pass_gitlab=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
+sed -i -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
+    -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
+    -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" "$file_env"
 
 ## php 7.1
 echo "use php 7.1"
@@ -64,26 +67,3 @@ if command -v docker-compose; then
 else
     echo "cd $path_install && docker compose up -d nginx mysql redis php-fpm"
 fi
-
-# case $docker_host_ip in
-# '192.168.3.22') ## git
-#     sed -i -e "/GITLAB_DOMAIN_NAME_GIT=/s/=.*/=git.fly.com/" \
-#         -e "/GITLAB_DOMAIN_NAME=/s/=.*/=https:\/\/git.fly.com/" \
-#         -e "/GITLAB_CI_SERVER_URL=/s/=.*/=https:\/\/git.fly.com/" \
-#         -e "/SONARQUBE_HOSTNAME=/s/=.*/=sonar.fly.com/" \
-#         -e "/NEXUS_DOMAIN=/s/=.*/=nexus.fly.com/" \
-#         .env
-#     ;;
-# '192.168.3.24') ## dev www1
-#     sed -i \
-#         -e "/NGINX_HOST_HTTP_PORT=/s/=.*/=82/" \
-#         -e "/NGINX_HOST_HTTPS_PORT=/s/=.*/=445/" \
-#         -e "/APISIX_HOST_HTTP_PORT=/s/=.*/=80/" \
-#         -e "/APISIX_HOST_HTTPS_PORT=/s/=.*/=443/" \
-#         -e "/DOCKER_HOST_IP_DB=/s/=.*/=192.168.3.24/" \
-#         .env
-#     ;;
-# *)
-#     echo "Usage: $0"
-#     ;;
-# esac
