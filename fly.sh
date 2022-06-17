@@ -60,7 +60,8 @@ sed -i -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
 
 ## php 7.1
 echo "use php 7.1"
-cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
+[ -f "$path_install"/php-fpm/Dockerfile.php71 ] &&
+    cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
 
 if command -v docker-compose; then
     echo "cd $path_install && docker-compose up -d nginx mysql redis php-fpm"
