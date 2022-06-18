@@ -13,7 +13,7 @@
 /nginx/ssl/*.key
 /nginx/ssl/*.csr
 /nginx/sites/include.*
-/nginx/sites/*.ssl
+/nginx/sites/ssl
 /nginx/sites/*.disable
 
 /apache2/ssl/*.crt
