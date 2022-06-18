@@ -1,6 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 
-# set -xe
 # script_path="$(dirname "$(readlink -f "$0")")"
 # cd "$script_path" || exit 1
 path_install="$HOME/docker/laradock"
@@ -44,12 +43,10 @@ git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_inst
 
 ## cp .env
 [ -f "$file_env" ] || cp -vf "$file_env".example "$file_env"
-
 ## change docker host ip
 docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
 sed -i -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
     -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" "$file_env"
-
 ## new password for mysql and redis
 pass_mysql=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
 pass_redis=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
@@ -57,6 +54,8 @@ pass_gitlab=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
 sed -i -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
     -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
     -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" "$file_env"
+## set SHELL_OH_MY_ZSH=true
+echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env"
 
 ## php 7.1
 echo "use php 7.1"

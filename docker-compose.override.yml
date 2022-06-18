@@ -105,7 +105,7 @@ services:
       ports:
         - "${NEXUS_HTTP_PORT}:8081"
       volumes:
-        - ./nexus-data:/nexus-data
+        - ${DATA_PATH_HOST}/nexus:/nexus-data
       networks:
         - backend
         - frontend
@@ -115,7 +115,7 @@ services:
       # container_name: acme
       command: daemon
       volumes:
-        - ./acmeout:/acme.sh
+        - ${DATA_PATH_HOST}/acmeout:/acme.sh
         - /var/run/docker.sock:/var/run/docker.sock
       environment:
         - DEPLOY_DOCKER_CONTAINER_LABEL=sh.acme.autoload.domain=${ACME_DOMAIN}
@@ -164,7 +164,7 @@ services:
         - "30303:30303"
       ###########   sudo chown -R 1000:1000 ../../laradock-data/geth-data
       volumes:
-        - ${DATA_PATH_HOST}/geth-data:/.ethereum
+        - ${DATA_PATH_HOST}/geth-rinkeby:/.ethereum
       command:
         - "--cache"
         - "2048"
@@ -195,7 +195,7 @@ services:
         - "30303:30303"
       ###########   sudo chown -R 1000:1000 ../../laradock-data/geth-data
       volumes:
-        - ${DATA_PATH_HOST}/geth-data:/.ethereum
+        - ${DATA_PATH_HOST}/geth:/.ethereum
       command:
         - "--cache"
         - "2048"
@@ -236,13 +236,13 @@ services:
         - "18333:18333"
         - "18334:18334"
       volumes:
-        - ${DATA_PATH_HOST}/bitcoind-data:/bitcoin
+        - ${DATA_PATH_HOST}/bitcoind:/bitcoin
 
 # 日志存储和解析
     loki:
       image: grafana/loki
       volumes:
-        - ./loki:/etc/loki
+        - ${DATA_PATH_HOST}/loki:/etc/loki
       # 修改loki默认配置文件路径
       # command: -config.file=/etc/loki/local-config.yml
       ports:
@@ -440,7 +440,7 @@ services:
         - "3690:3690"
       restart: always
       volumes:
-        - ${DATA_PATH_HOST}/svn:/home/svn
+        - ${DATA_PATH_HOST}/websvn:/home/svn
       networks:
         - frontend
         - backend

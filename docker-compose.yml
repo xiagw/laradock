@@ -418,8 +418,8 @@ services:
         - "${VARNISH_BACKEND_PORT}:81"
       extra_hosts:
         - "dockerhost:${DOCKER_HOST_IP}"
-      depends_on:
-        - php-fpm
+      # depends_on:
+      #   - php-fpm
       networks:
         - frontend
         - backend
