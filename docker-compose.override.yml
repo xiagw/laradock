@@ -16,10 +16,10 @@ services:
           - TZ=${WORKSPACE_TIMEZONE}
       environment:
         - TZ=${WORKSPACE_TIMEZONE}
-      depends_on:
-        - redis
-      links:
-        - redis
+      # depends_on:
+      #   - redis
+      # links:
+      #   - redis
       extra_hosts:
         - "dockerhost:${DOCKER_HOST_IP}"
         - "api1.xxx.com:${DOCKER_HOST_IP}"
@@ -422,13 +422,16 @@ services:
         - backend
 
     watermark-front:
-      image: watermark-front
+      # image: watermark-front
+      build:
+        context: ../watermark-front
+        # dockerfile: Dockerfile.front
       ports:
         - "8005:80"
       restart: always
-      depends_on:
-        - mysql
-        - redis
+      # depends_on:
+      #   - mysql
+      #   - redis
       networks:
         - frontend
         - backend
