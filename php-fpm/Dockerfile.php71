@@ -5,6 +5,7 @@ RUN set -xe \
     && printf '[nginx]\nname=nginx.repo\nbaseurl=http://nginx.org/packages/centos/7/$basearch/\ngpgcheck=0\nenabled=1' >/etc/yum.repos.d/nginx.repo \
     && yum -y install gcc gcc-c++ make openssl-devel pcre-devel zlib-devel yasm \
     && yum -y install nginx \
+    # http://mirror.webtatic.com/yum/el7/webtatic-release.rpm
     && yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm \
     && yum -y install php71 php71-php php71-php-fpm php71-php-gd php71-php-json \
     php71-php-mbstring php71-php-mysqlnd php71-php-xml php71-php-xmlrpc \
