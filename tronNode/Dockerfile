@@ -5,4 +5,4 @@ WORKDIR /project/tron/
 
 # cd /project/tron/
 RUN git clone -b master https://github.com/tronprotocol/java-tron.git \
-    &&cd ./java-tron && ./gradlew build
+    && cd ./java-tron && ./gradlew build
