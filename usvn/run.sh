@@ -26,7 +26,7 @@ _start_lsyncd() {
 }
 
 _svn_notify() {
-    export LANG='en_CN.UTF-8'
+    export LANG='en_US.UTF-8'
     export LC_CTYPE='en_US.UTF-8'
     export LC_ALL='en_US.UTF-8'
     svn_need_update=/tmp/svn_need_update
