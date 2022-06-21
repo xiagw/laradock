@@ -21,7 +21,7 @@ _start_lsyncd() {
     ## start lsyncd
     conf_lsyncd=~/.ssh/lsyncd.conf
     if [ -f $conf_lsyncd ]; then
-        lsyncd -nodaemon $conf_lsyncd
+        lsyncd $conf_lsyncd
     fi
 }
 
