@@ -457,6 +457,7 @@ services:
       volumes:
         - ${DATA_PATH_HOST}/usvn/usvn:/var/www/usvn
         # - ${DATA_PATH_HOST}/usvn/config:/var/www/usvn/config
+        - ${DATA_PATH_HOST}/usvn/svn_checkout:/svn_checkout
         - ${DATA_PATH_HOST}/usvn/lsyncd:/root/.ssh
       networks:
         - frontend
