@@ -455,8 +455,8 @@ services:
         - "8081:80"
       restart: always
       volumes:
-        - ${DATA_PATH_HOST}/usvn/files:/var/www/usvn/files
-        - ${DATA_PATH_HOST}/usvn/config:/var/www/usvn/config
+        - ${DATA_PATH_HOST}/usvn/usvn:/var/www/usvn
+        # - ${DATA_PATH_HOST}/usvn/config:/var/www/usvn/config
         - ${DATA_PATH_HOST}/usvn/lsyncd:/root/.ssh
       networks:
         - frontend

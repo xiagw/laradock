@@ -22,5 +22,8 @@ if [ -f $conf_lsyncd ]; then
     lsyncd $conf_lsyncd
 fi
 
+if [ ! -d /var/www/usvn/public ]; then
+    rsync -a /var/www/usvn_src/ /var/www/usvn/
+fi
 ## start apache
 apache2-foreground
