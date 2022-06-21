@@ -29,7 +29,6 @@ _svn_notify() {
     export LANG='en_CN.UTF-8'
     export LC_CTYPE='en_US.UTF-8'
     export LC_ALL='en_US.UTF-8'
-    svn_ckeckout_path=/svn_checkout
     svn_need_update=/tmp/svn_need_update
     [ -f /root/.ssh/svn_auth ] && source /root/.ssh/svn_auth
     if [ -f $svn_need_update ]; then
@@ -37,8 +36,8 @@ _svn_notify() {
             /usr/bin/svn update \
                 --username "${svn_user:-root}" \
                 --password "${svn_pass:?empty var}" \
-                --no-auth-cache -N "$svn_ckeckout_path/$line"
-            chown -R 1000.1000 "$svn_ckeckout_path/$line"
+                --no-auth-cache -N "$line"
+            chown -R 1000.1000 "$line"
         done <$svn_need_update ## post-commit
         rm -f $svn_need_update
     fi
@@ -55,7 +54,7 @@ main() {
     _start_lsyncd
 
     while true; do
-        _svn_notify &
+        _svn_notify >/dev/null 2>&1 &
         sleep 10
     done &
 
