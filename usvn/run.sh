@@ -62,3 +62,5 @@ main() {
     ## start apache
     apache2-foreground
 }
+
+main "$@"
