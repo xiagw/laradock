@@ -2,7 +2,7 @@ FROM php:7.3-apache
 RUN set -xe \
   && sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y --force-yes libapache2-mod-svn subversion rsync lsyncd openssh-client \
+  && apt-get install -y --force-yes libapache2-mod-svn subversion rsync lsyncd openssh-client locales \
   && a2enmod dav \
   && a2enmod dav_fs \
   && a2enmod rewrite \
