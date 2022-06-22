@@ -2,9 +2,9 @@ FROM php:7.3-apache
 RUN set -xe \
   && sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list \
   && apt-get update \
-  && apt-get install -y --force-yes libapache2-mod-svn subversion rsync lsyncd openssh-client locales \
+  && apt-get install -y --force-yes vim libapache2-mod-svn subversion rsync lsyncd openssh-client locales \
   && grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen \
-  && locale-gen \  
+  && locale-gen \
   && a2enmod dav \
   && a2enmod dav_fs \
   && a2enmod rewrite \

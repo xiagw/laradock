@@ -1,4 +1,5 @@
 #!/bin/bash
+
 _generate_ssh_key() {
     ## generate ssh key
     if [ ! -f ~/.ssh/id_ed25519 ]; then
@@ -14,15 +15,7 @@ Compression yes
 EOF
         chmod 600 ~/.ssh/config
     fi
-    cat ~/.ssh/id_ed25519.pub
-}
-
-_start_lsyncd() {
-    ## start lsyncd
-    conf_lsyncd=~/.ssh/lsyncd.conf
-    if [ -f $conf_lsyncd ]; then
-        lsyncd $conf_lsyncd
-    fi
+    # cat ~/.ssh/id_ed25519.pub
 }
 
 main() {
@@ -31,14 +24,20 @@ main() {
         rsync -a /var/www/usvn_src/ /var/www/usvn/
     fi
 
-    _generate_ssh_key
-
-    _start_lsyncd
-
-    ## svn update /svn_checkout/
-    if [ -f ~/.ssh/svn_update.sh ]; then
-        bash ~/.ssh/svn_update.sh
+    ## start lsyncd
+    conf_lsyncd=~/.ssh/lsyncd.conf
+    if [ -f $conf_lsyncd ]; then
+        lsyncd $conf_lsyncd
     fi
+
+    _generate_ssh_key
+    ## svn update /svn_checkout/
+    while true; do
+        if [ -f ~/.ssh/svn-update.sh ]; then
+            bash ~/.ssh/svn-update.sh &
+        fi
+        sleep 15
+    done &
 
     ## start apache
     apache2-foreground
