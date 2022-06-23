@@ -34,8 +34,8 @@ main() {
 
     ## svn update /svn_checkout/
     while true; do
-        if [ -f ~/.ssh/svn-update.sh ]; then
-            bash ~/.ssh/svn-update.sh &
+        if [ -f ~/tool/svn-update.sh ]; then
+            bash ~/tool/svn-update.sh &
         fi
         sleep 15
     done &

@@ -19,8 +19,9 @@ RUN set -xe \
   && apt-get clean \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/lastlog /var/log/faillog
+WORKDIR /root
 COPY svn-apache.conf /etc/apache2/sites-enabled/000-default.conf
-COPY ./run.sh /
-RUN chmod +x /run.sh
+COPY ./run.sh .
+RUN chmod +x /root/run.sh
 
-CMD [ "/run.sh" ]
+CMD [ "/root/run.sh" ]
