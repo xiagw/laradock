@@ -4,7 +4,7 @@ _svn_update() {
     export LANG='en_US.UTF-8'
     export LC_CTYPE='en_US.UTF-8'
     export LC_ALL='en_US.UTF-8'
-    svn_update_log=~/.ssh/svn-update.log
+    svn_update_log=~/.ssh/svn-update.sh.log
     svn_auth=~/.ssh/svn-auth.txt
 
     [ -f $svn_auth ] && source $svn_auth
@@ -27,3 +27,5 @@ main() {
     # path_script="$(dirname "$(readlink -f "$0")")"
     _svn_update
 }
+
+main "$@"

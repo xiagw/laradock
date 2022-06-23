@@ -1463,6 +1463,7 @@ services:
       # depends_on:
       #   - redis
       #   - postgres
+      shm_size: '256m'
     gitlab-runner:
       image: gitlab/gitlab-runner:latest
       environment:
