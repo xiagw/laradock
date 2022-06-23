@@ -25,12 +25,13 @@ main() {
     fi
 
     ## start lsyncd
-    conf_lsyncd=~/.ssh/lsyncd.conf
-    if [ -f $conf_lsyncd ]; then
-        lsyncd $conf_lsyncd
-    fi
+    # conf_lsyncd=~/.ssh/lsyncd.conf
+    # if [ -f $conf_lsyncd ]; then
+    #     lsyncd $conf_lsyncd
+    # fi
 
     _generate_ssh_key
+
     ## svn update /svn_checkout/
     while true; do
         if [ -f ~/.ssh/svn-update.sh ]; then
