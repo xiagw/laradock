@@ -22,6 +22,7 @@ RUN set -xe \
 WORKDIR /root
 COPY svn-apache.conf /etc/apache2/sites-enabled/000-default.conf
 COPY ./run.sh .
-RUN chmod +x /root/run.sh
+RUN chmod +x /root/run.sh \
+  && echo 'export LANG="en_US.UTF-8"' >>/root/.bashrc
 
 CMD [ "/root/run.sh" ]
