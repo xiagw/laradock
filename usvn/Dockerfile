@@ -21,7 +21,6 @@ RUN set -xe \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/lastlog /var/log/faillog
 COPY svn-apache.conf /etc/apache2/sites-enabled/000-default.conf
 COPY ./run.sh /
-RUN chmod +x /run.sh \
-  && echo 'fs.inotify.max_user_watches = 99999999' >/etc/sysctl.d/99-whatever.conf
+RUN chmod +x /run.sh
 
 CMD [ "/run.sh" ]
