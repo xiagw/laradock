@@ -12,7 +12,7 @@ main() {
     # export LC_CTYPE='en_US.UTF-8'
     # export LC_ALL='en_US.UTF-8'
     rsync_exclude=$path_script/rsync.exclude.conf
-    rsync_opt="rsync -anz --exclude-from=$rsync_exclude"
+    rsync_opt="rsync -avz --exclude-from=$rsync_exclude"
     cat >"$rsync_exclude" <<'EOF'
 .git
 .svn
