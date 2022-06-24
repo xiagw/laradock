@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+echo_time() {
+	echo "$(date +%F-%H:%M:%S) $*"
+}
+
+main() {
+	# set -x
+	REPOS="$1" # 仓库的路径
+	REV="$2"   # 新提交的版本号
+	export LANG='en_US.UTF-8'
+	export LC_CTYPE='en_US.UTF-8'
+	export LC_ALL='en_US.UTF-8'
+	bin_svnlook=/usr/bin/svnlook
+	svn_log="/tmp/svn_post_$(date +%F).log"
+	# svn_author="$($bin_svnlook author -r "$REV" "$REPOS")"
+	# svn_commit_msg="$($bin_svnlook log -r "$REV" "$REPOS")"
+	lock_myself=/tmp/svn_lock_myself
+	exec 1>>"$svn_log" 2>&1
+
+	while [ -f $lock_myself ]; do
+		# echo "$(date) Job is already running"
+		sleep 2
+	done
+	touch $lock_myself
+	trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
+	## trap: do some work
+	## dirs-changed result: vrupup.com/path/to/some/, not include repo url /vrupup/svn/trunk
+	## REPOS result: REPOS=/vrupup/svn/trunk
+	repo_name=${REPOS##*/}
+	for p in $($bin_svnlook dirs-changed "$REPOS"); do
+		echo "$p" | tee -a "/tmp/svn_need_update.${repo_name}.$REV"
+		## 交由 usvn docker 内的 run.sh 执行 svn update
+		## https://gitee.com/xiagw/laradock/blob/in-china/usvn/run.sh
+	done
+	# echo_time "**************************************************************"
+	# echo_time "提交版本：$REV 作者：$svn_author REPO: $REPOS"
+	# echo_time "提交备注：$svn_commit_msg"
+	# $bin_svnlook diff -r "$REV" "$REPOS"
+	## trap: end some work
+	rm $lock_myself
+	trap - INT TERM EXIT
+}
+
+main "$@"
