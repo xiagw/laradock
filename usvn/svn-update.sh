@@ -5,7 +5,7 @@ main() {
     path_script="$(dirname "$(readlink -f "$0")")"
     name_script="$(basename "$0")"
     svn_update_log=$path_script/$name_script.log
-    lock_myself=/tmp/svn_update_lock
+    lock_myself=/tmp/svn.update.lock
     svn_checkout=/root/svn_checkout
     exec 1>>"$svn_update_log" 2>&1
     export LANG='en_US.UTF-8'
@@ -29,12 +29,13 @@ EOF
     trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
     ## trap: do some work
     ## post-commit generate /tmp/svn_need_update.*
+
     for file in /tmp/svn_need_update.*; do
         [ -f "$file" ] || continue
-        repo_name=${file#*svn_need_update.}
-        repo_name=${repo_name%.*}
+        repo_name=${file##*.}
+        echo -e "\n######## $(date +%F-%T) svn need update $file"
         while read -r line; do
-            echo "svn update $svn_checkout/$repo_name/$line"
+            echo "######## $(date +%F-%T) svn update $svn_checkout/$repo_name/$line"
             /usr/bin/svn update --no-auth-cache -N "$svn_checkout/$repo_name/$line"
             chown -R 1000.1000 "$svn_checkout/$repo_name/$line"
             c=0
@@ -46,6 +47,8 @@ EOF
             rsync_src="$svn_checkout/$repo_name/"
             # rsync_dest="root@192.168.43.232:/nas/new.sync/$repo_name/${line%/}/"
             rsync_dest="root@192.168.43.232:/nas/new.sync/$repo_name/"
+            echo "######## $(date +%F-%T) $rsync_src"
+            echo "######## $(date +%F-%T) $rsync_dest"
             $rsync_opt "$rsync_src" "${rsync_dest}" && c=$((c + 1))
             [ $c -gt 0 ] && safe_del=true || safe_del=false
         done <"$file"

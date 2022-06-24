@@ -463,3 +463,17 @@ services:
         - frontend
         - backend
 
+    zentao:
+      build:
+        context: ./zentao
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
+          - TZ=${WORKSPACE_TIMEZONE}
+      container_name: zentao
+      ports:
+        - 8080:80
+      volumes:
+        - ./zentao-data:/app/zentaopms #该目录为禅道目录，里面包含禅道代码及附件上传目录。
+      depends_on:
+        - mysql
+      restart: always
