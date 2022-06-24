@@ -42,18 +42,17 @@ EOF
             # rsync -az "${line%/}/" root@10.0.5.34:/nas/new.sync/ && c=$((c+1))
             # rsync -az "${line%/}/" root@10.0.5.43:/nas/new.sync/ && c=$((c+1))
             # rsync -az "${line%/}/" root@10.0.5.58:/nas/new.sync/ && c=$((c+1))
-            rsync_src="$svn_checkout/$repo_name/${line%/}/"
-            rsync_dest="root@192.168.43.232:/nas/new.sync/$repo_name/${line%/}/"
+            # rsync_src="$svn_checkout/$repo_name/${line%/}/"
+            rsync_src="$svn_checkout/$repo_name/"
+            # rsync_dest="root@192.168.43.232:/nas/new.sync/$repo_name/${line%/}/"
+            rsync_dest="root@192.168.43.232:/nas/new.sync/$repo_name/"
             $rsync_opt "$rsync_src" "${rsync_dest}" && c=$((c + 1))
-            if [ $c -gt 0 ]; then
-                safe_del=true
-            else
-                safe_del=false
-            fi
+            [ $c -gt 0 ] && safe_del=true || safe_del=false
         done <"$file"
 
         [[ "$safe_del" == 'true' ]] && rm -f "$file"
     done
+    ## trap: end some work
     rm $lock_myself
     trap - INT TERM EXIT
 }
