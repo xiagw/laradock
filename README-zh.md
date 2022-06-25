@@ -2,7 +2,7 @@
 
 ```
 ## sudo apt install curl
-SVC=php71 sh -c "$(curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh)"
+sh -c "$(curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh)"
 ```
 
 [![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://zalt.me)
