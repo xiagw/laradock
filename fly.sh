@@ -64,14 +64,32 @@ sed -i -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
 ## set SHELL_OH_MY_ZSH=true
 echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env"
 
-## php 7.1
-[ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
-    echo "use php 7.1"
-    cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
-}
+case ${1:-nginx} in
+php71)
+    [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
+        cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
+    }
+    args="nginx mysql redis php-fpm"
+    ;;
+php74)
+    [ -f "$path_install"/php-fpm/Dockerfile.php74 ] && {
+        cp -vf "$path_install"/php-fpm/Dockerfile.php74 "$path_install"/php-fpm/Dockerfile
+    }
+    args="nginx mysql redis php-fpm"
+    ;;
+gitlab)
+    args="gitlab"
+    ;;
+svn)
+    args="usvn"
+    ;;
+*)
+    args="nginx"
+    ;;
+esac
 
 if command -v docker-compose; then
-    echo "cd $path_install && docker-compose up -d nginx mysql redis php-fpm"
+    echo "cd $path_install && docker-compose up -d $args"
 else
-    echo "cd $path_install && docker compose up -d nginx mysql redis php-fpm"
+    echo "cd $path_install && docker compose up -d $args"
 fi
