@@ -20,8 +20,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN set -xe \
   && apt-get -yq update \
   && apt-get install -yq --no-install-recommends apache2 php php-curl php-gd \
-    php-ldap php-mbstring php-mysql php-xml php-zip php-cli php-json curl \
-    unzip libapache2-mod-php \
+    php-ldap php-mbstring php-mysql php-xml php-zip php-cli php-json \
+    curl ca-certificates unzip libapache2-mod-php \
   # Clear dev deps
   && apt-get clean \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
@@ -46,7 +46,7 @@ RUN chmod +x /app/docker-entrypoint.sh \
   # https://www.zentao.net/dl/zentao/17.1/ZenTaoPMS.17.1.php7.1.zip
   # https://www.zentao.net/dl/zentao/17.1/ZenTaoPMS.17.1.php7.2_7.4.zip
   #curl http://dl.cnezsoft.com/zentao/${ZENTAO_VERSION}/ZenTaoPMS.${ZENTAO_VERSION}.stable.zip -o /var/www/zentao.zip && \
-  && curl https://www.zentao.net/dl/zentao/${ZENTAO_VERSION}/ZenTaoPMS.${ZENTAO_VERSION}.php7.2_7.4.zip -o zentao.zip \
+  && curl -Lo zentao.zip https://www.zentao.net/dl/zentao/${ZENTAO_VERSION}/ZenTaoPMS.${ZENTAO_VERSION}.php7.2_7.4.zip \
   && unzip -q zentao.zip \
   && rm zentao.zip
 
