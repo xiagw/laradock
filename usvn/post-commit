@@ -16,7 +16,7 @@ main() {
 	svn_author="$($bin_svnlook author -r "$REV" "$REPOS")"
 	svn_commit_msg="$($bin_svnlook log -r "$REV" "$REPOS")"
 	lock_myself=/tmp/svn.lock.myself
-	exec 1>>"$svn_log" 2>&1
+	exec &> >(tee -a "$svn_log")
 
 	while [ -f $lock_myself ]; do
 		# echo "$(date) Job is already running"

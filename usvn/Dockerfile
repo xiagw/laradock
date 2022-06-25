@@ -10,8 +10,8 @@
 #   && mkdir /var/www/usvn \
 #   && cd /var/www/usvn \
 #   && curl -L https://github.com/usvn/usvn/archive/1.0.7.tar.gz | tar --strip-components=1 -xz \
-#   && mkdir /var/www/usvn/files && chmod a+rwx /var/www/usvn/files
-# RUN chown -R www-data:www-data /var/www/
+#   && mkdir /var/www/usvn/files && chmod a+rwx /var/www/usvn/files \
+#   && chown -R www-data:www-data /var/www/
 
 # FROM kempkensteffen/usvn
 # RUN set -xe \
@@ -55,5 +55,7 @@ COPY ./run.sh .
 RUN set -xe \
   && chmod +x /root/run.sh \
   && printf 'export LANG="en_US.UTF-8"\nalias ll="ls -al --color"\n' >>/root/.bashrc
+
+## On Host: echo 'fs.inotify.max_user_watches = 99999999' >/etc/sysctl.d/99-whatever.conf
 
 CMD [ "/root/run.sh" ]

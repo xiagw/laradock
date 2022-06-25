@@ -2,16 +2,17 @@
 
 main() {
     # set -xe
-    path_script="$(dirname "$(readlink -f "$0")")"
-    name_script="$(basename "$0")"
-    svn_update_log=$path_script/$name_script.log
+    script_path="$(dirname "$(readlink -f "$0")")"
+    script_name="$(basename "$0")"
+    script_log=$script_path/$script_name.log
     lock_myself=/tmp/svn.update.lock
-    svn_checkout=/root/svn_checkout
-    exec 1>>"$svn_update_log" 2>&1
+    path_svn_checkout=/root/svn_checkout
+    exec &> >(tee -a "$script_log")
     export LANG='en_US.UTF-8'
     # export LC_CTYPE='en_US.UTF-8'
     # export LC_ALL='en_US.UTF-8'
-    rsync_exclude=$path_script/rsync.exclude.conf
+    rsync_exclude=$script_path/rsync.exclude.conf
+    # rsync_opt="rsync -avz --delete-after --exclude-from=$rsync_exclude"
     rsync_opt="rsync -avz --exclude-from=$rsync_exclude"
     cat >"$rsync_exclude" <<'EOF'
 .git
@@ -27,35 +28,35 @@ EOF
     fi
     touch $lock_myself
     trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
+
     ## trap: do some work
     ## post-commit generate /tmp/svn_need_update.*
-
     for file in /tmp/svn_need_update.*; do
         [ -f "$file" ] || continue
         repo_name=${file##*.}
+        if [ ! -d "$path_svn_checkout/$repo_name" ]; then
+            mkdir -p "$path_svn_checkout/$repo_name"
+            /usr/bin/svn checkout "file:///var/www/usvn/file/svn/$repo_name" "$path_svn_checkout/$repo_name"
+        fi
         echo -e "\n######## $(date +%F-%T) svn need update $file"
         while read -r line; do
-            echo "######## $(date +%F-%T) svn update $svn_checkout/$repo_name/$line"
-            /usr/bin/svn update --no-auth-cache -N "$svn_checkout/$repo_name/$line"
-            chown -R 1000.1000 "$svn_checkout/$repo_name/$line"
+            echo "######## $(date +%F-%T) svn update $path_svn_checkout/$repo_name/$line"
+            /usr/bin/svn update --no-auth-cache -N "$path_svn_checkout/$repo_name/$line"
+            chown -R 1000.1000 "$path_svn_checkout/$repo_name/$line"
             c=0
             # rsync -az "${line%/}/" root@10.0.5.33:/nas/new.sync/ && c=$((c+1))
             # rsync -az "${line%/}/" root@10.0.5.34:/nas/new.sync/ && c=$((c+1))
             # rsync -az "${line%/}/" root@10.0.5.43:/nas/new.sync/ && c=$((c+1))
             # rsync -az "${line%/}/" root@10.0.5.58:/nas/new.sync/ && c=$((c+1))
-            # rsync_src="$svn_checkout/$repo_name/${line%/}/"
-            rsync_src="$svn_checkout/$repo_name/"
+            # rsync_src="$path_svn_checkout/$repo_name/${line%/}/"
             # rsync_dest="root@192.168.43.232:/nas/new.sync/$repo_name/${line%/}/"
-            rsync_dest="root@192.168.43.232:/nas/new.sync/$repo_name/"
-            echo "######## $(date +%F-%T) $rsync_src"
-            echo "######## $(date +%F-%T) $rsync_dest"
-            $rsync_opt "$rsync_src" "${rsync_dest}" && c=$((c + 1))
+            $rsync_opt "$path_svn_checkout/$repo_name/" root@192.168.43.232:"/nas/new.sync/$repo_name/" && c=$((c + 1))
             [ $c -gt 0 ] && safe_del=true || safe_del=false
         done <"$file"
-
         [[ "$safe_del" == 'true' ]] && rm -f "$file"
     done
     ## trap: end some work
+
     rm $lock_myself
     trap - INT TERM EXIT
 }
