@@ -469,7 +469,7 @@ services:
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
           - TZ=${WORKSPACE_TIMEZONE}
-      container_name: zentao
+      # container_name: zentao
       ports:
         - 8080:80
       volumes:
