@@ -473,7 +473,7 @@ services:
       ports:
         - 8080:80
       volumes:
-        - ./zentao-data:/app/zentaopms #该目录为禅道目录，里面包含禅道代码及附件上传目录。
+        - ${DATA_PATH_HOST}/zentao:/app/zentaopms #该目录为禅道目录，里面包含禅道代码及附件上传目录。
       depends_on:
         - mysql
       restart: always

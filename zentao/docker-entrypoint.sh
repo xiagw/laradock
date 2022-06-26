@@ -3,7 +3,7 @@
 [ "$DEBUG" ] && set -x
 
 if [ ! -f /app/zentaopms/VERSION ] || [ "$(cat /app/zentaopms/VERSION)" != "$(cat /var/www/zentaopms/VERSION)" ]; then
-  cp -a /var/www/zentaopms/* /app/zentaopms
+  cp -af /var/www/zentaopms/* /app/zentaopms
 fi
 chmod -R 777 /app/zentaopms/www/data /app/zentaopms/tmp
 chmod 777 /app/zentaopms/www /app/zentaopms/config
