@@ -13,7 +13,7 @@ main() {
 	# export LC_ALL='en_US.UTF-8'
 	lock_myself=/tmp/svn.lock.myself
 	exec &> >(tee -a "/tmp/svn.post.$(date +%F).log")
-	## found lock, just wait
+	## found lock file, just wait
 	while [ -f $lock_myself ]; do sleep 2; done
 	touch $lock_myself
 	trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
@@ -21,8 +21,8 @@ main() {
 	## trap: do some work
 	## dirs-changed result: vrupup.com/path/to/some/, not include repo url /vrupup/svn/trunk
 	## REPOS result: REPOS=/vrupup/svn/trunk
-	for p in $(/usr/bin/svnlook dirs-changed "$REPOS"); do
-		echo "$p" | tee -a "/tmp/svn_need_update.${REV}.${REPOS##*/}"
+	for path in $(/usr/bin/svnlook dirs-changed "$REPOS"); do
+		echo "$path" | tee -a "/tmp/svn_need_update.${REV}.${REPOS##*/}"
 		## 交由 usvn docker 内的 run.sh 执行 svn update
 		## https://gitee.com/xiagw/laradock/blob/in-china/usvn/run.sh
 	done

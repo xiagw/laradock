@@ -44,13 +44,10 @@ EOF
             /usr/bin/svn update --no-auth-cache -N "$path_svn_checkout/$repo_name/$line"
             chown -R 1000.1000 "$path_svn_checkout/$repo_name/$line"
             c=0
-            # rsync -az "${line%/}/" root@10.0.5.33:/nas/new.sync/ && c=$((c+1))
-            # rsync -az "${line%/}/" root@10.0.5.34:/nas/new.sync/ && c=$((c+1))
-            # rsync -az "${line%/}/" root@10.0.5.43:/nas/new.sync/ && c=$((c+1))
-            # rsync -az "${line%/}/" root@10.0.5.58:/nas/new.sync/ && c=$((c+1))
-            # rsync_src="$path_svn_checkout/$repo_name/${line%/}/"
-            # rsync_dest="root@192.168.43.232:/nas/new.sync/$repo_name/${line%/}/"
-            $rsync_opt "$path_svn_checkout/$repo_name/" root@192.168.43.232:"/nas/new.sync/$repo_name/" && c=$((c + 1))
+            for ip in 33 34 43 58; do
+                $rsync_opt "$path_svn_checkout/$repo_name/${line%/}/" root@10.0.5.${ip}:"/nas/new.sync/$repo_name/${line%/}/" && c=$((c + 1))
+            done
+            $rsync_opt "$path_svn_checkout/$repo_name/${line%/}/" root@192.168.43.232:"/nas/new.sync/$repo_name/${line%/}/" && c=$((c + 1))
             [ $c -gt 0 ] && safe_del=true || safe_del=false
         done <"$file"
         [[ "$safe_del" == 'true' ]] && rm -f "$file"
