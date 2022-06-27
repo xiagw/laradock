@@ -15,6 +15,7 @@ main() {
     rsync_exclude=$script_path/rsync.exclude.conf
     if [ -f "$script_path/rsync.debug" ]; then
         rsync_opt="rsync -avnz --exclude-from=$rsync_exclude"
+        debug_on=1
     elif [ -f "$script_path/rsync.delete.confirm" ]; then
         rsync_opt="rsync -avz --delete-after --exclude-from=$rsync_exclude"
     else
@@ -40,7 +41,7 @@ EOF
     for file in /tmp/svn_need_update.*; do
         [ -f "$file" ] || continue
 
-        echo -e "\n######## $(date +%F-%T) svn need update $file"
+        echo -e "\n#### $(date +%F-%T) svn need update $file"
         repo_name=${file##*.}
         ## 1, svn checkout repo
         if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
@@ -49,7 +50,7 @@ EOF
         fi
         ## 2, svn update repo and rsync to dest
         while read -r line; do
-            echo "######## $(date +%F-%T) svn update $path_svn_checkout/$repo_name/$line"
+            echo "#### $(date +%F-%T) svn update $path_svn_checkout/$repo_name/$line"
             /usr/bin/svn update --no-auth-cache -N "$path_svn_checkout/$repo_name/$line"
             chown -R 1000.1000 "$path_svn_checkout/$repo_name/$line"
             c=0
@@ -62,6 +63,7 @@ EOF
                 rsync_src="$path_svn_checkout/$repo_name/${line%/}/"
                 user_ip="$(echo "$rline" | awk '{print $2}')"
                 rsync_dest="$(echo "$rline" | awk '{print $3}')/$repo_name/${line%/}/"
+                [[ "$debug_on" == 1 ]] && echo "#### $rsync_src $user_ip:$rsync_dest"
                 $rsync_opt "$rsync_src" "$user_ip":"$rsync_dest" && c=$((c + 1))
             done < <(grep "^$repo_name" "$rsync_conf")
             [ $c -gt 0 ] && safe_del=true || safe_del=false
