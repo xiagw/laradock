@@ -36,7 +36,7 @@ EOF
         repo_name=${file##*.}
         if [ ! -d "$path_svn_checkout/$repo_name" ]; then
             mkdir -p "$path_svn_checkout/$repo_name"
-            /usr/bin/svn checkout "file:///var/www/usvn/file/svn/$repo_name" "$path_svn_checkout/$repo_name"
+            /usr/bin/svn checkout "file:///var/www/usvn/files/svn/$repo_name" "$path_svn_checkout/$repo_name"
         fi
         echo -e "\n######## $(date +%F-%T) svn need update $file"
         while read -r line; do
