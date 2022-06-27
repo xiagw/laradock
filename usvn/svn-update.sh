@@ -46,7 +46,7 @@ EOF
         ## 1, svn checkout repo
         if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
             mkdir -p "$path_svn_checkout/$repo_name"
-            /usr/bin/svn checkout "file:///var/www/usvn/file/svn/$repo_name" "$path_svn_checkout/$repo_name"
+            /usr/bin/svn checkout "file:///var/www/usvn/files/svn/$repo_name" "$path_svn_checkout/$repo_name"
         fi
         ## 2, svn update repo and rsync to dest
         while read -r line; do
