@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo_time() {
-	echo "$(date +%F-%H:%M:%S) $*"
+	echo "#### $(date +%F-%H:%M:%S) $*"
 }
 
 main() {
@@ -24,7 +24,7 @@ main() {
 	repo_name="${REPOS#/var/www/usvn/files/svn/}"
 	repo_name=${repo_name%/}
 	if [ ! -d "/var/www/usvn/files/svn/${repo_name:-none}" ]; then
-		echo "Not found repo: $repo_name."
+		echo_time "Not found repo: $repo_name."
 		return
 	fi
 	for path in $(/usr/bin/svnlook dirs-changed "$REPOS"); do
@@ -32,7 +32,6 @@ main() {
 		## 交由 usvn docker 内的 run.sh 执行 svn update
 		## https://gitee.com/xiagw/laradock/blob/in-china/usvn/run.sh
 	done
-	echo_time "**************************************************************"
 	echo_time "Repository: $REPOS"
 	echo_time "Revision: $REV"
 	echo_time "Author: $(/usr/bin/svnlook author -r "$REV" "$REPOS") "
