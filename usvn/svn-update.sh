@@ -9,8 +9,6 @@ main() {
     script_path="$(dirname "$(readlink -f "$0")")"
     script_name="$(basename "$0")"
     script_log=$script_path/$script_name.log
-    exec &> >(tee -a "$script_log")
-
     lock_myself=/tmp/svn.update.lock
     path_svn_checkout=/root/svn_checkout
     export LANG='en_US.UTF-8'
@@ -29,10 +27,12 @@ main() {
     if [ -f "$script_path/rsync.delete.confirm" ]; then
         rsync_opt="$rsync_opt --delete-after"
     fi
+
     if [ -f $lock_myself ]; then
         # echo_time "$(date) lock file exists. exit."
         exit 0
     fi
+    exec &> >(tee -a "$script_log")
     touch $lock_myself
     trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
 
