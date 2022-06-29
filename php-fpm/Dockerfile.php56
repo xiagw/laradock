@@ -10,21 +10,21 @@ RUN set -xe \
     && { echo 6; echo 70; } | apt-get install -y --no-install-recommends tzdata \
     && apt-get -y install --no-install-recommends nginx \
     && apt-get -y install --no-install-recommends \
-        php7.1 \
-        php7.1-fpm \
-        php7.1-gd \
-        php7.1-mysql \
-        php7.1-xml \
-        php7.1-xmlrpc \
+        php5.6 \
+        php5.6-fpm \
+        php5.6-gd \
+        php5.6-mysql \
+        php5.6-xml \
+        php5.6-xmlrpc \
         php-redis \
         php-mongodb \
         php-imagick \
-        # php7.1-pecl-mcrypt  replace by  php7.1-libsodium
-        php7.1-bcmath \
-        php7.1-gmp \
-        php7.1-zip \
-        php7.1-soap \
-        # php7.1-process \
+        # php5.6-pecl-mcrypt  replace by  php5.6-libsodium
+        php5.6-bcmath \
+        php5.6-gmp \
+        php5.6-zip \
+        php5.6-soap \
+        # php5.6-process \
     && apt clean all && rm -rf /tmp/*
 RUN set -xe \
     && sed -i \
@@ -37,16 +37,16 @@ RUN set -xe \
         -e '/pm.start_servers/s/2/10/'  \
         -e '/pm.min_spare_servers/s/1/10/'  \
         -e '/pm.max_spare_servers/s/3/20/' \
-        /etc/php/7.1/fpm/pool.d/www.conf \
+        /etc/php/5.6/fpm/pool.d/www.conf \
     && sed -i \
         -e "/memory_limit/s/128M/256M/" \
         -e "/post_max_size/s/8M/256M/" \
         -e "/upload_max_filesize/s/2M/256M/" \
         -e "/max_file_uploads/s/20/256/" \
-        /etc/php/7.1/fpm/php.ini \
+        /etc/php/5.6/fpm/php.ini \
     # && chmod -R 777 /var/lib/php/sessions \
     && mkdir -p /run/php \
-    && printf '#!/bin/bash\ntrap "exit 0" HUP INT PIPE QUIT TERM\n/usr/sbin/php-fpm7.1\nexec nginx -g "daemon off;"\n' >/run.sh \
+    && printf '#!/bin/bash\ntrap "exit 0" HUP INT PIPE QUIT TERM\n/usr/sbin/php-fpm5.6\nexec nginx -g "daemon off;"\n' >/run.sh \
     && chmod +x /run.sh
 
 

@@ -3,28 +3,26 @@ ENV TIME_ZOME Asia/Shanghai
 RUN set -xe \
     && sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list \
     && apt-get update \
-    && apt-get install -y software-properties-common \
-    && add-apt-repository ppa:ondrej/php \
     && apt-get install -y --no-install-recommends apt-utils \
     && apt-get upgrade -y \
     && { echo 6; echo 70; } | apt-get install -y --no-install-recommends tzdata \
     && apt-get -y install --no-install-recommends nginx \
     && apt-get -y install --no-install-recommends \
-        php7.1 \
-        php7.1-fpm \
-        php7.1-gd \
-        php7.1-mysql \
-        php7.1-xml \
-        php7.1-xmlrpc \
+        php7.4 \
+        php7.4-fpm \
+        php7.4-gd \
+        php7.4-mysql \
+        php7.4-xml \
+        php7.4-xmlrpc \
         php-redis \
         php-mongodb \
         php-imagick \
-        # php7.1-pecl-mcrypt  replace by  php7.1-libsodium
-        php7.1-bcmath \
-        php7.1-gmp \
-        php7.1-zip \
-        php7.1-soap \
-        # php7.1-process \
+        # php7.4-pecl-mcrypt  replace by  php7.4-libsodium
+        php7.4-bcmath \
+        php7.4-gmp \
+        php7.4-zip \
+        php7.4-soap \
+        # php7.4-process \
     && apt clean all && rm -rf /tmp/*
 RUN set -xe \
     && sed -i \
@@ -37,16 +35,16 @@ RUN set -xe \
         -e '/pm.start_servers/s/2/10/'  \
         -e '/pm.min_spare_servers/s/1/10/'  \
         -e '/pm.max_spare_servers/s/3/20/' \
-        /etc/php/7.1/fpm/pool.d/www.conf \
+        /etc/php/7.4/fpm/pool.d/www.conf \
     && sed -i \
         -e "/memory_limit/s/128M/256M/" \
         -e "/post_max_size/s/8M/256M/" \
         -e "/upload_max_filesize/s/2M/256M/" \
         -e "/max_file_uploads/s/20/256/" \
-        /etc/php/7.1/fpm/php.ini \
+        /etc/php/7.4/fpm/php.ini \
     # && chmod -R 777 /var/lib/php/sessions \
     && mkdir -p /run/php \
-    && printf '#!/bin/bash\ntrap "exit 0" HUP INT PIPE QUIT TERM\n/usr/sbin/php-fpm7.1\nexec nginx -g "daemon off;"\n' >/run.sh \
+    && printf '#!/bin/bash\ntrap "exit 0" HUP INT PIPE QUIT TERM\n/usr/sbin/php-fpm7.4\nexec nginx -g "daemon off;"\n' >/run.sh \
     && chmod +x /run.sh
 
 
