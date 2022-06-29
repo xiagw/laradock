@@ -14,7 +14,7 @@ main() {
     fi
 
     ## start apache
-    apache2-foreground
+    exec apache2-foreground
 }
 
 main "$@"
