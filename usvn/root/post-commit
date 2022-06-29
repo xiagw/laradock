@@ -11,25 +11,22 @@ main() {
 	# export LC_ALL='en_US.UTF-8'
 	REPOS="$1" # 仓库的路径
 	REV="$2"   # 新提交的版本号
-	lock_myself=/tmp/svn.lock.myself
+
 	## found lock file, just wait
+	lock_myself=/tmp/svn.lock.myself
 	while [ -f $lock_myself ]; do sleep 2; done
 
-	exec &> >(tee -a "/tmp/svn.post.$(date +%F).log")
+	exec &> >(tee -a "/tmp/svn.post.commit.log")
 	touch $lock_myself
 	trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
 
 	## trap: do some work
-	## dirs-changed result: vrupup.com/path/to/some/, not include repo url /vrupup/svn/trunk
-	## REPOS result: REPOS=/vrupup/svn/trunk
-	repo_name="${REPOS#/var/www/usvn/files/svn/}"
-	repo_name=${repo_name%/}
-	if [ ! -d "/var/www/usvn/files/svn/${repo_name:-none}" ]; then
-		echo_time "Not found repo: $repo_name."
-		return
-	fi
+	## dirs-changed result: trunk/path/to/some/, not include repo url $REPOS
+	## REPOS result: REPOS=/var/www/usvn/files/svn/${repo_name}
 	for path in $(/usr/bin/svnlook dirs-changed "$REPOS"); do
-		echo "$path" | tee -a "/tmp/svn_need_update.${REV}.${repo_name}"
+		repo_name="${REPOS#/var/www/usvn/files/svn/}"
+		repo_name="${repo_name%/}"
+		echo "$path" | tee -a "/var/www/svn_commit/svn_need_update.${REV}.$repo_name"
 		## 交由 usvn docker 内的 run.sh 执行 svn update
 		## https://gitee.com/xiagw/laradock/blob/in-china/usvn/run.sh
 	done
