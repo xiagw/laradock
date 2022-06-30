@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo_time() {
-    echo "#### $(date +%F-%H:%M:%S) $*"
+    echo "#### $(date +%F-%T) $*"
 }
 
 _generate_ssh_key() {
@@ -52,22 +52,24 @@ main() {
     trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
 
     ## trap: do some work
-    ## setup rsync options
-    rsync_opt="rsync -avz --exclude=.svn --exclude=.git"
-    rsync_exclude=$script_path/rsync.exclude.conf
-    if [ -f "$rsync_exclude" ]; then
-        rsync_opt="$rsync_opt --exclude-from=$rsync_exclude"
-    fi
-    if [ -f "$script_path/rsync.debug" ]; then
-        rsync_opt="$rsync_opt -n"
-        debug_on=1
-    fi
-    if [ -f "$script_path/rsync.delete.confirm" ]; then
-        rsync_opt="$rsync_opt --delete-after"
-    fi
-
     inotifywait -m -r -e create ${path_svn_pre}/ |
         while read -r path action file; do
+            ## 1, setup rsync options
+            rsync_opt="rsync -az --exclude=.svn --exclude=.git"
+            rsync_exclude=$script_path/rsync.exclude.conf
+            if [ -f "$rsync_exclude" ]; then
+                rsync_opt="$rsync_opt --exclude-from=$rsync_exclude"
+            fi
+            if [ -f "$script_path/rsync.debug" ]; then
+                rsync_opt="$rsync_opt -v"
+            fi
+            if [ -f "$script_path/rsync.dryrun" ]; then
+                rsync_opt="$rsync_opt -n"
+            fi
+            if [ -f "$script_path/rsync.delete.confirm" ]; then
+                rsync_opt="$rsync_opt --delete-after"
+            fi
+            ## find $repo_name
             if ! echo "$path $action $file" | grep '/db/revprops.*CREATE'; then
                 continue
             fi
@@ -85,22 +87,22 @@ main() {
             fi
             ## 3, svnlook dirs-change
             for dir_changed in $(/usr/bin/svnlook dirs-changed "$path_svn_pre/${repo_name}"); do
-                echo "dirs-changed: $dir_changed"
+                echo_time "dirs-changed: $dir_changed"
+                ## 4, svn update
                 /usr/bin/svn update --no-auth-cache -N "$path_svn_checkout/$repo_name/${dir_changed}"
                 chown -R 1000.1000 "$path_svn_checkout/$repo_name/${dir_changed}"
-                count=0
                 if [ ! -f "$rsync_conf" ]; then
                     echo_time "Not found $rsync_conf, skip rsync."
                     continue
                 fi
-                ## get user@host_ip:/path/to/dest from $rsync_conf
+                ## 5, get user@host_ip:/path/to/dest from $rsync_conf
                 while read -r line_rsync_conf; do
                     rsync_src="$path_svn_checkout/$repo_name/${dir_changed%/}/"
                     user_ip="$(echo "$line_rsync_conf" | awk '{print $2}')"
                     rsync_dest="$(echo "$line_rsync_conf" | awk '{print $3}')/$repo_name/${dir_changed%/}/"
-                    [[ "$debug_on" == 1 ]] && echo_time "$rsync_src $user_ip:$rsync_dest"
+                    echo_time "$rsync_src $user_ip:$rsync_dest"
                     ssh -n "$user_ip" "[ -d $rsync_dest ] || mkdir -p $rsync_dest"
-                    $rsync_opt "$rsync_src" "$user_ip":"$rsync_dest" && count=$((count + 1))
+                    $rsync_opt "$rsync_src" "$user_ip":"$rsync_dest"
                 done < <(grep "^$repo_name" "$rsync_conf")
             done
         done
