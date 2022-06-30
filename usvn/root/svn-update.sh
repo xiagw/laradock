@@ -89,7 +89,7 @@ main() {
             for dir_changed in $(/usr/bin/svnlook dirs-changed "$path_svn_pre/${repo_name}"); do
                 echo_time "dirs-changed: $dir_changed"
                 ## 4, svn update
-                /usr/bin/svn update --no-auth-cache -N "$path_svn_checkout/$repo_name/${dir_changed}"
+                /usr/bin/svn update "$path_svn_checkout/$repo_name/${dir_changed}"
                 chown -R 1000.1000 "$path_svn_checkout/$repo_name/${dir_changed}"
                 if [ ! -f "$rsync_conf" ]; then
                     echo_time "Not found $rsync_conf, skip rsync."
