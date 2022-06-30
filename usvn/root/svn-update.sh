@@ -30,6 +30,19 @@ _start_lsyncd() {
     fi
 }
 
+_schedule_svn_update() {
+    while true; do
+        ## UTC time
+        if [[ "$(date +%H)" == 20 ]]; then
+            for d in "$path_svn_checkout"/*/; do
+                svn cleanup "$d"
+                svn update "$d"/
+            done
+        fi
+        sleep 600
+    done
+}
+
 main() {
     # set -xe
     export LANG='en_US.UTF-8'
@@ -44,6 +57,8 @@ main() {
 
     lock_myself=/tmp/svn.update.lock
     if [ -f $lock_myself ]; then exit 0; fi
+    ## schedule svn update
+    _schedule_svn_update &
     ## ssh key
     _generate_ssh_key
     ## debug log
