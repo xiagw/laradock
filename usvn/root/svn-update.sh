@@ -52,8 +52,9 @@ main() {
     trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
 
     ## trap: do some work
-    inotifywait -m -r -e create ${path_svn_pre}/ |
-        while read -r path action file; do
+    inotifywait -m -r -e create --excludei 'db/transactions/' ${path_svn_pre}/ |
+        grep -vE '/db/ CREATE|/db/txn' --line-buffered |
+        while read -r path; do
             ## 1, setup rsync options
             rsync_opt="rsync -az --exclude=.svn --exclude=.git"
             rsync_exclude=$script_path/rsync.exclude.conf
@@ -68,10 +69,6 @@ main() {
             fi
             if [ -f "$script_path/rsync.delete.confirm" ]; then
                 rsync_opt="$rsync_opt --delete-after"
-            fi
-            ## find $repo_name
-            if ! echo "$path $action $file" | grep '/db/revprops.*CREATE'; then
-                continue
             fi
             repo_name=${path#"${path_svn_pre}"/}
             repo_name=${repo_name%%/*}
