@@ -78,8 +78,9 @@ main() {
                 continue
             fi
             ## svnlook dirs-change
+            sleep 2
             for dir_changed in $(/usr/bin/svnlook dirs-changed "$path_svn_pre/${repo_name}"); do
-                echo_time "dirs-changed: $dir_changed"
+                echo_time "svnlook dirs-changed: $dir_changed"
                 ## not found svn repo in /root/svn_checkout, then svn checkout
                 if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
                     /usr/bin/svn checkout "file://$path_svn_pre/$repo_name" "$path_svn_checkout/$repo_name"
@@ -101,11 +102,11 @@ main() {
                 ## get user@host_ip:/path/to/dest from $rsync_conf
                 while read -r line_rsync_conf; do
                     rsync_src="$path_svn_checkout/$repo_name/${dir_changed%/}/"
-                    user_ip="$(echo "$line_rsync_conf" | awk '{print $2}')"
+                    rsync_user_ip="$(echo "$line_rsync_conf" | awk '{print $2}')"
                     rsync_dest="$(echo "$line_rsync_conf" | awk '{print $3}')/$repo_name/${dir_changed%/}/"
-                    echo_time "$rsync_src $user_ip:$rsync_dest"
-                    ssh -n "$user_ip" "[ -d $rsync_dest ] || mkdir -p $rsync_dest"
-                    $rsync_opt "$rsync_src" "$user_ip":"$rsync_dest"
+                    echo_time "$rsync_src $rsync_user_ip:$rsync_dest"
+                    ssh -n "$rsync_user_ip" "[ -d $rsync_dest ] || mkdir -p $rsync_dest"
+                    $rsync_opt "$rsync_src" "$rsync_user_ip":"$rsync_dest"
                 done < <(grep "^$repo_name" "$rsync_conf")
             done
         done
