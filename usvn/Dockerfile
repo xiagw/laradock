@@ -46,6 +46,7 @@ RUN set -xe \
   && cp -af /tmp/src/* /var/www/usvn_src/ \
   && mkdir -p /var/www/svn_commit \
   && chown -R www-data:www-data /var/www/ \
+  && sed -i -e "78 a ServerName svn.mydomain.com\n" /etc/apache2/apache2.conf \
   ## Clear dev deps
   && apt-get clean \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
