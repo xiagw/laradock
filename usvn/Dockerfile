@@ -39,8 +39,8 @@ RUN set -xe \
   && a2enmod dav_fs \
   && a2enmod rewrite \
   && a2enmod authz_svn \
-  && a2enmod dav_svn
-RUN curl -sSLo /tmp/usvn.tgz https://github.com/usvn/usvn/archive/1.0.10.tar.gz \
+  && a2enmod dav_svn \
+  && curl -sSLo /tmp/usvn.tgz https://github.com/usvn/usvn/archive/1.0.10.tar.gz \
   && tar --strip-components=1 -C /tmp/ -xzf /tmp/usvn.tgz \
   && mkdir -p /var/www/usvn_src \
   && cp -af /tmp/src/* /var/www/usvn_src/ \
