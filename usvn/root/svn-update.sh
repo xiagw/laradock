@@ -98,12 +98,14 @@ main() {
                 [ -f "$rsync_exclude" ] && rsync_opt="$rsync_opt --exclude-from=$rsync_exclude"
                 [ -f "$script_path/rsync.debug" ] && rsync_opt="$rsync_opt -v"
                 [ -f "$script_path/rsync.dryrun" ] && rsync_opt="$rsync_opt -n"
-                [ -f "$script_path/rsync.delete.confirm" ] && rsync_opt="$rsync_opt --delete-after"
+                # [ -f "$script_path/rsync.delete.confirm" ] && rsync_opt="$rsync_opt --delete-after"
                 ## get user@host_ip:/path/to/dest from $rsync_conf
                 while read -r line_rsync_conf; do
                     rsync_src="$path_svn_checkout/$repo_name/${dir_changed%/}/"
                     rsync_user_ip="$(echo "$line_rsync_conf" | awk '{print $2}')"
                     rsync_dest="$(echo "$line_rsync_conf" | awk '{print $3}')/$repo_name/${dir_changed%/}/"
+                    rsync_opt_del="$(echo "$line_rsync_conf" | awk '{print $4}')"
+                    [ "${rsync_opt_del:-none}" = rsync_delete ] && rsync_opt="$rsync_opt --delete-after"
                     echo_time "$rsync_src $rsync_user_ip:$rsync_dest"
                     ssh -n "$rsync_user_ip" "[ -d $rsync_dest ] || mkdir -p $rsync_dest"
                     $rsync_opt "$rsync_src" "$rsync_user_ip":"$rsync_dest"
