@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo_time() {
-    echo "#### $(date +%F-%T) $*"
+    echo "#### $(date +%F_%T) $*"
 }
 
 _generate_ssh_key() {
@@ -11,12 +11,12 @@ _generate_ssh_key() {
         chmod 700 ~/.ssh
         ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f ~/.ssh/id_ed25519
         ## set StrictHostKeyChecking no
-        cat >~/.ssh/config <<'EOF'
-Host *
-IdentityFile ~/.ssh/id_ed25519
-StrictHostKeyChecking no
-Compression yes
-EOF
+        (
+            echo 'Host *'
+            echo 'IdentityFile ~/.ssh/id_ed25519'
+            echo 'StrictHostKeyChecking no'
+            echo 'Compression yes'
+        ) >~/.ssh/config
         chmod 600 ~/.ssh/config
     fi
     # cat ~/.ssh/id_ed25519.pub
@@ -57,7 +57,7 @@ main() {
 
     lock_myself=/tmp/svn.update.lock
     if [ -f $lock_myself ]; then exit 0; fi
-    ## schedule svn update
+    ## schedule svn update root dirs
     _schedule_svn_update &
     ## ssh key
     _generate_ssh_key
@@ -70,44 +70,35 @@ main() {
     inotifywait -m -r -e create --excludei 'db/transactions/' ${path_svn_pre}/ |
         grep -vE '/db/ CREATE|/db/txn' --line-buffered |
         while read -r path; do
-            ## 1, setup rsync options
-            rsync_opt="rsync -az --exclude=.svn --exclude=.git"
-            rsync_exclude=$script_path/rsync.exclude.conf
-            if [ -f "$rsync_exclude" ]; then
-                rsync_opt="$rsync_opt --exclude-from=$rsync_exclude"
-            fi
-            if [ -f "$script_path/rsync.debug" ]; then
-                rsync_opt="$rsync_opt -v"
-            fi
-            if [ -f "$script_path/rsync.dryrun" ]; then
-                rsync_opt="$rsync_opt -n"
-            fi
-            if [ -f "$script_path/rsync.delete.confirm" ]; then
-                rsync_opt="$rsync_opt --delete-after"
-            fi
+            ## get $repo_name
             repo_name=${path#"${path_svn_pre}"/}
             repo_name=${repo_name%%/*}
-            ## not found $repo_name
             if [[ ! -d "$path_svn_pre/${repo_name:-none}" ]]; then
-                echo_time "Not found repo: ${repo_name:-none}"
+                echo_time "not found repo: ${repo_name:-none}"
                 continue
             fi
-            ## 2, svn checkout
-            if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
-                mkdir -p "$path_svn_checkout/$repo_name"
-                /usr/bin/svn checkout "file://$path_svn_pre/$repo_name" "$path_svn_checkout/$repo_name"
-            fi
-            ## 3, svnlook dirs-change
+            ## svnlook dirs-change
             for dir_changed in $(/usr/bin/svnlook dirs-changed "$path_svn_pre/${repo_name}"); do
                 echo_time "dirs-changed: $dir_changed"
-                ## 4, svn update
+                ## not found svn repo in /root/svn_checkout, then svn checkout
+                if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
+                    /usr/bin/svn checkout "file://$path_svn_pre/$repo_name" "$path_svn_checkout/$repo_name"
+                fi
+                ## svn update
                 /usr/bin/svn update "$path_svn_checkout/$repo_name/${dir_changed}"
                 chown -R 1000.1000 "$path_svn_checkout/$repo_name/${dir_changed}"
                 if [ ! -f "$rsync_conf" ]; then
-                    echo_time "Not found $rsync_conf, skip rsync."
+                    echo_time "not found $rsync_conf, skip rsync."
                     continue
                 fi
-                ## 5, get user@host_ip:/path/to/dest from $rsync_conf
+                ## setup rsync options
+                rsync_opt="rsync -az --exclude=.svn --exclude=.git"
+                rsync_exclude=$script_path/rsync.exclude.conf
+                [ -f "$rsync_exclude" ] && rsync_opt="$rsync_opt --exclude-from=$rsync_exclude"
+                [ -f "$script_path/rsync.debug" ] && rsync_opt="$rsync_opt -v"
+                [ -f "$script_path/rsync.dryrun" ] && rsync_opt="$rsync_opt -n"
+                [ -f "$script_path/rsync.delete.confirm" ] && rsync_opt="$rsync_opt --delete-after"
+                ## get user@host_ip:/path/to/dest from $rsync_conf
                 while read -r line_rsync_conf; do
                     rsync_src="$path_svn_checkout/$repo_name/${dir_changed%/}/"
                     user_ip="$(echo "$line_rsync_conf" | awk '{print $2}')"
