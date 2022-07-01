@@ -6,40 +6,48 @@ echo_time() {
 
 _generate_ssh_key() {
     ## generate ssh key
-    if [ ! -f ~/.ssh/id_ed25519 ]; then
-        mkdir -p ~/.ssh
-        chmod 700 ~/.ssh
-        ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f ~/.ssh/id_ed25519
-        ## set StrictHostKeyChecking no
-        (
-            echo 'Host *'
-            echo 'IdentityFile ~/.ssh/id_ed25519'
-            echo 'StrictHostKeyChecking no'
-            echo 'Compression yes'
-        ) >~/.ssh/config
-        chmod 600 ~/.ssh/config
-    fi
+    [ -f ~/.ssh/id_ed25519 ] && return
+    mkdir -p ~/.ssh
+    chmod 700 ~/.ssh
+    ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f ~/.ssh/id_ed25519
+    ## set StrictHostKeyChecking no
+    (
+        echo 'Host *'
+        echo 'IdentityFile ~/.ssh/id_ed25519'
+        echo 'StrictHostKeyChecking no'
+        echo 'Compression yes'
+    ) >~/.ssh/config
+    chmod 600 ~/.ssh/config
     # cat ~/.ssh/id_ed25519.pub
 }
 
 _start_lsyncd() {
     ## start lsyncd
     conf_lsyncd=~/.ssh/lsyncd.conf
-    if [ -f $conf_lsyncd ]; then
-        lsyncd $conf_lsyncd
-    fi
+    [ -f $conf_lsyncd ] && lsyncd $conf_lsyncd
+
 }
 
 _schedule_svn_update() {
     while true; do
         ## UTC time
-        if [[ "$(date +%H)" == 20 ]]; then
+        if [[ "$(date +%H%M)" == 2005 ]]; then
+            echo_time "svn cleanup/update root dir"
             for d in "$path_svn_checkout"/*/; do
+                [ -d "$d"/.svn ] || continue
                 svn cleanup "$d"
-                svn update "$d"/
+                svn update "$d"
             done
         fi
-        sleep 600
+        sleep 59
+    done
+}
+
+_backup_svn_checkout() {
+    ## backup svn checkout
+    for d in "$path_svn_pre"/*/; do
+        [ -f "$d"/format ] || continue
+        svnadmin dump "$d" >"$script_path/backup.svn.${d}.dump"
     done
 }
 
@@ -54,10 +62,10 @@ main() {
     path_svn_pre=/var/www/usvn/files/svn
     path_svn_checkout=/root/svn_checkout
     rsync_conf=$script_path/rsync.deploy.conf
-
+    ## allow only one instance
     lock_myself=/tmp/svn.update.lock
     if [ -f $lock_myself ]; then exit 0; fi
-    ## schedule svn update root dirs
+    ## schedule svn cleanup/update root dirs
     _schedule_svn_update &
     ## ssh key
     _generate_ssh_key
@@ -78,6 +86,7 @@ main() {
                 continue
             fi
             ## svnlook dirs-change
+            ## because inotifywait is too fast, need to wait svn write to disk
             sleep 2
             for dir_changed in $(/usr/bin/svnlook dirs-changed "$path_svn_pre/${repo_name}"); do
                 echo_time "svnlook dirs-changed: $dir_changed"
