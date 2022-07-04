@@ -39,7 +39,7 @@ command -v git || {
 ## install docker/compose
 command -v docker || {
     echo "install docker"
-    curl -fsSL https://get.docker.com | sudo bash
+    curl -fsSL https://get.docker.com | $pre_sudo bash
 }
 
 ## clone laradock
@@ -53,29 +53,39 @@ if [ ! -f "$file_env" ]; then
     pass_mysql=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
     pass_redis=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
     pass_gitlab=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
-    sed -i -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
+    sed -i \
+        -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
         -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
-        -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" "$file_env"
+        -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
+        "$file_env"
 fi
 ## change docker host ip
 docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
-sed -i -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
-    -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" "$file_env"
+sed -i \
+    -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
+    -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" \
+    "$file_env"
 ## set SHELL_OH_MY_ZSH=true
 echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env"
 
 case ${1:-nginx} in
+php56)
+    [ -f "$path_install"/php-fpm/Dockerfile.php56 ] && {
+        cp -vf "$path_install"/php-fpm/Dockerfile.php56 "$path_install"/php-fpm/Dockerfile
+    }
+    args="php-fpm"
+    ;;
 php71)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
         cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
     }
-    args="nginx mysql redis php-fpm"
+    args="php-fpm"
     ;;
 php74)
     [ -f "$path_install"/php-fpm/Dockerfile.php74 ] && {
         cp -vf "$path_install"/php-fpm/Dockerfile.php74 "$path_install"/php-fpm/Dockerfile
     }
-    args="nginx mysql redis php-fpm"
+    args="php-fpm"
     ;;
 gitlab)
     args="gitlab"
@@ -88,8 +98,9 @@ svn)
     ;;
 esac
 
-if command -v docker-compose; then
-    echo "cd $path_install && docker-compose up -d $args"
+echo -e "\n#### exec command: "
+if command -v docker-compose &>/dev/null; then
+    echo -e "\ncd $path_install && docker-compose up -d $args\n"
 else
-    echo "cd $path_install && docker compose up -d $args"
+    echo -e "\ncd $path_install && docker compose up -d $args\n"
 fi
