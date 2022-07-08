@@ -33,12 +33,11 @@ RUN set -xe \
         php7.1-zip \
         php7.1-soap \
         # php7.1-process \
-    && apt clean all && rm -rf /tmp/*
+    && apt-get clean all && rm -rf /tmp/*
 RUN set -xe \
     && sed -i \
         -e '/fpm.sock/s/^/;/' \
         -e '/fpm.sock/a listen = 9000' \
-        -e '/listen.allowed/ a listen.allowed_clients = 0.0.0.0' \
         -e '/rlimit_files/ a rlimit_files = 51200' \
         -e '/pm = dynamic/s/dynamic/ondemand/' \
         -e '/pm.max_children/s/5/2000/'  \
