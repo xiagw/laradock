@@ -38,7 +38,7 @@ command -v git || {
 
 ## install docker/compose
 command -v docker || {
-    echo "install docker"
+    echo "install docker..."
     curl -fsSL https://get.docker.com | $pre_sudo bash
 }
 
@@ -69,22 +69,32 @@ sed -i \
 echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env"
 
 case ${1:-nginx} in
-php56)
-    [ -f "$path_install"/php-fpm/Dockerfile.php56 ] && {
-        cp -vf "$path_install"/php-fpm/Dockerfile.php56 "$path_install"/php-fpm/Dockerfile
-    }
-    args="php-fpm"
-    ;;
-php71)
+5.6)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
         cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
     }
+    sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
     ;;
-php74)
-    [ -f "$path_install"/php-fpm/Dockerfile.php74 ] && {
-        cp -vf "$path_install"/php-fpm/Dockerfile.php74 "$path_install"/php-fpm/Dockerfile
+7.1)
+    [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
+        cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
     }
+    sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
+    args="php-fpm"
+    ;;
+7.4)
+    [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
+        cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
+    }
+    sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
+    args="php-fpm"
+    ;;
+8.0)
+    [ -f "$path_install"/php-fpm/Dockerfile.php80 ] && {
+        cp -vf "$path_install"/php-fpm/Dockerfile.php80 "$path_install"/php-fpm/Dockerfile
+    }
+    sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
     ;;
 gitlab)
