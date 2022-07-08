@@ -1,15 +1,23 @@
 FROM ubuntu:20.04
+## for apt to be noninteractive
+ENV DEBIAN_FRONTEND noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN true
 ENV TIME_ZOME Asia/Shanghai
 RUN set -xe \
     && sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list \
-    && apt-get update \
+    ## preesed tzdata, update package index, upgrade packages and install needed software
+    && truncate -s0 /tmp/preseed.cfg \
+    && echo "tzdata tzdata/Areas select Asia" >> /tmp/preseed.cfg \
+    && echo "tzdata tzdata/Zones/Asia select Shanghai" >> /tmp/preseed.cfg \
+    && debconf-set-selections /tmp/preseed.cfg \
+    && rm -f /etc/timezone /etc/localtime \
+    && apt-get update -y \
+    && apt-get install -y --no-install-recommends apt-utils tzdata \
     && apt-get install -y software-properties-common \
     && add-apt-repository ppa:ondrej/php \
-    && apt-get install -y --no-install-recommends apt-utils \
     && apt-get upgrade -y \
-    && { echo 6; echo 70; } | apt-get install -y --no-install-recommends tzdata \
-    && apt-get -y install --no-install-recommends nginx \
-    && apt-get -y install --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
+        nginx \
         php7.1 \
         php7.1-fpm \
         php7.1-gd \
@@ -48,6 +56,7 @@ RUN set -xe \
     && mkdir -p /run/php \
     && printf '#!/bin/bash\ntrap "exit 0" HUP INT PIPE QUIT TERM\n/usr/sbin/php-fpm7.1\nexec nginx -g "daemon off;"\n' >/run.sh \
     && chmod +x /run.sh
+    # && rm -f /etc/nginx/sites-enabled/default
 
 
 ## copy nginx conf
