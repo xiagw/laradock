@@ -2,7 +2,9 @@
 
 ```
 ## sudo apt install curl
-sh -c "$(curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh)"
+bash -c "$(curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh)"
+
+bash -c "$(curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh)" @ php71
 ```
 
 [![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://zalt.me)
