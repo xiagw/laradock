@@ -108,6 +108,13 @@ svn)
     ;;
 esac
 
+## docker pull ttl.sh
+# IMAGE_NAME=$(uuidgen)
+# cd "$path_install" && docker-compose build php-fpm
+# docker tag laradock_php-fpm ttl.sh/"${IMAGE_NAME}":2h
+# docker push ttl.sh/"${IMAGE_NAME}":2h
+# docker pull ttl.sh/"${IMAGE_NAME}":2h
+
 echo -e "\n#### exec command: "
 if command -v docker-compose &>/dev/null; then
     echo -e "\ncd $path_install && docker-compose up -d $args\n"

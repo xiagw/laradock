@@ -430,21 +430,6 @@ services:
         - frontend
         - backend
 
-    watermark-front:
-      # image: watermark-front
-      build:
-        context: ../watermark-front
-        # dockerfile: Dockerfile.front
-      ports:
-        - "8005:80"
-      restart: always
-      # depends_on:
-      #   - mysql
-      #   - redis
-      networks:
-        - frontend
-        - backend
-
     websvn:
       image: elleflorio/svn-server
       ports:
