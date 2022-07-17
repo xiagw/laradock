@@ -32,22 +32,14 @@ _schedule_svn_update() {
     while true; do
         ## UTC time
         if [[ "$(date +%H%M)" == 2005 ]]; then
-            echo_time "svn cleanup/update root dir"
+            echo_time "svn cleanup/update root dir" | tee -a "$script_log"
             for d in "$path_svn_checkout"/*/; do
                 [ -d "$d"/.svn ] || continue
                 svn cleanup "$d"
                 svn update "$d"
             done
         fi
-        sleep 59
-    done
-}
-
-_backup_svn_checkout() {
-    ## backup svn checkout
-    for d in "$path_svn_pre"/*/; do
-        [ -f "$d"/format ] || continue
-        svnadmin dump "$d" >"$script_path/backup.svn.${d}.dump"
+        sleep 50
     done
 }
 
@@ -60,24 +52,25 @@ main() {
     script_name="$(basename "$0")"
     script_log=${script_path}/${script_name}.log
     path_svn_pre=/var/www/usvn/files/svn
-    path_svn_checkout=/root/svn_checkout
+    path_svn_checkout=${script_path}/svn_checkout
     rsync_conf=$script_path/rsync.deploy.conf
     ## allow only one instance
-    lock_myself=/tmp/svn.update.lock
-    if [ -f $lock_myself ]; then exit 0; fi
+    lock_myself=${script_path}/.svn.update.lock
+    if [ -f "$lock_myself" ]; then exit 0; fi
     ## schedule svn cleanup/update root dirs
     _schedule_svn_update &
     ## ssh key
     _generate_ssh_key
     ## debug log
     exec &> >(tee -a "$script_log")
-    touch $lock_myself
+    touch "$lock_myself"
     trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
 
     ## trap: do some work
-    inotifywait -m -r -e create --excludei 'db/transactions/' ${path_svn_pre}/ |
-        grep -vE '/db/ CREATE|/db/txn' --line-buffered |
-        while read -r path; do
+
+    inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${path_svn_pre}/ |
+        while read -r path action file; do
+            echo "$path, $action, $file" | grep -q -E '/db/.*CREATE.*svn-|/db/revs/.*CREATE.ISDIR' && continue
             ## get $repo_name
             repo_name=${path#"${path_svn_pre}"/}
             repo_name=${repo_name%%/*}
@@ -90,7 +83,7 @@ main() {
             sleep 2
             for dir_changed in $(/usr/bin/svnlook dirs-changed "$path_svn_pre/${repo_name}"); do
                 echo_time "svnlook dirs-changed: $dir_changed"
-                ## not found svn repo in /root/svn_checkout, then svn checkout
+                ## not found svn repo in $path_svn_checkout, then svn checkout
                 if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
                     /usr/bin/svn checkout "file://$path_svn_pre/$repo_name" "$path_svn_checkout/$repo_name"
                 fi
@@ -123,7 +116,7 @@ main() {
         done
     ## trap: end some work
 
-    rm $lock_myself
+    rm "$lock_myself"
     trap - INT TERM EXIT
 }
 
