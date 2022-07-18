@@ -73,7 +73,7 @@ main() {
             ## svnlook dirs-change
             ## because inotifywait is too fast, need to wait svn write to disk
             sleep 2
-            for dir_changed in $(/usr/bin/svnlook dirs-changed "$path_svn_pre/${repo_name}"); do
+            for dir_changed in $(/usr/bin/svnlook dirs-changed -r "${file}" "$path_svn_pre/${repo_name}"); do
                 echo_time "svnlook dirs-changed: $dir_changed"
                 ## not found svn repo in $path_svn_checkout, then svn checkout
                 if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
