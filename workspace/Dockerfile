@@ -804,11 +804,16 @@ COPY ./.npmrc /home/laradock/.npmrc
 # PNPM:
 ###########################################################################
 
-USER laradock
+USER root
 
 ARG INSTALL_PNPM=false
+ENV PNPM_HOME="/home/laradock/.local/share/pnpm"
+ENV PATH $PATH:/home/laradock/.local/share/pnpm
 
 RUN if [ ${INSTALL_PNPM} = true ]; then \
+    echo "" >> ~/.bashrc && \
+    echo 'export PNPM_HOME="/home/laradock/.local/share/pnpm"' >> ~/.bashrc && \
+    echo 'export PATH="$PNPM_HOME:$PATH"' >> ~/.bashrc && \
     npx pnpm add -g pnpm \
 ;fi
 
@@ -1560,7 +1565,7 @@ ARG SHELL_OH_MY_ZSH_ALIASES=false
 USER laradock
 RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --keep-zshrc" && \
-    sed -i -r 's/^plugins=\(.*?\)$/plugins=(laravel5)/' /home/laradock/.zshrc && \
+    sed -i -r 's/^plugins=\(.*?\)$/plugins=(laravel composer)/' /home/laradock/.zshrc && \
     echo '\n\
 bindkey "^[OB" down-line-or-search\n\
 bindkey "^[OC" forward-char\n\
