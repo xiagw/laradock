@@ -55,7 +55,7 @@ main() {
     path_svn_checkout=${script_path}/svn_checkout
     rsync_conf=$script_path/rsync.deploy.conf
     ## allow only one instance
-    lock_myself=${script_path}/.svn.update.lock
+    lock_myself=/tmp/.svn.update.lock
     if [ -f "$lock_myself" ]; then exit 0; fi
     ## schedule svn cleanup/update root dirs
     _schedule_svn_update &
