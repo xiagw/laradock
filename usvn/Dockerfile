@@ -63,5 +63,6 @@ RUN set -xe \
 ## On Host:
 ## echo 'fs.inotify.max_user_watches = 99999999' | sudo tee -a /etc/sysctl.d/99-sysctl.conf
 ## sudo sysctl -p
+## cat /proc/sys/fs/inotify/max_user_watches
 
 CMD [ "/root/run.sh" ]

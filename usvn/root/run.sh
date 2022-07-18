@@ -6,11 +6,15 @@ main() {
         rsync -a /var/www/usvn_src/ /var/www/usvn/
     fi
 
-    ## svn update /svn_checkout/
+    ## svn update /root/tool/svn_checkout/
     if [ -f ~/tool/svn-update.sh ]; then
         bash ~/tool/svn-update.sh &
     elif [ -f ~/svn-update.sh ]; then
         bash ~/svn-update.sh &
+    fi
+    ## lsyncd /root/tool/lsyncd.conf
+    if [ -f ~/tool/lsyncd.conf ]; then
+        lsyncd ~/tool/lsyncd.conf
     fi
 
     ## start apache
