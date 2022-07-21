@@ -28,13 +28,24 @@
 # CMD [ "/run.sh" ]
 
 FROM php:7.3-apache
+## for apt to be noninteractive
+ENV DEBIAN_FRONTEND noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN true
+ENV TIME_ZOME Asia/Shanghai
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN set -xe \
   && sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list \
+  ## preesed tzdata, update package index, upgrade packages and install needed software
+  && truncate -s0 /tmp/preseed.cfg \
+  && echo "tzdata tzdata/Areas select Asia" >> /tmp/preseed.cfg \
+  && echo "tzdata tzdata/Zones/Asia select Shanghai" >> /tmp/preseed.cfg \
+  && debconf-set-selections /tmp/preseed.cfg \
+  && rm -f /etc/timezone /etc/localtime \
   && apt-get update \
-  && apt-get install -y vim libapache2-mod-svn subversion rsync lsyncd openssh-client locales inotify-tools \
+  && apt-get install -y apt-utils tzdata vim libapache2-mod-svn subversion rsync lsyncd openssh-client locales inotify-tools \
   && grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen \
-  && locale-gen \
+  && locale-gen en_US.UTF-8 \
   && a2enmod dav \
   && a2enmod dav_fs \
   && a2enmod rewrite \
