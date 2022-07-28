@@ -33,8 +33,15 @@ fi
 ## install git
 command -v git || {
     echo "install git..."
-    $cmd install -y git
+    $cmd install -y git zsh
 }
+
+## set CST
+sudo timedatectl set-timezone Asia/Shanghai
+
+## install oh my zsh
+# bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# sed -i -e 's/robbyrussell/ys/' ~/.zshrc
 
 ## install docker/compose
 command -v docker || {
