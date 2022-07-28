@@ -39,10 +39,6 @@ command -v git || {
 ## set CST
 sudo timedatectl set-timezone Asia/Shanghai
 
-## install oh my zsh
-# bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-# sed -i -e 's/robbyrussell/ys/' ~/.zshrc
-
 ## install docker/compose
 command -v docker || {
     echo "install docker..."
@@ -109,6 +105,11 @@ gitlab)
     ;;
 svn)
     args="usvn"
+    ;;
+zsh)
+    ## install oh my zsh
+    bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    sed -i -e 's/robbyrussell/ys/' ~/.zshrc
     ;;
 *)
     args="nginx"
