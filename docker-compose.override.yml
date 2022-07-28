@@ -470,3 +470,15 @@ services:
       depends_on:
         - mysql
       restart: always
+
+    spring:
+      image: deploy/spring
+      ports:
+        - 8080:8080
+        - 8080:8081
+      volumes:
+        - ${DATA_PATH_HOST}/spring:/app
+      depends_on:
+        - mysql
+        - redis
+      restart: always
