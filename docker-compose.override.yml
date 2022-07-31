@@ -75,7 +75,7 @@ services:
 
 ### watchtower ################################################
     gitlab:
-      container_name: gitlab
+      # container_name: gitlab
       depends_on:
         - watchtower
 ### watchtower ################################################
@@ -92,7 +92,7 @@ services:
         - /var/run/docker.sock:/var/run/docker.sock
         # - /home/ubuntu/.docker/config.json:/config.json
       ## schedule, 05 21 = 21:05 UTC = 05:05 Asia/Shanghai
-      command: --schedule "0 05 21 * * *" gitlab watchtower
+      command: --schedule "0 05 21 * * *" laradock_gitlab laradock_watchtower
       #command: --interval 300
 
 ### awvs ################################################
@@ -478,6 +478,23 @@ services:
         - 8080:8081
       volumes:
         - ${DATA_PATH_HOST}/spring:/app
+      depends_on:
+        - mysql
+        - redis
+      restart: always
+
+    zabbix:
+      image: zabbix/zabbix-server-mysql:latest
+      container_name: zabbix-server-mysql
+      environment:
+        DB_SERVER_HOST: zabbix-server-mysql
+        MYSQL_USER: zabbix
+        MYSQL_PASSWORD: zabbix8pass
+      ports:
+        - 8080:8080
+        - 8080:8081
+      volumes:
+        - ${DATA_PATH_HOST}/zabbix:/app
       depends_on:
         - mysql
         - redis
