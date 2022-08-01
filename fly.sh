@@ -78,6 +78,8 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
+    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.5.6.tar.gz http://cdn.flyh6.com/docker/laradock_php-fpm.5.6.tar.gz
+    docker load < /tmp/laradock_php-fpm.5.6.tar.gz
     ;;
 7.1)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
@@ -85,6 +87,8 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
+    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.7.1.tar.gz http://cdn.flyh6.com/docker/laradock_php-fpm.7.1.tar.gz
+    docker load < /tmp/laradock_php-fpm.7.1.tar.gz
     ;;
 7.4)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
@@ -92,6 +96,8 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
+    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.7.4.tar.gz http://cdn.flyh6.com/docker/laradock_php-fpm.7.4.tar.gz
+    docker load < /tmp/laradock_php-fpm.7.4.tar.gz
     ;;
 8.0)
     [ -f "$path_install"/php-fpm/Dockerfile.php80 ] && {
