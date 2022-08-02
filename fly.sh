@@ -78,8 +78,9 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
-    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.5.6.tar.gz http://cdn.flyh6.com/docker/laradock_php-fpm.5.6.tar.gz
-    docker load < /tmp/laradock_php-fpm.5.6.tar.gz
+    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.tar.gz \
+        "http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz"
+    docker load </tmp/laradock_php-fpm.tar.gz
     ;;
 7.1)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
@@ -87,8 +88,9 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
-    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.7.1.tar.gz http://cdn.flyh6.com/docker/laradock_php-fpm.7.1.tar.gz
-    docker load < /tmp/laradock_php-fpm.7.1.tar.gz
+    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.tar.gz \
+        "http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz"
+    docker load </tmp/laradock_php-fpm.tar.gz
     ;;
 7.4)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
@@ -96,8 +98,9 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
-    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.7.4.tar.gz http://cdn.flyh6.com/docker/laradock_php-fpm.7.4.tar.gz
-    docker load < /tmp/laradock_php-fpm.7.4.tar.gz
+    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.tar.gz \
+        "http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz"
+    docker load </tmp/laradock_php-fpm.tar.gz
     ;;
 8.0)
     [ -f "$path_install"/php-fpm/Dockerfile.php80 ] && {
@@ -105,6 +108,9 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
+    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.tar.gz \
+        "http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz"
+    docker load </tmp/laradock_php-fpm.tar.gz
     ;;
 gitlab)
     args="gitlab"
@@ -122,6 +128,15 @@ zsh)
     ;;
 esac
 
+## download php image
+# if [[ $1 =~ (5.6|7.1|7.4|8.0) ]]; then
+#     curl --referer http://www.flyh6.com/ \
+#         -Lo /tmp/laradock_php-fpm.tar.gz \
+#         http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz
+#     docker load </tmp/laradock_php-fpm.tar.gz
+# else
+#     echo "version $1 error."
+# fi
 ## docker pull ttl.sh
 # IMAGE_NAME=$(uuidgen)
 # cd "$path_install" && docker-compose build php-fpm

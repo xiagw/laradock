@@ -1,5 +1,6 @@
-FROM ubuntu:20.04
-ARG LARADOCK_PHP_VERSION=7.1
+ARG UBUNTU_VERSION=22.04
+FROM ubuntu:${UBUNTU_VERSION}
+ARG LARADOCK_PHP_VERSION=8.1
 ## for apt to be noninteractive
 ENV DEBIAN_FRONTEND noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN true
@@ -17,8 +18,8 @@ RUN set -xe \
     && apt-get install -y --no-install-recommends  locales \
     && grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen \
     && locale-gen en_US.UTF-8 \
-    && apt-get install -y --no-install-recommends software-properties-common \
-    && add-apt-repository ppa:ondrej/php \
+    # && apt-get install -y --no-install-recommends software-properties-common \
+    # && add-apt-repository ppa:ondrej/php \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         vim \
@@ -40,12 +41,12 @@ RUN set -xe \
         php${LARADOCK_PHP_VERSION}-curl \
         php${LARADOCK_PHP_VERSION}-bz2 \
         php${LARADOCK_PHP_VERSION}-mbstring \
-        php${LARADOCK_PHP_VERSION}-mcrypt \
         php${LARADOCK_PHP_VERSION}-msgpack \
         php${LARADOCK_PHP_VERSION}-sqlite3 \
         # php${LARADOCK_PHP_VERSION}-process \
         # php${LARADOCK_PHP_VERSION}-pecl-mcrypt  replace by  php${LARADOCK_PHP_VERSION}-libsodium
     && apt-get clean all && rm -rf /tmp/*
+
 RUN set -xe \
     && sed -i \
         -e '/fpm.sock/s/^/;/' \
