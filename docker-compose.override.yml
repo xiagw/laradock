@@ -470,6 +470,9 @@ services:
       depends_on:
         - mysql
       restart: always
+      networks:
+        - frontend
+        - backend
 
     spring:
       image: deploy/spring
@@ -482,20 +485,63 @@ services:
         - mysql
         - redis
       restart: always
+      networks:
+        - frontend
+        - backend
 
-    zabbix:
-      image: zabbix/zabbix-server-mysql:latest
-      container_name: zabbix-server-mysql
+#############################################################
+    zabbix-mysql:
+      image: mysql:8.0
       environment:
-        DB_SERVER_HOST: zabbix-server-mysql
+        MYSQL_DATABASE: zabbix
         MYSQL_USER: zabbix
         MYSQL_PASSWORD: zabbix8pass
-      ports:
-        - 8080:8080
-        - 8080:8081
-      volumes:
-        - ${DATA_PATH_HOST}/zabbix:/app
-      depends_on:
-        - mysql
-        - redis
+        MYSQL_ROOT_PASSWORD: root
+      command: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin --default-authentication-plugin=mysql_native_password
       restart: always
+      ports:
+        - 3306:3306
+      networks:
+        - frontend
+        - backend
+
+    zabbix-server:
+      image: zabbix/zabbix-server-mysql:alpine-5.4-latest
+      environment:
+        DB_SERVER_HOST: zabbix-mysql
+        MYSQL_DATABASE: zabbix
+        MYSQL_USER: zabbix
+        MYSQL_PASSWORD: zabbix8pass
+        MYSQL_ROOT_PASSWORD: root
+        ZBX_JAVAGATEWAY: zabbix-gateway
+      ports:
+        - 10051:10051
+      depends_on:
+        - zabbix-mysql
+      restart: always
+      networks:
+        - frontend
+        - backend
+
+    zabbix-gateway:
+      image: zabbix/zabbix-java-gateway:alpine-5.4-latest
+      restart: always
+      networks:
+        - frontend
+        - backend
+
+    zabbix-web:
+      image: zabbix/zabbix-web-nginx-mysql:alpine-5.4-latest
+      environment:
+        ZBX_SERVER_HOST: zabbix-server
+        DB_SERVER_HOST: zabbix-mysql
+        MYSQL_DATABASE: zabbix
+        MYSQL_USER: zabbix
+        MYSQL_PASSWORD: zabbix8pass
+        MYSQL_ROOT_PASSWORD: root
+      ports:
+        - 80:8080
+      restart: always
+      networks:
+        - frontend
+        - backend

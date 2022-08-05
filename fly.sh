@@ -102,9 +102,9 @@ case ${1:-nginx} in
         "http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz"
     docker load </tmp/laradock_php-fpm.tar.gz
     ;;
-8.0)
-    [ -f "$path_install"/php-fpm/Dockerfile.php80 ] && {
-        cp -vf "$path_install"/php-fpm/Dockerfile.php80 "$path_install"/php-fpm/Dockerfile
+8.1)
+    [ -f "$path_install"/php-fpm/Dockerfile.php81 ] && {
+        cp -vf "$path_install"/php-fpm/Dockerfile.php81 "$path_install"/php-fpm/Dockerfile
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
