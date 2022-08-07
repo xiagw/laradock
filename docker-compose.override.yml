@@ -482,3 +482,13 @@ services:
         - mysql
         - redis
       restart: always
+
+    cas:
+      image: apereo/cas
+      build: ./cas
+      ports:
+        - 8445:8443
+        - 8446:8080
+      volumes:
+        - ${DATA_PATH_HOST}/cas/thekeystore:/opt/cas/thekeystore
+      restart: always
