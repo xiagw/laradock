@@ -33,11 +33,11 @@ fi
 ## install git
 command -v git || {
     echo "install git..."
-    $cmd install -y git zsh
+    $cmd install -y git zsh fzf
 }
 
 ## set CST
-sudo timedatectl set-timezone Asia/Shanghai
+timedatectl | grep -q 'Asia/Shanghai' || sudo timedatectl set-timezone Asia/Shanghai
 
 ## install docker/compose
 command -v docker || {
