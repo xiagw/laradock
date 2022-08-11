@@ -14,6 +14,7 @@ if [ "$current_user" != "root" ]; then
         pre_sudo="sudo"
     else
         echo "User $current_user has no permission to execute this script!"
+        echo "Please run visudo with root"
         exit 1
     fi
 fi
@@ -32,7 +33,7 @@ fi
 
 ## install git
 command -v git || {
-    echo "install git..."
+    echo "install git zsh fzf..."
     $cmd install -y git zsh fzf
 }
 
@@ -43,6 +44,9 @@ timedatectl | grep -q 'Asia/Shanghai' || sudo timedatectl set-timezone Asia/Shan
 command -v docker || {
     echo "install docker..."
     curl -fsSL https://get.docker.com | $pre_sudo bash
+    echo "Add user $USER to group docker."
+    $pre_sudo usermod -aG docker "$USER"
+    echo "Please logout $USER, and login again."
 }
 
 ## clone laradock
@@ -78,9 +82,6 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
-    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.tar.gz \
-        "http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz"
-    docker load </tmp/laradock_php-fpm.tar.gz
     ;;
 7.1)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
@@ -88,9 +89,6 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
-    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.tar.gz \
-        "http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz"
-    docker load </tmp/laradock_php-fpm.tar.gz
     ;;
 7.4)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
@@ -98,9 +96,6 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
-    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.tar.gz \
-        "http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz"
-    docker load </tmp/laradock_php-fpm.tar.gz
     ;;
 8.1)
     [ -f "$path_install"/php-fpm/Dockerfile.php81 ] && {
@@ -108,9 +103,6 @@ case ${1:-nginx} in
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
-    curl --referer http://www.flyh6.com/ -Lo /tmp/laradock_php-fpm.tar.gz \
-        "http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz"
-    docker load </tmp/laradock_php-fpm.tar.gz
     ;;
 gitlab)
     args="gitlab"
@@ -129,14 +121,12 @@ zsh)
 esac
 
 ## download php image
-# if [[ $1 =~ (5.6|7.1|7.4|8.0) ]]; then
-#     curl --referer http://www.flyh6.com/ \
-#         -Lo /tmp/laradock_php-fpm.tar.gz \
-#         http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz
-#     docker load </tmp/laradock_php-fpm.tar.gz
-# else
-#     echo "version $1 error."
-# fi
+if [[ $1 =~ (5.6|7.1|7.4|8.0) ]]; then
+    curl --referer http://www.flyh6.com/ \
+        -C - -Lo /tmp/laradock_php-fpm.tar.gz \
+        http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz
+    docker load </tmp/laradock_php-fpm.tar.gz
+fi
 ## docker pull ttl.sh
 # IMAGE_NAME=$(uuidgen)
 # cd "$path_install" && docker-compose build php-fpm
