@@ -5,49 +5,61 @@
 path_install="$HOME/docker/laradock"
 file_env="$path_install"/.env
 
-# determine whether the user has permission to execute this script
-current_user=$(whoami)
-if [ "$current_user" != "root" ]; then
-    has_root_permission=$(sudo -l -U "$current_user" | grep "ALL")
-    if [ -n "$has_root_permission" ]; then
-        echo "User $current_user has sudo permission."
-        pre_sudo="sudo"
+echo "Check dependent: git/docker..."
+command -v git || install_git=1
+command -v docker || install_docker=1
+
+if [[ $install_git || $install_docker ]]; then
+    # determine whether the user has permission to execute this script
+    current_user=$(whoami)
+    if [ "$current_user" != "root" ]; then
+        echo "Not root, check sudo..."
+        has_root_permission=$(sudo -l -U "$current_user" | grep "ALL")
+        if [ -n "$has_root_permission" ]; then
+            echo "User $current_user has sudo permission."
+            pre_sudo="sudo"
+        else
+            echo "User $current_user has no permission to execute this script!"
+            echo "Please run visudo with root, and set sudo to $USER"
+            exit 1
+        fi
+    fi
+    ## yum or apt
+    if command -v apt; then
+        cmd="$pre_sudo apt"
+    elif command -v yum; then
+        cmd="$pre_sudo yum"
+    elif command -v dnf; then
+        cmd="$pre_sudo dnf"
     else
-        echo "User $current_user has no permission to execute this script!"
-        echo "Please run visudo with root"
+        echo "not found apt/yum/dnf, exit 1"
         exit 1
     fi
 fi
 
-## yum or apt
-if command -v apt; then
-    cmd="$pre_sudo apt"
-elif command -v yum; then
-    cmd="$pre_sudo yum"
-elif command -v dnf; then
-    cmd="$pre_sudo dnf"
-else
-    echo "not found apt/yum/dnf, exit 1"
-    exit 1
-fi
-
-## install git
-command -v git || {
-    echo "install git zsh fzf..."
-    $cmd install -y git zsh fzf
+[[ $install_git ]] && {
+    echo "install git..."
+    $cmd install -y git zsh
 }
-
-## set CST
-timedatectl | grep -q 'Asia/Shanghai' || sudo timedatectl set-timezone Asia/Shanghai
-
 ## install docker/compose
-command -v docker || {
+[[ $install_docker ]] && {
     echo "install docker..."
     curl -fsSL https://get.docker.com | $pre_sudo bash
-    echo "Add user $USER to group docker."
-    $pre_sudo usermod -aG docker "$USER"
-    echo "Please logout $USER, and login again."
+    if [ "$current_user" != "root" ]; then
+        echo "Add user $USER to group docker."
+        $pre_sudo usermod -aG docker "$USER"
+        echo "Please logout $USER, and login again."
+    fi
 }
+## set CST
+if timedatectl | grep -q 'Asia/Shanghai'; then
+    echo "Timezone is already set to Asia/Shanghai."
+else
+    echo "Set timezone to Asia/Shanghai."
+    if [[ -n "$pre_sudo" || "$current_user" == "root" ]]; then
+        $pre_sudo timedatectl set-timezone Asia/Shanghai
+    fi
+fi
 
 ## clone laradock
 [ -d "$path_install" ] || mkdir -p "$path_install"
