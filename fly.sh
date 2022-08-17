@@ -5,8 +5,13 @@
 path_install="$HOME/docker/laradock"
 file_env="$path_install"/.env
 
-echo "Check dependent: git/docker..."
+log_time() {
+    echo -e "[$(date +%Y%m%d-%T)], $*"
+}
+
+log_time "Check dependent command: git/curl/docker..."
 command -v git || install_git=1
+command -v curl || install_curl=1
 command -v docker || install_docker=1
 
 if [[ $install_git || $install_docker ]]; then
@@ -32,18 +37,22 @@ if [[ $install_git || $install_docker ]]; then
     elif command -v dnf; then
         cmd="$pre_sudo dnf"
     else
-        echo "not found apt/yum/dnf, exit 1"
+        log_time "not found apt/yum/dnf, exit 1"
         exit 1
     fi
 fi
 
+[[ $install_curl ]] && {
+    log_time "install curl..."
+    $cmd install -y curl
+}
 [[ $install_git ]] && {
-    echo "install git..."
+    log_time "install git..."
     $cmd install -y git zsh
 }
 ## install docker/compose
 [[ $install_docker ]] && {
-    echo "install docker..."
+    log_time "install docker..."
     curl -fsSL https://get.docker.com | $pre_sudo bash
     if [ "$current_user" != "root" ]; then
         echo "Add user $USER to group docker."
@@ -53,9 +62,9 @@ fi
 }
 ## set CST
 if timedatectl | grep -q 'Asia/Shanghai'; then
-    echo "Timezone is already set to Asia/Shanghai."
+    log_time "Timezone is already set to Asia/Shanghai."
 else
-    echo "Set timezone to Asia/Shanghai."
+    log_time "Set timezone to Asia/Shanghai."
     if [[ -n "$pre_sudo" || "$current_user" == "root" ]]; then
         $pre_sudo timedatectl set-timezone Asia/Shanghai
     fi
@@ -146,9 +155,9 @@ fi
 # docker push ttl.sh/"${IMAGE_NAME}":2h
 # docker pull ttl.sh/"${IMAGE_NAME}":2h
 
-echo -e "\n#### exec command: "
+log_time "\n#### exec command: "
 if command -v docker-compose &>/dev/null; then
-    echo -e "\ncd $path_install && docker-compose up -d $args\n"
+    echo -e "\n  cd $path_install && docker-compose up -d $args\n"
 else
-    echo -e "\ncd $path_install && docker compose up -d $args\n"
+    echo -e "\n  cd $path_install && docker compose up -d $args\n"
 fi
