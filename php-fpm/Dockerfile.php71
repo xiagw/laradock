@@ -47,6 +47,7 @@ RUN set -xe \
         # php${LARADOCK_PHP_VERSION}-process \
         # php${LARADOCK_PHP_VERSION}-pecl-mcrypt  replace by  php${LARADOCK_PHP_VERSION}-libsodium
     && apt-get clean all && rm -rf /tmp/*
+COPY ./run.sh /opt/
 RUN set -xe \
     && sed -i \
         -e '/fpm.sock/s/^/;/' \
@@ -63,15 +64,7 @@ RUN set -xe \
         -e "/upload_max_filesize/s/2M/1024M/" \
         -e "/max_file_uploads/s/20/256/" \
         /etc/php/${LARADOCK_PHP_VERSION}/fpm/php.ini \
-    && mkdir -p /run/php \
-    && printf '#!/bin/bash\ntrap "exit 0" HUP INT PIPE QUIT TERM\n' >>/opt/run.sh \
-    && printf '[ -d /var/lib/php/sessions ] && chmod -R 777 /var/lib/php/sessions' >>/opt/run.sh \
-    && printf '/usr/sbin/php-fpm%s\n' "${LARADOCK_PHP_VERSION}" >>/opt/run.sh \
-    && printf '[ -d /var/www/public ] || mkdir /var/www/public \n' >>/opt/run.sh \
-    && printf '[ -f /var/www/public/index.html ] || date >/var/www/public/index.html\n' >>/opt/run.sh \
-    && printf 'exec nginx -g "daemon off;"\n' >>/opt/run.sh \
     && chmod +x /opt/run.sh
-
 
 ## copy nginx conf
 # COPY ./etc/ /etc/

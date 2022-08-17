@@ -3,12 +3,9 @@
 
 main() {
     for d in /var/www/*; do
-        if [ ! -d "$d" ]; then
-            continue
-        fi
+        [[ -d "$d" ]] || continue
         cd "${d}" || exit 1
         if [[ -f task.sh ]]; then
-            chmod +x task.sh
             bash ./task.sh
         fi
     done
