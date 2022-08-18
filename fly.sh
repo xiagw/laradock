@@ -149,11 +149,11 @@ if [[ $1 =~ (5.6|7.1|7.4|8.0) ]]; then
     docker load </tmp/laradock_php-fpm.tar.gz
 fi
 ## docker pull ttl.sh
-# IMAGE_NAME=$(uuidgen)
-# cd "$path_install" && docker-compose build php-fpm
-# docker tag laradock_php-fpm ttl.sh/"${IMAGE_NAME}":2h
-# docker push ttl.sh/"${IMAGE_NAME}":2h
-# docker pull ttl.sh/"${IMAGE_NAME}":2h
+# IMAGE_NAME="ttl.sh/$(uuidgen):1h"
+# docker tag laradock_php-fpm:latest "${IMAGE_NAME}"
+# docker push "${IMAGE_NAME}"
+# echo "IMAGE_NAME=${IMAGE_NAME}"
+#
 
 log_time "\n#### exec command: "
 if command -v docker-compose &>/dev/null; then
