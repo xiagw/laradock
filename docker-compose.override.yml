@@ -81,7 +81,7 @@ services:
 ### watchtower ################################################
     watchtower:
       image: containrrr/watchtower
-      container_name: watchtower
+      # container_name: watchtower
       restart: always
       # environment:
       #   WATCHTOWER_SCHEDULE: 0 05 05 * * *
