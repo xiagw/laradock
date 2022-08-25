@@ -92,7 +92,7 @@ services:
         - /var/run/docker.sock:/var/run/docker.sock
         # - /home/ubuntu/.docker/config.json:/config.json
       ## schedule, 05 21 = 21:05 UTC = 05:05 Asia/Shanghai
-      command: --schedule "0 05 21 * * *" laradock_gitlab laradock_watchtower
+      command: --schedule "0 05 21 * * *" laradock_gitlab_1 laradock_watchtower_1
       #command: --interval 300
 
 ### awvs ################################################

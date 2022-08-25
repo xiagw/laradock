@@ -1,5 +1,9 @@
 #!/bin/bash
 
+_cleanup() {
+    rm -f /tmp/.svn.update.lock
+}
+
 main() {
     ## web app usvn
     if [[ ! -d /var/www/usvn/public ]]; then
@@ -16,6 +20,8 @@ main() {
     if [ -f ~/tool/lsyncd.conf ]; then
         lsyncd ~/tool/lsyncd.conf
     fi
+
+    trap _cleanup INT TERM EXIT HUP
 
     ## start apache
     exec apache2-foreground
