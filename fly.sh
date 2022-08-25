@@ -14,7 +14,7 @@ command -v git || install_git=1
 command -v curl || install_curl=1
 command -v docker || install_docker=1
 
-if [[ $install_git || $install_docker ]]; then
+if [[ $install_git || $install_curl || $install_docker ]]; then
     # determine whether the user has permission to execute this script
     current_user=$(whoami)
     if [ "$current_user" != "root" ]; then
@@ -142,7 +142,7 @@ zsh)
 esac
 
 ## download php image
-if [[ $1 =~ (5.6|7.1|7.4|8.0) ]]; then
+if [[ $1 =~ (5.6|7.1|7.4|8.1) ]]; then
     curl --referer http://www.flyh6.com/ \
         -C - -Lo /tmp/laradock_php-fpm.tar.gz \
         http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz
