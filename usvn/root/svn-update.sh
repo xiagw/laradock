@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo_time() {
+_log() {
     echo "#### $(date +%F_%T) $*"
 }
 
@@ -25,7 +25,7 @@ _schedule_svn_update() {
     while true; do
         ## UTC time
         if [[ "$(date +%H%M)" == 2005 ]]; then
-            echo_time "svn cleanup/update root dir" | tee -a "$script_log"
+            _log "svn cleanup/update root dir" | tee -a "$script_log"
             for d in "$path_svn_checkout"/*/; do
                 [ -d "$d"/.svn ] || continue
                 svn cleanup "$d"
@@ -34,6 +34,10 @@ _schedule_svn_update() {
         fi
         sleep 50
     done
+}
+
+_cleanup() {
+    rm -f "$lock_myself"
 }
 
 main() {
@@ -57,7 +61,7 @@ main() {
     ## debug log
     exec &> >(tee -a "$script_log")
     touch "$lock_myself"
-    trap 'rm -f "$lock_myself"; exit $?' INT TERM EXIT
+    trap _cleanup INT TERM EXIT HUP
 
     ## trap: do some work
     inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${path_svn_pre}/ |
@@ -67,14 +71,14 @@ main() {
             repo_name=${path#"${path_svn_pre}"/}
             repo_name=${repo_name%%/*}
             if [[ ! -d "$path_svn_pre/${repo_name:-none}" ]]; then
-                echo_time "not found repo: ${repo_name:-none}"
+                _log "not found repo: ${repo_name:-none}"
                 continue
             fi
             ## svnlook dirs-change
             ## because inotifywait is too fast, need to wait svn write to disk
             sleep 2
             for dir_changed in $(/usr/bin/svnlook dirs-changed -r "${file}" "$path_svn_pre/${repo_name}"); do
-                echo_time "svnlook dirs-changed: $dir_changed"
+                _log "svnlook dirs-changed: $dir_changed"
                 ## not found svn repo in $path_svn_checkout, then svn checkout
                 if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
                     /usr/bin/svn checkout "file://$path_svn_pre/$repo_name" "$path_svn_checkout/$repo_name"
@@ -82,14 +86,11 @@ main() {
                 ## svn update
                 /usr/bin/svn update "$path_svn_checkout/$repo_name/${dir_changed}"
                 chown -R 1000.1000 "$path_svn_checkout/$repo_name/${dir_changed}"
-                ## sync by lsyncd /root/tool/lsyncd.conf
-                ## sync by lsyncd /root/tool/lsyncd.conf
-                ## sync by lsyncd /root/tool/lsyncd.conf
             done
         done
     ## trap: end some work
 
-    rm "$lock_myself"
+    _cleanup
     trap - INT TERM EXIT
 }
 

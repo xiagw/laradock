@@ -55,7 +55,6 @@ RUN set -xe \
   && tar --strip-components=1 -C /tmp/ -xzf /tmp/usvn.tgz \
   && mkdir -p /var/www/usvn_src \
   && cp -af /tmp/src/* /var/www/usvn_src/ \
-  && mkdir -p /var/www/svn_commit \
   && chown -R www-data:www-data /var/www/ \
   && sed -i -e "78 a ServerName svn.mydomain.com\n" /etc/apache2/apache2.conf \
   ## Clear dev deps
