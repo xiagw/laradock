@@ -2,8 +2,7 @@
 
 name_script="$(basename "$0")"
 path_script="$(dirname "$(readlink -f "$0")")"
-echo "$path_script" >/dev/null
-path_backup="/backup"
+path_backup="$path_script"
 log_backup="$path_backup/${name_script}.log"
 
 ## check permission
@@ -14,10 +13,18 @@ fi
 ## check mysql version
 ver_number=$(mysql --version | awk '{print $3}' | sed 's/\.//g')
 if [[ $ver_number -le 8025 ]]; then
-    mysql_dump='mysqldump -E -R --triggers --master-data=2'
+    mysql_dump='mysqldump --set-gtid-purged=OFF -E -R --triggers --master-data=2'
 else
-    mysql_dump='mysqldump -E -R --triggers --source-data=2'
+    mysql_dump='mysqldump --set-gtid-purged=OFF -E -R --triggers --source-data=2'
 fi
+## backup user/permission
+user_list=$path_backup/user.list.txt
+user_perm=$path_backup/user.perm.sql
+mysql -Ne 'select user,host from mysql.user' >"$user_list"
+while read -r line; do
+    IFS=" " read -r -a user_host <<<$line
+    mysql -Ne "show grants for ${user_host[0]}@'${user_host[1]}';" >>"$user_perm"
+done <"$user_list"
 ## backup single/multiple databases
 backup_time="$(date +%s)"
 db_name="$1"
