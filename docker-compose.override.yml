@@ -76,6 +76,8 @@ services:
 ### watchtower ################################################
     gitlab:
       # container_name: gitlab
+      ports:
+        - "5050:5050"
       depends_on:
         - watchtower
 ### watchtower ################################################
