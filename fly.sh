@@ -60,7 +60,7 @@ fi
         echo "Please logout $USER, and login again."
     fi
 }
-## set CST
+## change UTC to CST
 if timedatectl | grep -q 'Asia/Shanghai'; then
     log_time "Timezone is already set to Asia/Shanghai."
 else
@@ -69,12 +69,14 @@ else
         $pre_sudo timedatectl set-timezone Asia/Shanghai
     fi
 fi
-
-## clone laradock
-[ -d "$path_install" ] || mkdir -p "$path_install"
-git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_install"
-
-## cp .env
+## clone laradock or git pull
+if [ -d "$path_install" ]; then
+    (cd "$path_install" && git pull)
+else
+    mkdir -p "$path_install"
+    git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_install"
+fi
+## copy .env.example to .env
 if [ ! -f "$file_env" ]; then
     cp -vf "$file_env".example "$file_env"
     ## new password for mysql and redis
@@ -99,28 +101,28 @@ echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$fil
 case ${1:-nginx} in
 5.6)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
-        cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
+        cp -f "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
     ;;
 7.1)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
-        cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
+        cp -f "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
     ;;
 7.4)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
-        cp -vf "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
+        cp -f "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
     ;;
 8.1)
     [ -f "$path_install"/php-fpm/Dockerfile.php81 ] && {
-        cp -vf "$path_install"/php-fpm/Dockerfile.php81 "$path_install"/php-fpm/Dockerfile
+        cp -f "$path_install"/php-fpm/Dockerfile.php81 "$path_install"/php-fpm/Dockerfile
     }
     sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
     args="php-fpm"
@@ -157,7 +159,7 @@ fi
 
 log_time "\n#### exec command: "
 if command -v docker-compose &>/dev/null; then
-    echo -e "\n  cd $path_install && docker-compose up -d $args\n"
+    echo -e "\n  cd $path_install && docker-compose up -d $args \n"
 else
-    echo -e "\n  cd $path_install && docker compose up -d $args\n"
+    echo -e "\n  cd $path_install && docker compose up -d $args \n"
 fi
