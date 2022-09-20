@@ -1461,7 +1461,6 @@ services:
           # gitlab_rails['db_database'] = "${GITLAB_POSTGRES_DB}"
           gitlab_rails['initial_root_password'] = "${GITLAB_ROOT_PASSWORD}"
           gitlab_rails['gitlab_shell_ssh_port'] = "${GITLAB_HOST_SSH_PORT}"
-          gitlab_rails['gitlab_default_projects_features_builds'] = false
           # laradock-data/gitlab/data/nginx/conf/gitlab-http.conf /var/opt/gitlab/nginx/conf/svn.conf
           # /opt/gitlab/embedded/sbin/nginx -c /var/opt/gitlab/nginx/conf/nginx.conf -t
           nginx['custom_gitlab_server_config'] = "location /jmeter/ {\n  root /var/opt/gitlab/;\n  autoindex on;\n}\n"
