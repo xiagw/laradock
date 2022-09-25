@@ -9,7 +9,7 @@ log_time() {
     echo -e "[$(date +%Y%m%d-%T)], $*"
 }
 
-log_time "Check dependent command: git/curl/docker..."
+log_time "check command: git/curl/docker..."
 command -v git || install_git=1
 command -v curl || install_curl=1
 command -v docker || install_docker=1
@@ -29,7 +29,6 @@ if [[ $install_git || $install_curl || $install_docker ]]; then
             exit 1
         fi
     fi
-    ## yum or apt
     if command -v apt; then
         cmd="$pre_sudo apt"
     elif command -v yum; then
@@ -79,7 +78,6 @@ fi
 ## copy .env.example to .env
 if [ ! -f "$file_env" ]; then
     cp -vf "$file_env".example "$file_env"
-    ## new password for mysql and redis
     pass_mysql=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
     pass_redis=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
     pass_gitlab=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
@@ -87,6 +85,7 @@ if [ ! -f "$file_env" ]; then
         -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
         -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
         -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
+        -e "/PHP_VERSION=/s/=.*/=7.1/" \
         "$file_env"
 fi
 ## change docker host ip
@@ -98,33 +97,20 @@ sed -i \
 ## set SHELL_OH_MY_ZSH=true
 echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env"
 
-case ${1:-nginx} in
-5.6)
+ver_php="${1:-nginx}"
+case ${ver_php} in
+5.6 | 7.1 | 7.4)
     [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
         cp -f "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
     }
-    sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
+    sed -i -e "/PHP_VERSION=/s/=.*/=$ver_php/" "$file_env"
     args="php-fpm"
     ;;
-7.1)
-    [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
-        cp -f "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
-    }
-    sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
-    args="php-fpm"
-    ;;
-7.4)
-    [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
-        cp -f "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
-    }
-    sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
-    args="php-fpm"
-    ;;
-8.1)
+8.1 | 8.2)
     [ -f "$path_install"/php-fpm/Dockerfile.php81 ] && {
         cp -f "$path_install"/php-fpm/Dockerfile.php81 "$path_install"/php-fpm/Dockerfile
     }
-    sed -i -e "/PHP_VERSION=/s/=.*/=$1/" "$file_env"
+    sed -i -e "/PHP_VERSION=/s/=.*/=$ver_php/" "$file_env"
     args="php-fpm"
     ;;
 gitlab)
@@ -144,10 +130,10 @@ zsh)
 esac
 
 ## download php image
-if [[ $1 =~ (5.6|7.1|7.4|8.1) ]]; then
+if [[ "$ver_php" =~ (5.6|7.1|7.4|8.1|8.2) ]]; then
     curl --referer http://www.flyh6.com/ \
         -C - -Lo /tmp/laradock_php-fpm.tar.gz \
-        http://cdn.flyh6.com/docker/laradock_php-fpm.${1}.tar.gz
+        http://cdn.flyh6.com/docker/laradock_php-fpm."${ver_php}".tar.gz
     docker load </tmp/laradock_php-fpm.tar.gz
 fi
 ## docker pull ttl.sh

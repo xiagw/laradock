@@ -1,10 +1,18 @@
 # Laradock
 
+### 国内  branch: in-china
 ```
-## sudo apt install curl (default php-7.4)
+## sudo apt install curl (default php-7.1)
 bash -c "$(curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh)"
-## use php-7.1 (default php-7.4)
-bash -c "$(curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh)" @ 7.1
+## use php-7.4 (default php-7.1)
+bash -c "$(curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh)" @ 7.4
+```
+### 国外 branch: in-inchina
+```
+## sudo apt install curl (default php-7.1)
+bash -c "$(curl -fsSL https://github.com/xiagw/laradock/raw/in-china/fly.sh)"
+## use php-7.4 (default php-7.1)
+bash -c "$(curl -fsSL https://github.com/xiagw/laradock/raw/in-china/fly.sh)" @ 7.4
 ```
 
 [![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://zalt.me)

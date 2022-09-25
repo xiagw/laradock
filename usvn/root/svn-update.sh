@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 
+# set -xe
+export LANG='en_US.UTF-8'
+# export LC_CTYPE='en_US.UTF-8'
+# export LC_ALL='en_US.UTF-8'
+script_path="$(dirname "$(readlink -f "$0")")"
+script_name="$(basename "$0")"
+script_log="${script_path}/${script_name}.log"
+lock_myself=/tmp/.svn.update.lock
+
 _log() {
-    echo "#### $(date +%F_%T) $*"
+    echo "[$(date +%F_%T)], $*" >>"$script_log"
 }
 
 _generate_ssh_key() {
@@ -10,11 +19,11 @@ _generate_ssh_key() {
     mkdir -p ~/.ssh
     chmod 700 ~/.ssh
     ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f ~/.ssh/id_ed25519
-    ## set StrictHostKeyChecking no
     (
         echo 'Host *'
         echo 'IdentityFile ~/.ssh/id_ed25519'
         echo 'StrictHostKeyChecking no'
+        echo 'GSSAPIAuthentication no'
         echo 'Compression yes'
     ) >~/.ssh/config
     chmod 600 ~/.ssh/config
@@ -37,32 +46,21 @@ _schedule_svn_update() {
 }
 
 _cleanup() {
-    rm -f "$lock_myself"
+    rm -f $lock_myself
 }
 
 main() {
-    # set -xe
-    export LANG='en_US.UTF-8'
-    # export LC_CTYPE='en_US.UTF-8'
-    # export LC_ALL='en_US.UTF-8'
-    script_path="$(dirname "$(readlink -f "$0")")"
-    script_name="$(basename "$0")"
-    script_log=${script_path}/${script_name}.log
     path_svn_pre=/var/www/usvn/files/svn
     path_svn_checkout=${script_path}/svn_checkout
     ## allow only one instance
-    lock_myself=/tmp/.svn.update.lock
     if [ -f "$lock_myself" ]; then exit 0; fi
     ## schedule svn cleanup/update root dirs
     _schedule_svn_update &
     ## ssh key
     _generate_ssh_key
-
-    ## debug log
-    exec &> >(tee -a "$script_log")
+    # exec &> >(tee -a "$script_log")
     touch "$lock_myself"
     trap _cleanup INT TERM EXIT HUP
-
     ## trap: do some work
     inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${path_svn_pre}/ |
         while read -r path action file; do
@@ -75,8 +73,7 @@ main() {
                 continue
             fi
             ## svnlook dirs-change
-            ## because inotifywait is too fast, need to wait svn write to disk
-            sleep 2
+            sleep 2 ## because inotifywait is too fast, need to wait svn write to disk
             for dir_changed in $(/usr/bin/svnlook dirs-changed -r "${file}" "$path_svn_pre/${repo_name}"); do
                 _log "svnlook dirs-changed: $dir_changed"
                 ## not found svn repo in $path_svn_checkout, then svn checkout
@@ -85,7 +82,7 @@ main() {
                 fi
                 ## svn update
                 /usr/bin/svn update "$path_svn_checkout/$repo_name/${dir_changed}"
-                chown -R 1000.1000 "$path_svn_checkout/$repo_name/${dir_changed}"
+                # chown -R 1000.1000 "$path_svn_checkout/$repo_name/${dir_changed}"
             done
         done
     ## trap: end some work

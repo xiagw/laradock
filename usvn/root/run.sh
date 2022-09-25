@@ -17,8 +17,8 @@ main() {
         bash ~/svn-update.sh &
     fi
     ## lsyncd /root/tool/lsyncd.conf
-    if [ -f ~/tool/lsyncd.conf ]; then
-        lsyncd ~/tool/lsyncd.conf
+    if [ -f ~/tool/lsyncd.conf.lua ]; then
+        lsyncd ~/tool/lsyncd.conf.lua
     fi
 
     trap _cleanup INT TERM EXIT HUP
