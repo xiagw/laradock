@@ -1,12 +1,12 @@
 #!/usr/bin/bash
 
-# script_path="$(dirname "$(readlink -f "$0")")"
-# cd "$script_path" || exit 1
+# me_path="$(dirname "$(readlink -f "$0")")"
+# cd "$me_path" || exit 1
 path_install="$HOME/docker/laradock"
 file_env="$path_install"/.env
 
 log_time() {
-    echo -e "[$(date +%Y%m%d-%T)], $*"
+    echo -e "[$(date +%Y%m%d-%T)], $* \n"
 }
 
 log_time "check command: git/curl/docker..."
@@ -15,6 +15,7 @@ command -v curl || install_curl=1
 command -v docker || install_docker=1
 
 if [[ $install_git || $install_curl || $install_docker ]]; then
+    log_time "check sudo."
     # determine whether the user has permission to execute this script
     current_user=$(whoami)
     if [ "$current_user" != "root" ]; then
@@ -63,20 +64,23 @@ fi
 if timedatectl | grep -q 'Asia/Shanghai'; then
     log_time "Timezone is already set to Asia/Shanghai."
 else
-    log_time "Set timezone to Asia/Shanghai."
     if [[ -n "$pre_sudo" || "$current_user" == "root" ]]; then
+        log_time "Set timezone to Asia/Shanghai."
         $pre_sudo timedatectl set-timezone Asia/Shanghai
     fi
 fi
 ## clone laradock or git pull
 if [ -d "$path_install" ]; then
+    log_time "$path_install exist, git pull."
     (cd "$path_install" && git pull)
 else
+    log_time "install laradock to $path_install."
     mkdir -p "$path_install"
     git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_install"
 fi
 ## copy .env.example to .env
 if [ ! -f "$file_env" ]; then
+    log_time "copy .env.example to .env, and update password"
     cp -vf "$file_env".example "$file_env"
     pass_mysql=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
     pass_redis=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
@@ -89,6 +93,7 @@ if [ ! -f "$file_env" ]; then
         "$file_env"
 fi
 ## change docker host ip
+log_time "change docker host ip."
 docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
 sed -i \
     -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
@@ -130,6 +135,7 @@ zsh)
 esac
 
 ## download php image
+log_time "download docker image of php-fpm."
 if [[ "$ver_php" =~ (5.6|7.1|7.4|8.1|8.2) ]]; then
     curl --referer http://www.flyh6.com/ \
         -C - -Lo /tmp/laradock_php-fpm.tar.gz \
@@ -143,9 +149,10 @@ fi
 # echo "IMAGE_NAME=${IMAGE_NAME}"
 #
 
-log_time "\n#### exec command: "
+echo '#########################################'
 if command -v docker-compose &>/dev/null; then
     echo -e "\n  cd $path_install && docker-compose up -d $args \n"
 else
     echo -e "\n  cd $path_install && docker compose up -d $args \n"
 fi
+echo '#########################################'
