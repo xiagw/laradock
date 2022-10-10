@@ -4,13 +4,13 @@
 export LANG='en_US.UTF-8'
 # export LC_CTYPE='en_US.UTF-8'
 # export LC_ALL='en_US.UTF-8'
-script_path="$(dirname "$(readlink -f "$0")")"
-script_name="$(basename "$0")"
-script_log="${script_path}/${script_name}.log"
-lock_myself=/tmp/.svn.update.lock
+me_path="$(dirname "$(readlink -f "$0")")"
+me_name="$(basename "$0")"
+me_log="${me_path}/${me_name}.log"
+me_lock=/tmp/.svn.update.lock
 
 _log() {
-    echo "[$(date +%F_%T)], $*" >>"$script_log"
+    echo "[$(date +%F_%T)], $*" >>"$me_log"
 }
 
 _generate_ssh_key() {
@@ -34,9 +34,9 @@ _schedule_svn_update() {
     while true; do
         ## UTC time
         if [[ "$(date +%H%M)" == 2005 ]]; then
-            _log "svn cleanup/update root dir" | tee -a "$script_log"
+            _log "svn cleanup/update root dir" | tee -a "$me_log"
             for d in "$path_svn_checkout"/*/; do
-                [ -d "$d"/.svn ] || continue
+                [ -d "${d%/}"/.svn ] || continue
                 svn cleanup "$d"
                 svn update "$d"
             done
@@ -46,20 +46,50 @@ _schedule_svn_update() {
 }
 
 _cleanup() {
-    rm -f $lock_myself
+    rm -f $me_lock
+}
+
+_chown_chmod() {
+    args="$1"
+    ## ThinkPHP, crate folder runtime / 创建文件夹 runtime
+    if [[ "$args" =~ (application) ]]; then
+        path_app="${args%/application/*}"
+        if [[ -f "$path_app"/.env && -d "$path_app"/vendor && ! -d "$path_app"/runtime ]]; then
+            mkdir "$path_app"/runtime
+            chown 33:33 "$path_app"/runtime
+            chmod 755 "$path_app"/runtime
+        fi
+    fi
+    ## chmod
+    if [[ -d "$args" ]]; then
+        chmod 755 "$args"
+    elif [[ -f "$args" ]]; then
+        chmod 644 "$args"
+    fi
+    ## chown
+    if [[ "$args" =~ (runtime) ]]; then
+        chown 33:33 "${args%/runtime/*}"/runtime
+    elif [[ "$args" =~ (Runtime) ]]; then
+        chown 33:33 "${args%/Runtime/*}"/Runtime
+    else
+        chown 0:0 "$args"
+    fi
 }
 
 main() {
     path_svn_pre=/var/www/usvn/files/svn
-    path_svn_checkout=${script_path}/svn_checkout
+    path_svn_checkout=${me_path}/svn_checkout
     ## allow only one instance
-    if [ -f "$lock_myself" ]; then exit 0; fi
+    if [ -f "$me_lock" ]; then
+        _log "$me_lock exist, exit."
+        return 1
+    fi
     ## schedule svn cleanup/update root dirs
     _schedule_svn_update &
     ## ssh key
     _generate_ssh_key
-    # exec &> >(tee -a "$script_log")
-    touch "$lock_myself"
+    # exec &> >(tee -a "$me_log")
+    touch "$me_lock"
     trap _cleanup INT TERM EXIT HUP
     ## trap: do some work
     inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${path_svn_pre}/ |
@@ -82,7 +112,7 @@ main() {
                 fi
                 ## svn update
                 /usr/bin/svn update "$path_svn_checkout/$repo_name/${dir_changed}"
-                # chown -R 1000.1000 "$path_svn_checkout/$repo_name/${dir_changed}"
+                _chown_chmod "$dir_changed"
             done
         done
     ## trap: end some work
