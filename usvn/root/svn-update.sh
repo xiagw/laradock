@@ -112,7 +112,7 @@ main() {
                 fi
                 ## svn update
                 /usr/bin/svn update "$path_svn_checkout/$repo_name/${dir_changed}"
-                _chown_chmod "$dir_changed"
+                _chown_chmod "$path_svn_checkout/$repo_name/${dir_changed}"
             done
         done
     ## trap: end some work
