@@ -90,6 +90,7 @@ if [ ! -f "$file_env" ]; then
         -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
         -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
         -e "/PHP_VERSION=/s/=.*/=7.1/" \
+        -e "/CHANGE_SOURCE=/s/false/true/" \
         "$file_env"
 fi
 ## change docker host ip
@@ -136,7 +137,7 @@ esac
 
 ## download php image
 log_time "download docker image of php-fpm."
-if [[ "$ver_php" =~ (5.6|7.1|7.4|8.1|8.2) ]]; then
+if [[ "$ver_php" =~ (nginx|5.6|7.1|7.4|8.1|8.2) ]]; then
     curl --referer http://www.flyh6.com/ \
         -C - -Lo /tmp/laradock_php-fpm.tar.gz \
         http://cdn.flyh6.com/docker/laradock_php-fpm."${ver_php}".tar.gz

@@ -111,6 +111,7 @@ main() {
                     /usr/bin/svn checkout "file://$path_svn_pre/$repo_name" "$path_svn_checkout/$repo_name"
                 fi
                 ## svn update
+                echo "${dir_changed}" | grep runtime >>"$me_path"/runtime.log
                 /usr/bin/svn update "$path_svn_checkout/$repo_name/${dir_changed}"
                 _chown_chmod "$path_svn_checkout/$repo_name/${dir_changed}"
             done
