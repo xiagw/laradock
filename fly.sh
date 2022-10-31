@@ -139,13 +139,13 @@ esac
 log_time "download docker image of php-fpm."
 if [[ "$ver_php" =~ (nginx|5.6|7.1|7.4|8.1|8.2) ]]; then
     curl --referer http://www.flyh6.com/ \
-        -C - -Lo /tmp/laradock_php-fpm.tar.gz \
-        http://cdn.flyh6.com/docker/laradock_php-fpm."${ver_php}".tar.gz
-    docker load </tmp/laradock_php-fpm.tar.gz
+        -C - -Lo /tmp/laradock-php-fpm.tar.gz \
+        http://cdn.flyh6.com/docker/laradock-php-fpm."${ver_php}".tar.gz
+    docker load </tmp/laradock-php-fpm.tar.gz
 fi
 ## docker pull ttl.sh
 # IMAGE_NAME="ttl.sh/$(uuidgen):1h"
-# docker tag laradock_php-fpm:latest "${IMAGE_NAME}"
+# docker tag laradock-php-fpm:latest "${IMAGE_NAME}"
 # docker push "${IMAGE_NAME}"
 # echo "IMAGE_NAME=${IMAGE_NAME}"
 #
