@@ -328,7 +328,7 @@ services:
         - backend
         - frontend
 
-# git clone https://github.com/apache/apisix-docker.git ~/apisix-docker.git
+# git clone --depth 1 https://github.com/apache/apisix-docker.git ~/apisix-docker.git
 # rsync -av ~/apisix-docker.git/example/ ~/laradock-data/apisix/
 # mkdir -p ~/laradock-data/apisix/etcd_data/data
 # chmod 700 ~/laradock-data/apisix/etcd_data/data
@@ -411,27 +411,6 @@ services:
         - frontend
         - backend
 
-    watermark:
-      depends_on:
-        - mysql
-        - redis
-      image: watermark
-      ports:
-        - "8000:8000"
-      restart: always
-      volumes:
-        - ${DATA_PATH_HOST}/watermark:/var/www/html
-      environment:
-        WATERMARK_DB_HOST: mysql
-        WATERMARK_DB_USER: watermark
-        WATERMARK_DB_PASSWORD: Aethoise6V
-        WATERMARK_DB_NAME: watermark
-      extra_hosts:
-        - "dockerhost:${DOCKER_HOST_IP}"
-      networks:
-        - frontend
-        - backend
-
     websvn:
       image: elleflorio/svn-server
       ports:
@@ -476,21 +455,6 @@ services:
         - frontend
         - backend
 
-    spring:
-      image: deploy/spring
-      ports:
-        - 8080:8080
-        - 8080:8081
-      volumes:
-        - ${DATA_PATH_HOST}/spring:/app
-      depends_on:
-        - mysql
-        - redis
-      restart: always
-      networks:
-        - frontend
-        - backend
-
     cas:
       image: apereo/cas
       build: ./cas
@@ -500,6 +464,32 @@ services:
       volumes:
         - ${DATA_PATH_HOST}/cas/thekeystore:/opt/cas/thekeystore
       restart: always
+      networks:
+        - frontend
+        - backend
+
+    app1:
+      build:
+        context: ./app1
+      ports:
+        - "8080:8080"
+        - "8081:8081"
+      restart: always
+      volumes:
+        - ./app1:/app
+      networks:
+        - frontend
+        - backend
+
+    app2:
+      build:
+        context: ./app2
+      ports:
+        - "8082:8080"
+        - "8083:8081"
+      restart: always
+      volumes:
+        - ./app2:/app
       networks:
         - frontend
         - backend
