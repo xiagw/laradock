@@ -468,28 +468,12 @@ services:
         - frontend
         - backend
 
-    app1:
+    spring:
       build:
-        context: ./app1
-      ports:
-        - "8080:8080"
-        - "8081:8081"
+        context: ./spring
       restart: always
       volumes:
-        - ./app1:/app
-      networks:
-        - frontend
-        - backend
-
-    app2:
-      build:
-        context: ./app2
-      ports:
-        - "8082:8080"
-        - "8083:8081"
-      restart: always
-      volumes:
-        - ./app2:/app
+        - ./spring:/app
       networks:
         - frontend
         - backend

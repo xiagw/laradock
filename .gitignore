@@ -29,5 +29,4 @@ docker-compose.custom.yml
 
 .DS_Store
 
-/app1/
-/app2/
+/app*
