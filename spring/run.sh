@@ -28,7 +28,7 @@ _start() {
             [[ "$cj" -eq "$cy" ]] && profile_name="-Dspring.config.location=${y}"
         done
         echo "[INFO] start $jar ..."
-        $JAVA_OPTS -jar "$jar" $profile_name &
+        $JAVA_OPTS $profile_name -jar "$jar" &
         pids="$pids $!"
     done
     ## allow debug / 方便开发者调试，可以直接kill java, 不会停止容器
