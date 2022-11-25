@@ -63,6 +63,9 @@ fi
         $pre_sudo usermod -aG docker "$USER"
         echo "Please logout $USER, and login again."
     fi
+    if id ubuntu; then
+        $pre_sudo usermod -aG docker ubuntu
+    fi
     [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
 }
 ## change UTC to CST
