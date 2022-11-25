@@ -53,12 +53,17 @@ fi
 ## install docker/compose
 [[ $install_docker ]] && {
     _msg_time "install docker..."
+    if grep -q '^ID=.alinux' /etc/os-release; then
+        sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
+        update_os_release=1
+    fi
     curl -fsSL https://get.docker.com | $pre_sudo bash
     if [ "$current_user" != "root" ]; then
         echo "Add user $USER to group docker."
         $pre_sudo usermod -aG docker "$USER"
         echo "Please logout $USER, and login again."
     fi
+    [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
 }
 ## change UTC to CST
 if timedatectl | grep -q 'Asia/Shanghai'; then
