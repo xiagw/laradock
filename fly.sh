@@ -64,19 +64,19 @@ main() {
     command -v curl || install_curl=1
     command -v docker || install_docker=1
     if [[ $install_git || $install_curl || $install_docker ]]; then
-        _msg time "check sudo."
+        _msg step "check sudo."
         # determine whether the user has permission to execute this script
         current_user=$(whoami)
         if [ "$current_user" != "root" ]; then
-            echo "Not root, check sudo..."
+            _msg time "Not root, check sudo..."
             has_root_permission=$(sudo -l -U "$current_user" | grep "ALL")
             if [ -n "$has_root_permission" ]; then
-                echo "User $current_user has sudo permission."
+                _msg time "User $current_user has sudo permission."
                 pre_sudo="sudo"
             else
-                echo "User $current_user has no permission to execute this script!"
-                echo "Please run visudo with root, and set sudo to $USER"
-                exit 1
+                _msg time "User $current_user has no permission to execute this script!"
+                _msg time "Please run visudo with root, and set sudo to $USER"
+                return 1
             fi
         fi
         if command -v apt; then
@@ -87,21 +87,21 @@ main() {
             cmd="$pre_sudo dnf"
         else
             _msg time "not found apt/yum/dnf, exit 1"
-            exit 1
+            return 1
         fi
     fi
 
     [[ $install_curl ]] && {
-        _msg time "install curl..."
+        _msg step "install curl..."
         $cmd install -y curl
     }
     [[ $install_git ]] && {
-        _msg time "install git..."
+        _msg step "install git..."
         $cmd install -y git zsh
     }
     ## install docker/compose
     [[ $install_docker ]] && {
-        _msg time "install docker..."
+        _msg step "install docker..."
         if grep -q '^ID=.alinux' /etc/os-release; then
             sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
             update_os_release=1
@@ -139,13 +139,13 @@ main() {
         git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_install"
     fi
     ## copy .env.example to .env
-    _msg step "laradock .env ..."
+    _msg step "set laradock .env ..."
     if [ ! -f "$file_env" ]; then
-        _msg time "copy .env.example to .env, and update password"
+        _msg time "copy .env.example to .env, and set password"
         cp -vf "$file_env".example "$file_env"
-        pass_mysql=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
-        pass_redis=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
-        pass_gitlab=$(echo "$RANDOM$(date)$RANDOM" | md5sum | base64 | cut -c 1-14)
+        pass_mysql="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
+        pass_redis="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
+        pass_gitlab="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
         sed -i \
             -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
             -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
@@ -155,7 +155,6 @@ main() {
             "$file_env"
     fi
     ## change docker host ip
-    _msg time "change docker host ip."
     docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
     sed -i \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
@@ -163,7 +162,7 @@ main() {
         "$file_env"
     ## set SHELL_OH_MY_ZSH=true
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env"
-
+    ## download image and echo startup msg
     ver_php="${1:-nginx}"
     case ${ver_php} in
     5.6 | 7.1 | 7.4)
