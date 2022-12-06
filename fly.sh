@@ -16,7 +16,7 @@ _msg() {
         color_off=''
         ;;
     step | timestep)
-        color_on="\033[0;33m[$((STEP + 1))]. $(date +%Y%m%d-%T-%u), \033[0m"
+        color_on="\033[0;33m[$((${STEP:-0} + 1))] $(date +%Y%m%d-%T-%u), \033[0m"
         STEP=$((${STEP:-0} + 1))
         color_off=''
         ;;
@@ -44,7 +44,7 @@ _get_yes_no() {
 
 _download_image() {
     ## download php image
-    _msg step "download docker image of php-fpm."
+    _msg step "download docker image of php-fpm..."
     curl --referer http://www.flyh6.com/ \
         -C - -Lo /tmp/laradock-php-fpm.tar.gz \
         http://cdn.flyh6.com/docker/laradock-php-fpm."${ver_php}".tar.gz
@@ -108,9 +108,9 @@ main() {
         fi
         curl -fsSL https://get.docker.com | $pre_sudo bash
         if [ "$current_user" != "root" ]; then
-            echo "Add user $USER to group docker."
+            _msg time "Add user $USER to group docker."
             $pre_sudo usermod -aG docker "$USER"
-            echo "Please logout $USER, and login again."
+            _msg time "Please logout $USER, and login again."
         fi
         if id ubuntu; then
             $pre_sudo usermod -aG docker ubuntu
@@ -206,7 +206,6 @@ main() {
         echo -e "\n  cd $path_install && docker compose up -d $args \n"
     fi
     echo '#########################################'
-
 }
 
 main "$@"
