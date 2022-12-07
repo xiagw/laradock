@@ -146,9 +146,11 @@ main() {
         _msg time "copy .env.example to .env, and set password"
         cp -vf "$file_env".example "$file_env"
         pass_mysql="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
+        pass_mysql_default="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
         pass_redis="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
         pass_gitlab="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
         sed -i \
+            -e "/^MYSQL_PASSWORD/s/=.*/=$pass_mysql_default/" \
             -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
             -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
             -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
