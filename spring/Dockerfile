@@ -34,5 +34,5 @@ WORKDIR /app
 USER 1000
 EXPOSE 8080 8081 8082
 # volume /data
-
+# ADD https://gitee.com/xiagw/deploy.sh/raw/main/conf/dockerfile/run.sh
 CMD ["/app/run.sh"]

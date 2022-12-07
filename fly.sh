@@ -49,6 +49,8 @@ _download_image() {
         -C - -Lo /tmp/laradock-php-fpm.tar.gz \
         http://cdn.flyh6.com/docker/laradock-php-fpm."${ver_php}".tar.gz
     docker load </tmp/laradock-php-fpm.tar.gz
+    docker tag laradock_php-fpm laradock-php-fpm
+    echo 'docker rmi laradock_php-fpm'
 }
 
 main() {
