@@ -1,7 +1,6 @@
 #!/usr/bin/bash
 
 set -e
-
 _msg() {
     color_off='\033[0m' # Text Reset
     case "$1" in
@@ -28,11 +27,9 @@ _msg() {
     shift
     echo -e "${color_on}$*${color_off}"
 }
-
 _log() {
-    _msg time "$*" >>"$me_log"
+    _msg time "$*" | tee -a "$me_log"
 }
-
 _get_yes_no() {
     read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     if [[ ${read_yes_no:-n} =~ ^(y|Y|yes|YES)$ ]]; then
@@ -42,57 +39,41 @@ _get_yes_no() {
     fi
 }
 
-_download_image() {
-    ## download php image
-    _msg step "download docker image of php-fpm..."
-    curl --referer http://www.flyh6.com/ \
-        -C - -Lo /tmp/laradock-php-fpm.tar.gz \
-        http://cdn.flyh6.com/docker/laradock-php-fpm."${ver_php}".tar.gz
-    docker load </tmp/laradock-php-fpm.tar.gz
-    docker tag laradock_php-fpm laradock-php-fpm
-    echo 'docker rmi laradock_php-fpm'
-}
-
-main() {
-    me_path="$(dirname "$(readlink -f "$0")")"
-    me_name="$(basename "$0")"
-    me_log="${me_path}/${me_name}.log"
-
-    path_install="$HOME/docker/laradock"
-    file_env="$path_install"/.env
-    ##
-    _msg step "check command: git/curl/docker..."
-    command -v git || install_git=1
-    command -v curl || install_curl=1
-    command -v docker || install_docker=1
-    if [[ $install_git || $install_curl || $install_docker ]]; then
-        _msg step "check sudo."
-        # determine whether the user has permission to execute this script
-        current_user=$(whoami)
-        if [ "$current_user" != "root" ]; then
-            _msg time "Not root, check sudo..."
-            has_root_permission=$(sudo -l -U "$current_user" | grep "ALL")
-            if [ -n "$has_root_permission" ]; then
-                _msg time "User $current_user has sudo permission."
-                pre_sudo="sudo"
-            else
-                _msg time "User $current_user has no permission to execute this script!"
-                _msg time "Please run visudo with root, and set sudo to $USER"
-                return 1
-            fi
-        fi
-        if command -v apt; then
-            cmd="$pre_sudo apt"
-        elif command -v yum; then
-            cmd="$pre_sudo yum"
-        elif command -v dnf; then
-            cmd="$pre_sudo dnf"
+_check_sudo() {
+    _msg step "check sudo."
+    # determine whether the user has permission to execute this script
+    current_user=$(whoami)
+    if [ "$current_user" != "root" ]; then
+        _msg time "Not root, check sudo..."
+        has_root_permission=$(sudo -l -U "$current_user" | grep "ALL")
+        if [ -n "$has_root_permission" ]; then
+            _msg time "User $current_user has sudo permission."
+            pre_sudo="sudo"
         else
-            _msg time "not found apt/yum/dnf, exit 1"
+            _msg time "User $current_user has no permission to execute this script!"
+            _msg time "Please run visudo with root, and set sudo to $USER"
             return 1
         fi
     fi
-
+    if command -v apt; then
+        cmd="$pre_sudo apt"
+    elif command -v yum; then
+        cmd="$pre_sudo yum"
+    elif command -v dnf; then
+        cmd="$pre_sudo dnf"
+    else
+        _msg time "not found apt/yum/dnf, exit 1"
+        return 1
+    fi
+}
+_check_dependence() {
+    _msg step "check command: git/curl/docker..."
+    command -v git && echo ok || install_git=1
+    command -v curl && echo ok || install_curl=1
+    command -v docker && echo ok || install_docker=1
+    if [[ $install_git || $install_curl || $install_docker ]]; then
+        _check_sudo
+    fi
     [[ $install_curl ]] && {
         _msg step "install curl..."
         $cmd install -y curl
@@ -112,7 +93,7 @@ main() {
         if [ "$current_user" != "root" ]; then
             _msg time "Add user $USER to group docker."
             $pre_sudo usermod -aG docker "$USER"
-            _msg time "Please logout $USER, and login again."
+            _msg red "Please logout $USER, and login again."
         fi
         if id ubuntu; then
             $pre_sudo usermod -aG docker ubuntu
@@ -120,8 +101,10 @@ main() {
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
     }
+}
+_check_timezone() {
     ## change UTC to CST
-    _msg step "check timedate ..."
+    _msg step "check timezone ..."
     if timedatectl | grep -q 'Asia/Shanghai'; then
         _msg time "Timezone is already set to Asia/Shanghai."
     else
@@ -130,6 +113,8 @@ main() {
             $pre_sudo timedatectl set-timezone Asia/Shanghai
         fi
     fi
+}
+_install_laradock() {
     ## clone laradock or git pull
     _msg step "git clone laradock ..."
     if [ -d "$path_install" ]; then
@@ -166,24 +151,73 @@ main() {
         "$file_env"
     ## set SHELL_OH_MY_ZSH=true
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env"
+}
+_get_image() {
+    _msg step "download docker image of php-fpm..."
+    if [ -f "$path_install/php-fpm/$dockerfile_php" ]; then
+        cp -f "$path_install/php-fpm/$dockerfile_php" "$path_install"/php-fpm/Dockerfile
+    fi
+    sed -i -e "/PHP_VERSION=/s/=.*/=$ver_php/" "$file_env"
+    ref_url=http://www.flyh6.com/
+    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php}.tar.gz"
+    file_save=/tmp/laradock-php-fpm.tar.gz
+    ## download php image
+    curl --referer $ref_url -C - -Lo $file_save $file_url
+    docker load <$file_save
+    docker tag laradock_php-fpm laradock-php-fpm
+    echo 'docker rmi laradock_php-fpm'
+}
+_set_perm() {
+    find ~/docker/backend -type d -exec chmod 755 {} \;
+    find ~/docker/backend -type f -exec chmod 644 {} \;
+}
+_new_app_php() {
+    ## create dir 'app' for  php files
+    mkdir "$path_install/../app"
+    ## create nginx app.conf
+    \cp -av "$path_install/nginx/sites/app.conf.example" "$path_install/nginx/sites/app.conf"
+    cd $path_install && docker-compose exec nginx nginx -s reload
+    ## create test.php
+    cat >"$path_install/../app/test.php" <<EOF
+<?php
+echo 'This is test page for php';
+EOF
+}
+_new_app_java() {
+    ## create spring
+    echo "cd $path_install && docker-compose up -d spring"
+}
+
+main() {
+    me_path="$(dirname "$(readlink -f "$0")")"
+    me_name="$(basename "$0")"
+    me_log="${me_path}/${me_name}.log"
+
+    path_install="$HOME/docker/laradock"
+    file_env="$path_install"/.env
+
+    _check_dependence
+    _check_timezone
+    _install_laradock
+
     ## download image and echo startup msg
     ver_php="${1:-nginx}"
     case ${ver_php} in
     5.6 | 7.1 | 7.4)
-        [ -f "$path_install"/php-fpm/Dockerfile.php71 ] && {
-            cp -f "$path_install"/php-fpm/Dockerfile.php71 "$path_install"/php-fpm/Dockerfile
-        }
-        sed -i -e "/PHP_VERSION=/s/=.*/=$ver_php/" "$file_env"
         args="php-fpm"
-        _download_image
+        dockerfile_php=Dockerfile.php71
+        _get_image
         ;;
     8.1 | 8.2)
-        [ -f "$path_install"/php-fpm/Dockerfile.php81 ] && {
-            cp -f "$path_install"/php-fpm/Dockerfile.php81 "$path_install"/php-fpm/Dockerfile
-        }
-        sed -i -e "/PHP_VERSION=/s/=.*/=$ver_php/" "$file_env"
         args="php-fpm"
-        _download_image
+        dockerfile_php=Dockerfile.php81
+        _get_image
+        ;;
+    phpnew)
+        _new_app_php
+        ;;
+    java)
+        args="spring"
         ;;
     gitlab)
         args="gitlab"
@@ -196,17 +230,20 @@ main() {
         bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
         sed -i -e 's/robbyrussell/ys/' ~/.zshrc
         ;;
+    perm)
+        _set_perm
+        ;;
     *)
         args="nginx"
         ;;
     esac
 
-    _msg step "startup ..."
+    _msg step "manual startup ..."
     echo '#########################################'
     if command -v docker-compose &>/dev/null; then
-        echo -e "\n  cd $path_install && docker-compose up -d $args \n"
+        _msg info "\n  cd $path_install && docker-compose up -d $args \n"
     else
-        echo -e "\n  cd $path_install && docker compose up -d $args \n"
+        _msg info "\n  cd $path_install && docker compose up -d $args \n"
     fi
     echo '#########################################'
 }
