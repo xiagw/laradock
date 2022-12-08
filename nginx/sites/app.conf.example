@@ -13,28 +13,49 @@ server {
     root /var/www/app;
     index index.php index.html index.htm;
 
-    location / {
-         try_files $uri $uri/ /index.php$is_args$args;
-    }
+#最完美解决Nginx部署ThinkPHP项目的办法_大哥在北漂的博客-CSDN博客_nginx thinkphp
+#https://blog.csdn.net/u014796929/article/details/123396330
 
+   location / {
+        #try_files $uri $uri/ /index.php$is_args$args;
+        try_files $uri $uri/ /index.php/$request_uri;
+        #if (!-e $request_filename) {
+            #rewrite ^/(.*)$ /index.php/$1 last;
+            #break;
+        #}
+    }
     include conf.d/app.include;
 
-    location ~ \.php$ {
-        try_files $uri /index.php =404;
-        fastcgi_pass 127.0.0.1:9000;
+    location ~ \.php(.*)$ {
+        #fastcgi_pass  unix:/var/run/php-fpm.sock;
+        # try_files $uri $uri/ /index.php =404;
+        fastcgi_pass php-fpm:9000;
         fastcgi_index index.php;
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
+        fastcgi_split_path_info ^((?U).+\.php)(/?.+)$;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        #fixes timeouts
-        fastcgi_read_timeout 600;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
+        fastcgi_param APP_ENV product;
         include fastcgi_params;
     }
 
-    location ~ /\.ht {
+    location = /favicon.ico {
+        access_log off;
+        log_not_found off;
+    }
+    location ~ /.*favicon.ico {
+        access_log off;
+        log_not_found off;
+    }
+    location = /robots.txt {
+        access_log off;
+        log_not_found off;
+    }
+    location ~ /\.(htaccess|htpasswd|env) {
         deny all;
     }
-
     location /.well-known/acme-challenge/ {
         root /var/www/letsencrypt/;
         log_not_found off;

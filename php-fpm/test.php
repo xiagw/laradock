@@ -7,7 +7,7 @@ $response = 'default value';
 $redis->connect('redis',6379);
 // redis password
 $redis->auth('ENV_REDIS_PASSWORD');
-$redis->set('foo', 'bar');
+$redis->set('foo', rand(1,1000000));
 $response = $redis->get('foo');
 echo " Key foo: $response" ;
 
