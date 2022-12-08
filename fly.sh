@@ -166,7 +166,7 @@ _get_image() {
     curl --referer $ref_url -C - -Lo $file_save $file_url
     docker load <$file_save
     docker tag laradock_php-fpm laradock-php-fpm
-    echo 'docker rmi laradock_php-fpm'
+    docker rmi laradock_php-fpm
 }
 _set_perm() {
     find ~/docker/backend -type d -exec chmod 755 {} \;
@@ -182,6 +182,7 @@ _new_app_php() {
     cat >"$path_install/../app/test.php" <<EOF
 <?php
 echo 'This is test page for php';
+
 EOF
 }
 _new_app_java() {
@@ -206,7 +207,7 @@ _install_zsh() {
     # sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
     return 0
 }
-_start() {
+_start_manual() {
     _msg step "manual startup ..."
     echo '#########################################'
     if command -v docker-compose &>/dev/null; then
@@ -215,6 +216,25 @@ _start() {
         _msg info "\n  cd $path_install && $dco up -d $args \n"
     fi
     echo '#########################################'
+}
+_start_auto() {
+    _msg step "auto startup ..."
+    ## create test.php
+    \cp -avf "$path_install/php-fpm/test.php" "$path_install/../public/test.php"
+    source $file_env
+    sed -i \
+        -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
+        -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
+        -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
+        "$path_install/../public/test.php"
+    cd $path_install && $dco up -d redis mysql nginx $args
+    _msg time "Test nginx ..."
+    until curl --connect-timeout 3 localhost; do
+        sleep 1
+        c=$((${c:-0} + 1))
+        [[ $c -gt 60 ]] && break
+    done
+    curl --connect-timeout 3 localhost/test.php
 }
 main() {
     me_path="$(dirname "$(readlink -f "$0")")"
@@ -265,7 +285,8 @@ main() {
     _get_image
     _docker_compose
     ## startup
-    _start
+    _start_manual
+    # _start_auto
 }
 
 main "$@"
