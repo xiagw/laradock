@@ -124,13 +124,13 @@ _check_timezone() {
 _install_laradock() {
     ## clone laradock or git pull
     _msg step "git clone laradock ..."
-    if [ -d "$path_install" ]; then
-        _msg time "$path_install exist, git pull."
-        (cd "$path_install" && git pull)
+    if [ -d "$path_laradock" ]; then
+        _msg time "$path_laradock exist, git pull."
+        (cd "$path_laradock" && git pull)
     else
-        _msg time "install laradock to $path_install."
-        mkdir -p "$path_install"
-        git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_install"
+        _msg time "install laradock to $path_laradock."
+        mkdir -p "$path_laradock"
+        git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_laradock"
     fi
     ## copy .env.example to .env
     _msg step "set laradock .env ..."
@@ -163,8 +163,8 @@ _install_laradock() {
 _get_image() {
     [[ "$args" == "php-fpm" ]] || return 0
     _msg step "download docker image of php-fpm..."
-    if [ -f "$path_install/php-fpm/$dockerfile_php" ]; then
-        cp -f "$path_install/php-fpm/$dockerfile_php" "$path_install"/php-fpm/Dockerfile
+    if [ -f "$path_laradock/php-fpm/$dockerfile_php" ]; then
+        cp -f "$path_laradock/php-fpm/$dockerfile_php" "$path_laradock"/php-fpm/Dockerfile
     fi
     sed -i -e "/PHP_VERSION=/s/=.*/=$ver_php/" "$file_env"
     ref_url=http://www.flyh6.com/
@@ -178,18 +178,19 @@ _get_image() {
 }
 
 _set_perm() {
-    find "$path_install/../backend" -type d -exec chmod 755 {} \;
-    find "$path_install/../backend" -type f -exec chmod 644 {} \;
+    find "$path_laradock/../backend" -type d -exec chmod 755 {} \;
+    find "$path_laradock/../backend" -type f -exec chmod 644 {} \;
 }
 
 _new_app_php() {
     ## create dir 'app' for  php files
-    mkdir "$path_install/../app"
+    mkdir "$path_laradock/../app"
     ## create nginx app.conf
-    \cp -av "$path_install/nginx/sites/app.conf.example" "$path_install/nginx/sites/app.conf"
-    cd $path_install && $dco exec nginx nginx -s reload
+    \cp -av "$path_laradock/nginx/sites/app.conf.example" "$path_laradock/nginx/sites/app.conf"
+    sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/app.conf"
+    cd $path_laradock && $dco exec nginx nginx -s reload
     ## create test.php
-    cat >"$path_install/../app/test.php" <<EOF
+    cat >"$path_laradock/../app/test.php" <<EOF
 <?php
 echo 'This is test page for php';
 
@@ -197,8 +198,11 @@ EOF
 }
 
 _new_app_java() {
-    ## create spring
-    echo "cd $path_install && $dco up -d spring"
+    ## create nginx app.conf
+    \cp -av "$path_laradock/nginx/sites/app.conf.example" "$path_laradock/nginx/sites/app.conf"
+    sed -i -e 's/127\.0\.0\.1/spring/' "$path_laradock/nginx/sites/app.conf"
+    cd $path_laradock && $dco exec nginx nginx -s reload
+    echo "cd $path_laradock && $dco up -d spring"
 }
 
 _docker_compose() {
@@ -224,9 +228,9 @@ _start_manual() {
     _msg step "manual startup ..."
     echo '#########################################'
     if command -v docker-compose &>/dev/null; then
-        _msg info "\n  cd $path_install && $dco up -d $args \n"
+        _msg info "\n  cd $path_laradock && $dco up -d $args \n"
     else
-        _msg info "\n  cd $path_install && $dco up -d $args \n"
+        _msg info "\n  cd $path_laradock && $dco up -d $args \n"
     fi
     echo '#########################################'
 }
@@ -234,14 +238,14 @@ _start_manual() {
 _start_auto() {
     _msg step "auto startup ..."
     ## create test.php
-    \cp -avf "$path_install/php-fpm/test.php" "$path_install/../public/test.php"
+    \cp -avf "$path_laradock/php-fpm/test.php" "$path_laradock/../public/test.php"
     source $file_env
     sed -i \
         -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
         -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
         -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
-        "$path_install/../public/test.php"
-    cd $path_install && $dco up -d redis mysql nginx $args
+        "$path_laradock/../public/test.php"
+    cd $path_laradock && $dco up -d redis mysql nginx $args
     _msg time "Test nginx ..."
     until curl --connect-timeout 3 localhost; do
         sleep 1
@@ -250,7 +254,7 @@ _start_auto() {
     done
     if [[ "$args" == "php-fpm" ]]; then
         _msg time "Test PHP Redis MySQL ..."
-        sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_install/nginx/sites/default.conf"
+        sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
         $dco exec nginx nginx -s reload
         curl --connect-timeout 3 localhost/test.php
     fi
@@ -261,8 +265,8 @@ main() {
     me_name="$(basename "$0")"
     me_log="${me_path}/${me_name}.log"
 
-    path_install="$HOME/docker/laradock"
-    file_env="$path_install"/.env
+    path_laradock="$HOME/docker/laradock"
+    file_env="$path_laradock"/.env
 
     ver_php="${1:-nginx}"
     case ${ver_php} in
