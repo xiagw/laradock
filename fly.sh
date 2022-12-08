@@ -250,7 +250,7 @@ _start_auto() {
     done
     if [[ "$args" == "php-fpm" ]]; then
         _msg time "Test PHP Redis MySQL ..."
-        sed -i -e "$path_install/nginx/sites/default.conf"
+        sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_install/nginx/sites/default.conf"
         $dco exec nginx nginx -s reload
         curl --connect-timeout 3 localhost/test.php
     fi
