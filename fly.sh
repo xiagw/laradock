@@ -234,6 +234,7 @@ _start_auto() {
         c=$((${c:-0} + 1))
         [[ $c -gt 60 ]] && break
     done
+    _msg time "Test PHP Redis MySQL ..."
     curl --connect-timeout 3 localhost/test.php
 }
 main() {
@@ -285,8 +286,8 @@ main() {
     _get_image
     _docker_compose
     ## startup
-    _start_manual
-    # _start_auto
+    # _start_manual
+    _start_auto
 }
 
 main "$@"
