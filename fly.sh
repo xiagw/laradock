@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 set -e
+
 _msg() {
     color_off='\033[0m' # Text Reset
     case "$1" in
@@ -27,9 +28,11 @@ _msg() {
     shift
     echo -e "${color_on}$*${color_off}"
 }
+
 _log() {
     _msg time "$*" | tee -a "$me_log"
 }
+
 _get_yes_no() {
     read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     if [[ ${read_yes_no:-n} =~ ^(y|Y|yes|YES)$ ]]; then
@@ -38,6 +41,7 @@ _get_yes_no() {
         return 1
     fi
 }
+
 _check_sudo() {
     _msg step "check sudo."
     # determine whether the user has permission to execute this script
@@ -65,6 +69,7 @@ _check_sudo() {
         return 1
     fi
 }
+
 _check_dependence() {
     _msg step "check command: git/curl/docker..."
     command -v git && echo ok || install_git=1
@@ -102,6 +107,7 @@ _check_dependence() {
     }
     return 0
 }
+
 _check_timezone() {
     ## change UTC to CST
     _msg step "check timezone ..."
@@ -114,6 +120,7 @@ _check_timezone() {
         fi
     fi
 }
+
 _install_laradock() {
     ## clone laradock or git pull
     _msg step "git clone laradock ..."
@@ -152,6 +159,7 @@ _install_laradock() {
     ## set SHELL_OH_MY_ZSH=true
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env" || return 0
 }
+
 _get_image() {
     [[ "$args" == "php-fpm" ]] || return 0
     _msg step "download docker image of php-fpm..."
@@ -168,10 +176,12 @@ _get_image() {
     docker tag laradock_php-fpm laradock-php-fpm
     docker rmi laradock_php-fpm
 }
+
 _set_perm() {
-    find ~/docker/backend -type d -exec chmod 755 {} \;
-    find ~/docker/backend -type f -exec chmod 644 {} \;
+    find "$path_install/../backend" -type d -exec chmod 755 {} \;
+    find "$path_install/../backend" -type f -exec chmod 644 {} \;
 }
+
 _new_app_php() {
     ## create dir 'app' for  php files
     mkdir "$path_install/../app"
@@ -185,10 +195,12 @@ echo 'This is test page for php';
 
 EOF
 }
+
 _new_app_java() {
     ## create spring
     echo "cd $path_install && $dco up -d spring"
 }
+
 _docker_compose() {
     if command -v docker-compose &>/dev/null; then
         dco=docker-compose
@@ -198,6 +210,7 @@ _docker_compose() {
     ## install docker-compose
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
 }
+
 _install_zsh() {
     _msg step "install oh my zsh"
     bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
@@ -205,8 +218,8 @@ _install_zsh() {
     omz plugin enable z extract fzf docker-compose
     # sed -i -e 's/robbyrussell/ys/' ~/.zshrc
     # sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
-    return 0
 }
+
 _start_manual() {
     _msg step "manual startup ..."
     echo '#########################################'
@@ -217,6 +230,7 @@ _start_manual() {
     fi
     echo '#########################################'
 }
+
 _start_auto() {
     _msg step "auto startup ..."
     ## create test.php
@@ -234,9 +248,14 @@ _start_auto() {
         c=$((${c:-0} + 1))
         [[ $c -gt 60 ]] && break
     done
-    _msg time "Test PHP Redis MySQL ..."
-    curl --connect-timeout 3 localhost/test.php
+    if [[ "$args" == "php-fpm" ]]; then
+        _msg time "Test PHP Redis MySQL ..."
+        sed -i -e "$path_install/nginx/sites/default.conf"
+        $dco exec nginx nginx -s reload
+        curl --connect-timeout 3 localhost/test.php
+    fi
 }
+
 main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
@@ -256,6 +275,7 @@ main() {
         dockerfile_php=Dockerfile.php81
         ;;
     php)
+        args="php-fpm"
         _new_app_php
         return
         ;;
@@ -270,6 +290,7 @@ main() {
         ;;
     zsh)
         _install_zsh
+        return 0
         ;;
     perm)
         _set_perm
