@@ -101,6 +101,7 @@ _check_dependence() {
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
     }
+    return 0
 }
 _check_timezone() {
     ## change UTC to CST
@@ -150,7 +151,7 @@ _install_laradock() {
         -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" \
         "$file_env"
     ## set SHELL_OH_MY_ZSH=true
-    echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env"
+    echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env" || return 0
 }
 _get_image() {
     _msg step "download docker image of php-fpm..."
@@ -176,7 +177,7 @@ _new_app_php() {
     mkdir "$path_install/../app"
     ## create nginx app.conf
     \cp -av "$path_install/nginx/sites/app.conf.example" "$path_install/nginx/sites/app.conf"
-    cd $path_install && docker-compose exec nginx nginx -s reload
+    cd $path_install && $dco exec nginx nginx -s reload
     ## create test.php
     cat >"$path_install/../app/test.php" <<EOF
 <?php
@@ -185,9 +186,27 @@ EOF
 }
 _new_app_java() {
     ## create spring
-    echo "cd $path_install && docker-compose up -d spring"
+    echo "cd $path_install && $dco up -d spring"
 }
-
+_docker_compose() {
+    if command -v docker-compose &>/dev/null; then
+        dco=docker-compose
+    else
+        dco="docker compose"
+    fi
+    ## install docker-compose
+    ## Overview | Docker Documentation https://docs.docker.com/compose/install/
+}
+_start() {
+    _msg step "manual startup ..."
+    echo '#########################################'
+    if command -v docker-compose &>/dev/null; then
+        _msg info "\n  cd $path_install && $dco up -d $args \n"
+    else
+        _msg info "\n  cd $path_install && $dco up -d $args \n"
+    fi
+    echo '#########################################'
+}
 main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
@@ -213,7 +232,7 @@ main() {
         dockerfile_php=Dockerfile.php81
         _get_image
         ;;
-    phpnew)
+    php)
         _new_app_php
         ;;
     java)
@@ -226,9 +245,12 @@ main() {
         args="usvn"
         ;;
     zsh)
-        ## install oh my zsh
+        _msg step "install oh my zsh"
         bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-        sed -i -e 's/robbyrussell/ys/' ~/.zshrc
+        omz theme set ys
+        omz plugin enable z extract fzf docker-compose
+        # sed -i -e 's/robbyrussell/ys/' ~/.zshrc
+        # sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
         ;;
     perm)
         _set_perm
@@ -237,15 +259,9 @@ main() {
         args="nginx"
         ;;
     esac
-
-    _msg step "manual startup ..."
-    echo '#########################################'
-    if command -v docker-compose &>/dev/null; then
-        _msg info "\n  cd $path_install && docker-compose up -d $args \n"
-    else
-        _msg info "\n  cd $path_install && docker compose up -d $args \n"
-    fi
-    echo '#########################################'
+    _docker_compose
+    ## startup
+    _start
 }
 
 main "$@"
