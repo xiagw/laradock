@@ -38,7 +38,6 @@ _get_yes_no() {
         return 1
     fi
 }
-
 _check_sudo() {
     _msg step "check sudo."
     # determine whether the user has permission to execute this script
@@ -154,6 +153,7 @@ _install_laradock() {
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env" || return 0
 }
 _get_image() {
+    [[ "$args" == "php-fpm" ]] || return 0
     _msg step "download docker image of php-fpm..."
     if [ -f "$path_install/php-fpm/$dockerfile_php" ]; then
         cp -f "$path_install/php-fpm/$dockerfile_php" "$path_install"/php-fpm/Dockerfile
@@ -197,6 +197,15 @@ _docker_compose() {
     ## install docker-compose
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
 }
+_install_zsh() {
+    _msg step "install oh my zsh"
+    bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    omz theme set ys
+    omz plugin enable z extract fzf docker-compose
+    # sed -i -e 's/robbyrussell/ys/' ~/.zshrc
+    # sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
+    return 0
+}
 _start() {
     _msg step "manual startup ..."
     echo '#########################################'
@@ -215,25 +224,19 @@ main() {
     path_install="$HOME/docker/laradock"
     file_env="$path_install"/.env
 
-    _check_dependence
-    _check_timezone
-    _install_laradock
-
-    ## download image and echo startup msg
     ver_php="${1:-nginx}"
     case ${ver_php} in
     5.6 | 7.1 | 7.4)
         args="php-fpm"
         dockerfile_php=Dockerfile.php71
-        _get_image
         ;;
     8.1 | 8.2)
         args="php-fpm"
         dockerfile_php=Dockerfile.php81
-        _get_image
         ;;
     php)
         _new_app_php
+        return
         ;;
     java)
         args="spring"
@@ -245,20 +248,21 @@ main() {
         args="usvn"
         ;;
     zsh)
-        _msg step "install oh my zsh"
-        bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-        omz theme set ys
-        omz plugin enable z extract fzf docker-compose
-        # sed -i -e 's/robbyrussell/ys/' ~/.zshrc
-        # sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
+        _install_zsh
         ;;
     perm)
         _set_perm
+        return
         ;;
     *)
         args="nginx"
         ;;
     esac
+
+    _check_dependence
+    _check_timezone
+    _install_laradock
+    _get_image
     _docker_compose
     ## startup
     _start
