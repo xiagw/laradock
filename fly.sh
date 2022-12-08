@@ -260,6 +260,12 @@ _start_auto() {
     fi
 }
 
+_get_redis_mysql_info() {
+    grep ^REDIS_ $file_env | head -n 3
+    grep ^DB_HOST $file_env
+    grep ^MYSQL_ $file_env | sed -n '2,5 p'
+}
+
 main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
@@ -298,6 +304,10 @@ main() {
         ;;
     perm)
         _set_perm
+        return
+        ;;
+    info)
+        _get_redis_mysql_info
         return
         ;;
     *)
