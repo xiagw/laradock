@@ -236,15 +236,12 @@ _start_manual() {
 }
 
 _start_auto() {
-    _msg step "auto startup ..."
+    if _get_yes_no "Do you want start docker now? "; then
+        _msg step "startup ..."
+    else
+        return 0
+    fi
     ## create test.php
-    \cp -avf "$path_laradock/php-fpm/test.php" "$path_laradock/../public/test.php"
-    source $file_env
-    sed -i \
-        -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
-        -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
-        -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
-        "$path_laradock/../public/test.php"
     cd $path_laradock && $dco up -d redis mysql nginx $args
     _msg time "Test nginx ..."
     until curl --connect-timeout 3 localhost; do
@@ -252,6 +249,13 @@ _start_auto() {
         c=$((${c:-0} + 1))
         [[ $c -gt 60 ]] && break
     done
+    \cp -avf "$path_laradock/php-fpm/test.php" "$path_laradock/../public/test.php"
+    source $file_env
+    sed -i \
+        -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
+        -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
+        -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
+        "$path_laradock/../public/test.php"
     if [[ "$args" == "php-fpm" ]]; then
         _msg time "Test PHP Redis MySQL ..."
         sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
@@ -321,7 +325,7 @@ main() {
     _get_image
     _docker_compose
     ## startup
-    # _start_manual
+    _start_manual
     _start_auto
 }
 
