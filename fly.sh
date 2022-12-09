@@ -34,7 +34,12 @@ _log() {
 }
 
 _get_yes_no() {
-    read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
+    if [[ "$1" == timeout ]]; then
+        shift
+        read -t 20 -rp "${1:-Confirm the action?} [y/N] " read_yes_no
+    else
+        read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
+    fi
     if [[ ${read_yes_no:-n} =~ ^(y|Y|yes|YES)$ ]]; then
         return 0
     else
@@ -236,12 +241,11 @@ _start_manual() {
 }
 
 _start_auto() {
-    if _get_yes_no "Do you want start docker now? "; then
-        _msg step "startup ..."
+    if _get_yes_no timeout "Do you want start laradock now? "; then
+        _msg step "start redis mysql nginx ..."
     else
         return 0
     fi
-    ## create test.php
     cd $path_laradock && $dco up -d redis mysql nginx $args
     _msg time "Test nginx ..."
     until curl --connect-timeout 3 localhost; do
@@ -249,6 +253,7 @@ _start_auto() {
         c=$((${c:-0} + 1))
         [[ $c -gt 60 ]] && break
     done
+    ## create test.php
     \cp -avf "$path_laradock/php-fpm/test.php" "$path_laradock/../public/test.php"
     source $file_env
     sed -i \
