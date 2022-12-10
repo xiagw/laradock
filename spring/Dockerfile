@@ -17,9 +17,9 @@ RUN if [ "$INSTALL_FONTS" = true ]; then \
     sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list \
     && apt-get update && apt-get install -y --no-install-recommends fontconfig \
     && fc-cache --force \
-    && curl -LO --referer http://www.flyh6.com/ http://cdn.flyh6.com/docker/fonts-2022.tar \
-    && tar -xvf fonts-2022.tar -C /usr/share \
-    && rm -f fonts-2022.tar; \
+    && curl -Lo /tmp/fonts.tar --referer http://www.flyh6.com/ http://cdn.flyh6.com/docker/fonts-2022.tar \
+    && tar -xvf /tmp/fonts.tar -C /usr/share \
+    && rm -f /tmp/fonts.tar; \
     fi; \
     if [ "$INSTALL_FFMPEG" = true ]; then \
     apt-get update && apt-get install -y --no-install-recommends ffmpeg; \

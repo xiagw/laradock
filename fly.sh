@@ -335,3 +335,8 @@ main() {
 }
 
 main "$@"
+# TODO
+# docker compose start/stop/logs/
+## 导入数据库 sql
+## 查看容器进程
+## 以及重启 nginx docker compose exec nginx nginx -s reload

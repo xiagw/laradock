@@ -473,7 +473,7 @@ services:
         context: ./spring
       restart: always
       volumes:
-        - ${DATA_PATH_HOST}/spring:/app
+        - ./spring:/app
       networks:
         - frontend
         - backend
