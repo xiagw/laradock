@@ -14,6 +14,8 @@ services:
         context: ./php-fpm
         args:
           - TZ=${WORKSPACE_TIMEZONE}
+          - LARADOCK_PHP_VERSION=${PHP_VERSION}
+          - UBUNTU_VERSION=${UBUNTU_VERSION}
       environment:
         - TZ=${WORKSPACE_TIMEZONE}
       # depends_on:
@@ -471,6 +473,8 @@ services:
     spring:
       build:
         context: ./spring
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
       restart: always
       volumes:
         - ./spring:/app

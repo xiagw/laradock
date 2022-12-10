@@ -4,7 +4,7 @@ set -e
 
 _msg() {
     color_off='\033[0m' # Text Reset
-    case "$1" in
+    case "${1:-none}" in
     red | error | erro) color_on='\033[0;31m' ;;       # Red
     green | info) color_on='\033[0;32m' ;;             # Green
     yellow | warning | warn) color_on='\033[0;33m' ;;  # Yellow
@@ -12,20 +12,26 @@ _msg() {
     purple | question | ques) color_on='\033[0;35m' ;; # Purple
     cyan) color_on='\033[0;36m' ;;                     # Cyan
     time)
-        color_on="[+] $(date +%Y%m%d-%T-%u), " ## datetime
+        color_on="[+] $(date +%Y%m%d-%T-%u), "
         color_off=''
+        ;;
+    stepend)
+        color_on="[+] $(date +%Y%m%d-%T-%u), "
+        color_off=' ... end'
         ;;
     step | timestep)
         color_on="\033[0;33m[$((${STEP:-0} + 1))] $(date +%Y%m%d-%T-%u), \033[0m"
         STEP=$((${STEP:-0} + 1))
-        color_off=''
+        color_off=' ... start'
         ;;
     *)
         color_on=''
         color_off=''
+        need_shift=0
         ;;
     esac
-    shift
+    [ "${need_shift:-1}" -eq 1 ] && shift
+    need_shift=1
     echo -e "${color_on}$*${color_off}"
 }
 
@@ -151,7 +157,8 @@ _install_laradock() {
             -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
             -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
             -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
-            -e "/PHP_VERSION=/s/=.*/=7.1/" \
+            -e "/PHP_VERSION=/s/=.*/=${ver_php}/" \
+            -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
             -e "/CHANGE_SOURCE=/s/false/true/" \
             "$file_env"
     fi
@@ -168,23 +175,24 @@ _install_laradock() {
 _get_image() {
     [[ "$args" == "php-fpm" ]] || return 0
     _msg step "download docker image of php-fpm..."
-    if [ -f "$path_laradock/php-fpm/$dockerfile_php" ]; then
-        cp -f "$path_laradock/php-fpm/$dockerfile_php" "$path_laradock"/php-fpm/Dockerfile
+    if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
+        cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
     fi
     sed -i -e "/PHP_VERSION=/s/=.*/=$ver_php/" "$file_env"
     ref_url=http://www.flyh6.com/
     file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php}.tar.gz"
     file_save=/tmp/laradock-php-fpm.tar.gz
     ## download php image
-    curl --referer $ref_url -C - -Lo $file_save $file_url
+    curl --referer $ref_url -C - -Lo $file_save "$file_url"
     docker load <$file_save
     docker tag laradock_php-fpm laradock-php-fpm
     docker rmi laradock_php-fpm
 }
 
 _set_perm() {
-    find "$path_laradock/../backend" -type d -exec chmod 755 {} \;
-    find "$path_laradock/../backend" -type f -exec chmod 644 {} \;
+    find "$path_laradock/../app" -type d -exec chmod 755 {} \;
+    find "$path_laradock/../app" -type f -exec chmod 644 {} \;
+    chown 1000:1000 "$path_laradock/spring"
 }
 
 _new_app_php() {
@@ -287,11 +295,11 @@ main() {
     case ${ver_php} in
     5.6 | 7.1 | 7.4)
         args="php-fpm"
-        dockerfile_php=Dockerfile.php71
+        ubuntu_ver=20.04
         ;;
     8.1 | 8.2)
         args="php-fpm"
-        dockerfile_php=Dockerfile.php81
+        ubuntu_ver=22.04
         ;;
     php)
         args="php-fpm"
