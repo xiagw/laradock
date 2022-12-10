@@ -30,3 +30,6 @@ docker-compose.custom.yml
 .DS_Store
 
 /app*
+
+/spring/*
+!/spring/Dockerfile
