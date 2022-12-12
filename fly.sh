@@ -275,9 +275,10 @@ _get_redis_mysql_info() {
     grep ^MYSQL_ $file_env | sed -n '2,5 p'
 }
 
-_db_import() {
-    echo "import sql from <some.file.sql>"
-    echo "<skip>"
+_exec_mysql() {
+    echo "exec mysql"
+    password_default=$(awk -F= '/^MYSQL_PASSWORD/ {print $2}' "$file_env")
+    $dco exec mysql bash -c "mysql default -u default -p$password_default"
 }
 
 _usage() {
@@ -296,6 +297,7 @@ Parameters:
     start-java
     stop-java
     nginx
+    nginx-reload
     ps
     sql
 
@@ -372,7 +374,7 @@ main() {
         $dco stop spring
         return
         ;;
-    reload)
+    nginx-reload)
         $dco exec nginx nginx -s reload
         return
         ;;
@@ -381,11 +383,14 @@ main() {
         return
         ;;
     sql)
-        _db_import
+        _exec_mysql
         return
         ;;
-    *)
+    nginx)
         args="nginx"
+        ;;
+    *)
+        _usage
         ;;
     esac
 
