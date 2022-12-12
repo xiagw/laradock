@@ -328,10 +328,8 @@ main() {
         args="php-fpm"
         ubuntu_ver=22.04
         ;;
-    php-new)
-        args="php-fpm"
-        _new_app_php
-        return
+    nginx)
+        args="nginx"
         ;;
     java)
         args="spring"
@@ -341,6 +339,11 @@ main() {
         ;;
     svn)
         args="usvn"
+        ;;
+    php-new)
+        args="php-fpm"
+        _new_app_php
+        return
         ;;
     zsh)
         _install_zsh
@@ -386,11 +389,9 @@ main() {
         _exec_mysql
         return
         ;;
-    nginx)
-        args="nginx"
-        ;;
     *)
         _usage
+        return
         ;;
     esac
 
