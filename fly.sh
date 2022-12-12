@@ -117,6 +117,7 @@ _check_dependence() {
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
     }
+    $pre_sudo chown 1000:1000 "$path_laradock/spring"
     return 0
 }
 
@@ -133,7 +134,7 @@ _check_timezone() {
     fi
 }
 
-_install_laradock() {
+_check_laradock() {
     ## clone laradock or git pull
     _msg step "git clone laradock ..."
     if [ -d "$path_laradock" ]; then
@@ -219,16 +220,6 @@ _new_app_java() {
     echo "cd $path_laradock && $dco up -d spring"
 }
 
-_docker_compose() {
-    if command -v docker-compose &>/dev/null; then
-        dco=docker-compose
-    else
-        dco="docker compose"
-    fi
-    ## install docker-compose
-    ## Overview | Docker Documentation https://docs.docker.com/compose/install/
-}
-
 _install_zsh() {
     _msg step "install oh my zsh"
     bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
@@ -284,6 +275,32 @@ _get_redis_mysql_info() {
     grep ^MYSQL_ $file_env | sed -n '2,5 p'
 }
 
+_db_import() {
+    echo "import sql from <some.file.sql>"
+    echo "<skip>"
+}
+
+_usage() {
+    echo "
+Usage: $0 [parameters ...]
+
+Parameters:
+    -h, --help               Show this help message.
+    -v, --version            Show version info.
+    php-new             create new domain for php
+    java                start spring
+    info
+    logs
+    start-php
+    stop-php
+    start-java
+    stop-java
+    nginx
+    ps
+    sql
+
+"
+}
 main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
@@ -291,6 +308,12 @@ main() {
 
     path_laradock="$HOME/docker/laradock"
     file_env="$path_laradock"/.env
+    ## Overview | Docker Documentation https://docs.docker.com/compose/install/
+    if command -v docker-compose &>/dev/null; then
+        dco=docker-compose
+    else
+        dco="docker compose"
+    fi
 
     ver_php="${1:-nginx}"
     case ${ver_php} in
@@ -302,7 +325,7 @@ main() {
         args="php-fpm"
         ubuntu_ver=22.04
         ;;
-    php)
+    php-new)
         args="php-fpm"
         _new_app_php
         return
@@ -328,24 +351,51 @@ main() {
         _get_redis_mysql_info
         return
         ;;
+    logs)
+        $dco logs -f
+        return
+        ;;
+    start-php)
+        $dco start php-fpm
+        return
+        ;;
+    stop-php)
+        $dco stop php-fpm
+        return
+        ;;
+    start-java)
+        $dco start spring
+        return
+        ;;
+    stop-java)
+        $dco stop spring
+        return
+        ;;
+    nginx)
+        $dco exec nginx nginx -s reload
+        return
+        ;;
+    ps)
+        $dco ps
+        return
+        ;;
+    sql)
+        _db_import
+        return
+        ;;
     *)
         args="nginx"
         ;;
     esac
 
-    _check_dependence
     _check_timezone
-    _install_laradock
+    _check_dependence
+    _check_laradock
     _get_image
-    _docker_compose
+
     ## startup
     _start_manual
     _start_auto
 }
 
 main "$@"
-# TODO
-# docker compose start/stop/logs/
-## 导入数据库 sql
-## 查看容器进程
-## 以及重启 nginx docker compose exec nginx nginx -s reload
