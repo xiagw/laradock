@@ -314,6 +314,7 @@ main() {
     else
         dco="docker compose"
     fi
+    [[ -d $path_laradock ]] && cd "$path_laradock" || exit 1
 
     ver_php="${1:-nginx}"
     case ${ver_php} in
@@ -372,7 +373,7 @@ main() {
         return
         ;;
     reload)
-        cd $path_laradock && $dco exec nginx nginx -s reload
+        $dco exec nginx nginx -s reload
         return
         ;;
     ps)
