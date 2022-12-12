@@ -42,6 +42,7 @@ _log() {
 _get_yes_no() {
     if [[ "$1" == timeout ]]; then
         shift
+        echo "Automatic answer N within 20 seconds ..."
         read -t 20 -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     else
         read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
