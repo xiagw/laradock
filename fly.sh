@@ -371,8 +371,8 @@ main() {
         $dco stop spring
         return
         ;;
-    nginx)
-        $dco exec nginx nginx -s reload
+    reload)
+        cd $path_laradock && $dco exec nginx nginx -s reload
         return
         ;;
     ps)
