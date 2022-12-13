@@ -198,12 +198,12 @@ _set_perm() {
 }
 
 _new_app_php() {
-    ## create dir 'app' for  php files
-    mkdir "$path_laradock/../app"
     ## create nginx app.conf
     \cp -av "$path_laradock/nginx/sites/app.conf.example" "$path_laradock/nginx/sites/app.conf"
     sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/app.conf"
     cd $path_laradock && $dco exec nginx nginx -s reload
+    ## create dir 'app' for  php files
+    mkdir "$path_laradock/../app"
     ## create test.php
     cat >"$path_laradock/../app/test.php" <<EOF
 <?php
@@ -215,9 +215,26 @@ EOF
 _new_app_java() {
     ## create nginx app.conf
     \cp -av "$path_laradock/nginx/sites/app.conf.example" "$path_laradock/nginx/sites/app.conf"
-    sed -i -e 's/127\.0\.0\.1/spring/' "$path_laradock/nginx/sites/app.conf"
+    sed -i -e 's/127\.0\.0\.1/spring/' "$path_laradock/nginx/sites/app.include"
     cd $path_laradock && $dco exec nginx nginx -s reload
-    echo "cd $path_laradock && $dco up -d spring"
+    ## create dir 'spring2'
+    mkdir "$path_laradock/spring2"
+    ## change docker-compose.override.yml
+    cat >>$path_laradock/docker-compose.override.yml <<EOF
+    spring2:
+      build:
+        context: ./spring2
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
+      restart: always
+      volumes:
+        - ./spring2:/app
+      networks:
+        - frontend
+        - backend
+EOF
+    ## start spring2
+    echo "cd $path_laradock && $dco up -d spring2"
 }
 
 _install_zsh() {
@@ -240,13 +257,7 @@ _start_manual() {
     echo '#########################################'
 }
 
-_start_auto() {
-    if _get_yes_no timeout "Do you want start laradock now? "; then
-        _msg step "start redis mysql nginx ..."
-    else
-        return 0
-    fi
-    cd $path_laradock && $dco up -d redis mysql nginx $args
+_test_nginx_php() {
     _msg time "Test nginx ..."
     until curl --connect-timeout 3 localhost; do
         sleep 1
@@ -261,12 +272,22 @@ _start_auto() {
         -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
         -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
         "$path_laradock/../public/test.php"
-    if [[ "$args" == "php-fpm" ]]; then
-        _msg time "Test PHP Redis MySQL ..."
-        sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
-        $dco exec nginx nginx -s reload
-        curl --connect-timeout 3 localhost/test.php
+    # if [[ "$args" == "php-fpm" ]]; then
+    _msg time "Test PHP Redis MySQL ..."
+    sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
+    $dco exec nginx nginx -s reload
+    curl --connect-timeout 3 localhost/test.php
+    # fi
+}
+
+_start_auto() {
+    if _get_yes_no timeout "Do you want start laradock now? "; then
+        _msg step "start redis mysql nginx ..."
+    else
+        return 0
     fi
+    cd $path_laradock && $dco up -d redis mysql nginx $args
+    _test_nginx_php
 }
 
 _get_redis_mysql_info() {
@@ -288,21 +309,13 @@ Usage: $0 [parameters ...]
 Parameters:
     -h, --help               Show this help message.
     -v, --version            Show version info.
-    php-new             create new domain for php
-    java                start spring
-    info
-    logs
-    start-php
-    stop-php
-    start-java
-    stop-java
-    nginx
-    nginx-reload
-    ps
+    info                get mysql redis info
+    php new             create new domain for php
     sql
 
 "
 }
+
 main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
@@ -320,6 +333,9 @@ main() {
 
     ver_php="${1:-nginx}"
     case ${ver_php} in
+    nginx)
+        args="nginx"
+        ;;
     5.6 | 7.1 | 7.4)
         args="php-fpm"
         ubuntu_ver=20.04
@@ -328,8 +344,10 @@ main() {
         args="php-fpm"
         ubuntu_ver=22.04
         ;;
-    nginx)
-        args="nginx"
+    phpnew)
+        args="php-fpm"
+        _new_app_php
+        return
         ;;
     java)
         args="spring"
@@ -339,11 +357,6 @@ main() {
         ;;
     svn)
         args="usvn"
-        ;;
-    php-new)
-        args="php-fpm"
-        _new_app_php
-        return
         ;;
     zsh)
         _install_zsh
@@ -357,35 +370,7 @@ main() {
         _get_redis_mysql_info
         return
         ;;
-    logs)
-        $dco logs -f
-        return
-        ;;
-    start-php)
-        $dco start php-fpm
-        return
-        ;;
-    stop-php)
-        $dco stop php-fpm
-        return
-        ;;
-    start-java)
-        $dco start spring
-        return
-        ;;
-    stop-java)
-        $dco stop spring
-        return
-        ;;
-    nginx-reload)
-        $dco exec nginx nginx -s reload
-        return
-        ;;
-    ps)
-        $dco ps
-        return
-        ;;
-    sql)
+    mysql)
         _exec_mysql
         return
         ;;
