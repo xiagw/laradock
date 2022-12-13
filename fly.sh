@@ -22,7 +22,7 @@ _msg() {
     step | timestep)
         color_on="\033[0;33m[$((${STEP:-0} + 1))] $(date +%Y%m%d-%T-%u), \033[0m"
         STEP=$((${STEP:-0} + 1))
-        color_off=' ... start'
+        color_off=' ...'
         ;;
     *)
         color_on=''
@@ -281,8 +281,9 @@ _test_nginx_php() {
 }
 
 _start_auto() {
+    _msg step "auto startup ..."
     if _get_yes_no timeout "Do you want start laradock now? "; then
-        _msg step "start redis mysql nginx ..."
+        _msg "redis mysql nginx $args"
     else
         return 0
     fi
