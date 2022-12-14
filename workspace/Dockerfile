@@ -532,7 +532,8 @@ RUN if [ ${INSTALL_GEARMAN} = true ]; then \
 ARG INSTALL_PHPREDIS=false
 
 RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
-    apt-get install -yqq php${LARADOCK_PHP_VERSION}-redis \
+    apt-get update \
+    && apt-get install -yqq php${LARADOCK_PHP_VERSION}-redis \
 ;fi
 
 ###########################################################################
@@ -550,6 +551,8 @@ RUN set -eux; \
         echo '' | pecl -q install swoole-4.3.5; \
       elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ]; then \
         echo '' | pecl -q install swoole-4.5.11; \
+      elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
+        echo '' | pecl -q install swoole-4.8.12; \
       else \
         echo '' | pecl -q install swoole; \
       fi; \
@@ -1147,7 +1150,7 @@ RUN if [ ${INSTALL_SYMFONY} = true ]; then \
   mkdir -p /usr/local/bin \
   && apt-get -y install sudo wget \
   && wget --quiet https://get.symfony.com/cli/installer -O - | bash \
-  && mv /root/.symfony/bin/symfony /usr/local/bin/symfony \
+  && mv /root/.symfony5/bin/symfony /usr/local/bin/symfony \
   && chmod a+x /usr/local/bin/symfony \
 ;fi
 
