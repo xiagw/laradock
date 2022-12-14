@@ -382,10 +382,10 @@ main() {
         _start_auto
     fi
     [[ "${exec_new_app_php:-0}" -eq 1 ]] && _new_app_php
-    [[ "${exec_install_zsh=1:-0}" -eq 1 ]] && _install_zsh
-    [[ "${exec_set_perm=1:-0}" -eq 1 ]] && _set_perm
-    [[ "${exec_get_redis_mysql_info=1:-0}" -eq 1 ]] && _get_redis_mysql_info
-    [[ "${exec_mysql_cmd=1:-0}" -eq 1 ]] && _mysql_cmd
+    [[ "${exec_install_zsh:-0}" -eq 1 ]] && _install_zsh
+    [[ "${exec_set_perm:-0}" -eq 1 ]] && _set_perm
+    [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]] && _get_redis_mysql_info
+    [[ "${exec_mysql_cmd:-0}" -eq 1 ]] && _mysql_cmd
 
 }
 
