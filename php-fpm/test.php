@@ -1,6 +1,6 @@
 <?php
 
-echo "\n</br>Test Redis ... </br>\n";
+echo "Test Redis ... </br>\n";
 $redis = new Redis();
 $response = 'default value';
 // redis host port
@@ -9,9 +9,9 @@ $redis->connect('redis',6379);
 $redis->auth('ENV_REDIS_PASSWORD');
 $redis->set('foo', rand(1,1000000));
 $response = $redis->get('foo');
-echo " Key foo: $response" ;
+echo "Key foo: $response </br>\n";
 
-echo "\n</br>Test MySQL ... </br>\n";
+echo "Test MySQL ... </br>\n";
 // mysql user
 $username = "ENV_MYSQL_USER";
 // mysql password
@@ -33,10 +33,10 @@ foreach ($arr_dns as $dns) {
     //initiate the connection to the server, using both previously specified timeouts
     // $connection = mysqli_connect($dns,$username,$passwd);
     if(mysqli_real_connect($connection,$dns,$username,$passwd)){
-        echo "\n</br> connect $dns: OK. </br>\n";
+        echo "Connect $dns: OK. </br>\n";
     }else{
         // die("connection Failed:" . mysqli_connect_errno());
-        echo "\n</br> connect $dns: Failed </br>\n";
+        echo "Connect $dns: Failed </br>\n";
     }
     mysqli_close($connection);
 }

@@ -2,9 +2,9 @@ server {
     listen 80;
     listen [::]:80;
 
-    include app.include.ssl;
-
-    server_name app.test;
+    include conf.d/app.include.ssl;
+    ## !!! change me !!!
+    server_name app.example.com;
 
     root /var/www/app;
     index index.php index.html index.htm;

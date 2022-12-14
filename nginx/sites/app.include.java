@@ -1,3 +1,4 @@
+## !!! change me !!!
 location /spring {
     proxy_pass http://spring:8080;
 }
