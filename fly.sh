@@ -284,13 +284,12 @@ _test_nginx_php() {
 }
 
 _start_auto() {
-    _msg step "auto startup "
-    if _get_yes_no timeout "Do you want start laradock now? "; then
-        _msg "redis mysql nginx $args"
-    else
-        return 0
+    if ss -lntu4 | grep -E ':80|:443'; then
+        _msg red "ERR: port already start"
+        _msg "Please fix $file_env, manual start docker."
     fi
-    cd $path_laradock && $dco up -d redis mysql nginx $args
+    _msg step "auto startup"
+    cd $path_laradock && $dco up -d redis mysql ${args:-php-fpm spring} nginx
     _test_nginx_php
 }
 
