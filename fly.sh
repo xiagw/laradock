@@ -169,6 +169,14 @@ _check_laradock() {
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env" || return 0
 }
 
+_update_php_ver() {
+    sed -i \
+        -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" \
+        -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
+        -e "/CHANGE_SOURCE=/s/false/true/" \
+        "$file_env"
+}
+
 _get_image() {
     [[ "$args" == "php-fpm" ]] || return 0
     _msg step "download docker image of php-fpm"
@@ -328,11 +336,13 @@ main() {
         args="php-fpm"
         ver_php="${1}"
         ubuntu_ver=20.04
+        exec_update_php_ver=1
         ;;
     8.1 | 8.2)
         args="php-fpm"
         ver_php="${1}"
         ubuntu_ver=22.04
+        exec_update_php_ver=1
         ;;
     phpnew)
         args="php-fpm"
@@ -340,6 +350,7 @@ main() {
         ;;
     java)
         args="spring"
+        exec_set_perm=1
         ;;
     gitlab)
         args="gitlab"
@@ -387,6 +398,7 @@ main() {
     [[ "${exec_set_perm:-0}" -eq 1 ]] && _set_perm
     [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]] && _get_redis_mysql_info
     [[ "${exec_mysql_cmd:-0}" -eq 1 ]] && _mysql_cmd
+    [[ "${exec_update_php_ver:-0}" -eq 1 ]] && _update_php_ver
 }
 
 main "$@"
