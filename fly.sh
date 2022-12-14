@@ -17,12 +17,12 @@ _msg() {
         ;;
     stepend)
         color_on="[+] $(date +%Y%m%d-%T-%u), "
-        color_off=' ... end'
+        color_off=' ... '
         ;;
     step | timestep)
         color_on="\033[0;33m[$((${STEP:-0} + 1))] $(date +%Y%m%d-%T-%u), \033[0m"
         STEP=$((${STEP:-0} + 1))
-        color_off=' ...'
+        color_off=' ... '
         ;;
     *)
         color_on=''
@@ -42,7 +42,7 @@ _log() {
 _get_yes_no() {
     if [[ "$1" == timeout ]]; then
         shift
-        echo "Automatic answer N within 20 seconds ..."
+        echo "Automatic answer 'N' within 20 seconds"
         read -t 20 -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     else
         read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
@@ -59,7 +59,7 @@ _check_sudo() {
     # determine whether the user has permission to execute this script
     current_user=$(whoami)
     if [ "$current_user" != "root" ]; then
-        _msg time "Not root, check sudo..."
+        _msg time "Not root, check sudo"
         has_root_permission=$(sudo -l -U "$current_user" | grep "ALL")
         if [ -n "$has_root_permission" ]; then
             _msg time "User $current_user has sudo permission."
@@ -83,7 +83,7 @@ _check_sudo() {
 }
 
 _check_dependence() {
-    _msg step "check command: git/curl/docker..."
+    _msg step "check command: git/curl/docker"
     command -v git && echo ok || install_git=1
     command -v curl && echo ok || install_curl=1
     command -v docker && echo ok || install_docker=1
@@ -91,16 +91,16 @@ _check_dependence() {
         _check_sudo
     fi
     [[ $install_curl ]] && {
-        _msg step "install curl..."
+        _msg step "install curl"
         $cmd install -y curl
     }
     [[ $install_git ]] && {
-        _msg step "install git..."
+        _msg step "install git"
         $cmd install -y git zsh
     }
     ## install docker/compose
     [[ $install_docker ]] && {
-        _msg step "install docker..."
+        _msg step "install docker"
         if grep -q '^ID=.alinux' /etc/os-release; then
             sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
             update_os_release=1
@@ -123,7 +123,7 @@ _check_dependence() {
 
 _check_timezone() {
     ## change UTC to CST
-    _msg step "check timezone ..."
+    _msg step "check timezone "
     if timedatectl | grep -q 'Asia/Shanghai'; then
         _msg time "Timezone is already set to Asia/Shanghai."
     else
@@ -136,7 +136,7 @@ _check_timezone() {
 
 _check_laradock() {
     ## clone laradock or git pull
-    _msg step "git clone laradock ..."
+    _msg step "git clone laradock "
     if [ -d "$path_laradock" ]; then
         _msg time "$path_laradock exist, git pull."
         (cd "$path_laradock" && git pull)
@@ -146,7 +146,7 @@ _check_laradock() {
         git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_laradock"
     fi
     ## copy .env.example to .env
-    _msg step "set laradock .env ..."
+    _msg step "set laradock .env "
     if [ ! -f "$file_env" ]; then
         _msg time "copy .env.example to .env, and set password"
         cp -vf "$file_env".example "$file_env"
@@ -176,7 +176,7 @@ _check_laradock() {
 
 _get_image() {
     [[ "$args" == "php-fpm" ]] || return 0
-    _msg step "download docker image of php-fpm..."
+    _msg step "download docker image of php-fpm"
     if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
         cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
     fi
@@ -247,7 +247,7 @@ _install_zsh() {
 }
 
 _start_manual() {
-    _msg step "manual startup ..."
+    _msg step "manual startup "
     echo '#########################################'
     if command -v docker-compose &>/dev/null; then
         _msg info "\n  cd $path_laradock && $dco up -d $args \n"
@@ -258,7 +258,7 @@ _start_manual() {
 }
 
 _test_nginx_php() {
-    _msg time "Test nginx ..."
+    _msg time "Test nginx "
     until curl --connect-timeout 3 localhost; do
         sleep 1
         c=$((${c:-0} + 1))
@@ -273,7 +273,7 @@ _test_nginx_php() {
         -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
         "$path_laradock/../public/test.php"
     # if [[ "$args" == "php-fpm" ]]; then
-    _msg time "Test PHP Redis MySQL ..."
+    _msg time "Test PHP Redis MySQL "
     sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
     $dco exec nginx nginx -s reload
     curl --connect-timeout 3 localhost/test.php
@@ -281,7 +281,7 @@ _test_nginx_php() {
 }
 
 _start_auto() {
-    _msg step "auto startup ..."
+    _msg step "auto startup "
     if _get_yes_no timeout "Do you want start laradock now? "; then
         _msg "redis mysql nginx $args"
     else

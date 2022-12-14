@@ -1,0 +1,5 @@
+# For https
+listen 443 ssl;
+listen [::]:443 ssl ipv6only=on;
+ssl_certificate conf.d/ssl/default.crt;
+ssl_certificate_key conf.d/ssl/default.key;

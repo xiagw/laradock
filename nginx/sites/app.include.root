@@ -1,0 +1,15 @@
+#最完美解决Nginx部署ThinkPHP项目的办法_大哥在北漂的博客-CSDN博客_nginx thinkphp
+#https://blog.csdn.net/u014796929/article/details/123396330
+
+location / {
+    ## For VUE, static files
+    # try_files $uri $uri/ /index.html$request_uri;
+
+    ## For PHP
+    try_files $uri $uri/ /index.php/$request_uri;
+    #if (!-e $request_filename) {
+        #rewrite ^/(.*)$ /index.php/$1 last;
+        #break;
+    #}
+    # try_files $uri $uri/ /index.php$is_args$args;
+}

@@ -1,66 +1,18 @@
 server {
-
     listen 80;
     listen [::]:80;
 
-    # For https
-    # listen 443 ssl;
-    # listen [::]:443 ssl ipv6only=on;
-    # ssl_certificate /etc/nginx/ssl/default.crt;
-    # ssl_certificate_key /etc/nginx/ssl/default.key;
+    include app.include.ssl;
 
     server_name app.test;
+
     root /var/www/app;
     index index.php index.html index.htm;
+    error_log /var/log/nginx/app.error.log;
+    access_log /var/log/nginx/app.access.log;
 
-#最完美解决Nginx部署ThinkPHP项目的办法_大哥在北漂的博客-CSDN博客_nginx thinkphp
-#https://blog.csdn.net/u014796929/article/details/123396330
-
-   location / {
-        #try_files $uri $uri/ /index.php$is_args$args;
-        try_files $uri $uri/ /index.php/$request_uri;
-        #if (!-e $request_filename) {
-            #rewrite ^/(.*)$ /index.php/$1 last;
-            #break;
-        #}
-    }
-    include conf.d/app.include;
-
-    location ~ \.php(.*)$ {
-        #fastcgi_pass  unix:/var/run/php-fpm.sock;
-        # try_files $uri $uri/ /index.php =404;
-        fastcgi_pass php-fpm:9000;
-        fastcgi_index index.php;
-        fastcgi_buffers 16 16k;
-        fastcgi_buffer_size 32k;
-        fastcgi_split_path_info ^((?U).+\.php)(/?.+)$;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
-        fastcgi_param APP_ENV product;
-        include fastcgi_params;
-    }
-
-    location = /favicon.ico {
-        access_log off;
-        log_not_found off;
-    }
-    location ~ /.*favicon.ico {
-        access_log off;
-        log_not_found off;
-    }
-    location = /robots.txt {
-        access_log off;
-        log_not_found off;
-    }
-    location ~ /\.(htaccess|htpasswd|env) {
-        deny all;
-    }
-    location /.well-known/acme-challenge/ {
-        root /var/www/letsencrypt/;
-        log_not_found off;
-    }
-
-    error_log /var/log/nginx/app_error.log;
-    access_log /var/log/nginx/app_access.log;
+    include conf.d/app.include.root;
+    include conf.d/app.include.java;
+    include conf.d/app.include.php;
+    include conf.d/default.include;
 }

@@ -1,0 +1,19 @@
+location = /favicon.ico {
+    access_log off;
+    log_not_found off;
+}
+location ~ /.*favicon.ico {
+    access_log off;
+    log_not_found off;
+}
+location = /robots.txt {
+    access_log off;
+    log_not_found off;
+}
+location ~ /\.(htaccess|htpasswd|env) {
+    deny all;
+}
+location /.well-known/acme-challenge/ {
+    root /var/www/letsencrypt/;
+    log_not_found off;
+}

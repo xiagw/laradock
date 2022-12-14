@@ -481,3 +481,15 @@ services:
       networks:
         - frontend
         - backend
+
+    # spring1:
+    #   build:
+    #     context: ./spring1
+    #     args:
+    #       - CHANGE_SOURCE=${CHANGE_SOURCE}
+    #   restart: always
+    #   volumes:
+    #     - ./spring1:/app
+    #   networks:
+    #     - frontend
+    #     - backend
