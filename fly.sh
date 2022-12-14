@@ -154,7 +154,7 @@ _check_laradock() {
             -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
             -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
             -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
-            -e "/PHP_VERSION=/s/=.*/=${ver_php}/" \
+            -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" \
             -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
             -e "/CHANGE_SOURCE=/s/false/true/" \
             "$file_env"
@@ -175,9 +175,9 @@ _get_image() {
     if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
         cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
     fi
-    sed -i -e "/PHP_VERSION=/s/=.*/=$ver_php/" "$file_env"
+    sed -i -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" "$file_env"
     ref_url=http://www.flyh6.com/
-    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php}.tar.gz"
+    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php:-7.1}.tar.gz"
     file_save=/tmp/laradock-php-fpm.tar.gz
     ## download php image
     curl --referer $ref_url -C - -Lo $file_save "$file_url"
@@ -320,17 +320,18 @@ main() {
     path_laradock="$HOME/docker/laradock"
     file_env="$path_laradock"/.env
 
-    ver_php="${1:-nginx}"
-    case ${ver_php} in
+    case "${1:-nginx}" in
     nginx)
         args="nginx"
         ;;
     5.6 | 7.1 | 7.4)
         args="php-fpm"
+        ver_php="${1}"
         ubuntu_ver=20.04
         ;;
     8.1 | 8.2)
         args="php-fpm"
+        ver_php="${1}"
         ubuntu_ver=22.04
         ;;
     phpnew)
@@ -386,7 +387,6 @@ main() {
     [[ "${exec_set_perm:-0}" -eq 1 ]] && _set_perm
     [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]] && _get_redis_mysql_info
     [[ "${exec_mysql_cmd:-0}" -eq 1 ]] && _mysql_cmd
-
 }
 
 main "$@"
