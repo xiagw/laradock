@@ -137,14 +137,9 @@ _check_timezone() {
 _check_laradock() {
     ## clone laradock or git pull
     _msg step "git clone laradock "
-    if [ -d "$path_laradock" ]; then
-        _msg time "$path_laradock exist, git pull."
-        (cd "$path_laradock" && git pull)
-    else
-        _msg time "install laradock to $path_laradock."
-        mkdir -p "$path_laradock"
-        git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_laradock"
-    fi
+    _msg time "install laradock to $path_laradock."
+    mkdir -p "$path_laradock"
+    git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_laradock"
     ## copy .env.example to .env
     _msg step "set laradock .env "
     if [ ! -f "$file_env" ]; then
@@ -297,7 +292,7 @@ _get_redis_mysql_info() {
     grep ^MYSQL_ $file_env | sed -n '2,5 p'
 }
 
-_exec_mysql() {
+_mysql_cmd() {
     echo "exec mysql"
     password_default=$(awk -F= '/^MYSQL_PASSWORD/ {print $2}' "$file_env")
     $dco exec mysql bash -c "mysql default -u default -p$password_default"
@@ -324,13 +319,6 @@ main() {
 
     path_laradock="$HOME/docker/laradock"
     file_env="$path_laradock"/.env
-    ## Overview | Docker Documentation https://docs.docker.com/compose/install/
-    if command -v docker-compose &>/dev/null; then
-        dco=docker-compose
-    else
-        dco="docker compose"
-    fi
-    [[ -d $path_laradock ]] && cd "$path_laradock" || exit 1
 
     ver_php="${1:-nginx}"
     case ${ver_php} in
@@ -347,8 +335,7 @@ main() {
         ;;
     phpnew)
         args="php-fpm"
-        _new_app_php
-        return
+        exec_new_app_php=1
         ;;
     java)
         args="spring"
@@ -360,20 +347,16 @@ main() {
         args="usvn"
         ;;
     zsh)
-        _install_zsh
-        return 0
+        exec_install_zsh=1
         ;;
     perm)
-        _set_perm
-        return
+        exec_set_perm=1
         ;;
     info)
-        _get_redis_mysql_info
-        return
+        exec_get_redis_mysql_info=1
         ;;
     mysql)
-        _exec_mysql
-        return
+        exec_mysql_cmd=1
         ;;
     *)
         _usage
@@ -381,14 +364,29 @@ main() {
         ;;
     esac
 
-    _check_timezone
-    _check_dependence
-    _check_laradock
-    _get_image
+    ## Overview | Docker Documentation https://docs.docker.com/compose/install/
+    if command -v docker-compose &>/dev/null; then
+        dco=docker-compose
+    else
+        dco="docker compose"
+    fi
+    if [ -d "$path_laradock" ]; then
+        _msg time "$path_laradock exist, git pull."
+        (cd "$path_laradock" && git pull)
+    else
+        _check_timezone
+        _check_dependence
+        _check_laradock
+        _get_image
+        _start_manual
+        _start_auto
+    fi
+    [[ "${exec_new_app_php:-0}" -eq 1 ]] && _new_app_php
+    [[ "${exec_install_zsh=1:-0}" -eq 1 ]] && _install_zsh
+    [[ "${exec_set_perm=1:-0}" -eq 1 ]] && _set_perm
+    [[ "${exec_get_redis_mysql_info=1:-0}" -eq 1 ]] && _get_redis_mysql_info
+    [[ "${exec_mysql_cmd=1:-0}" -eq 1 ]] && _mysql_cmd
 
-    ## startup
-    _start_manual
-    _start_auto
 }
 
 main "$@"
