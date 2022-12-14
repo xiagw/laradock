@@ -117,7 +117,6 @@ _check_dependence() {
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
     }
-    $pre_sudo chown 1000:1000 "$path_laradock/spring"
     return 0
 }
 
@@ -140,6 +139,7 @@ _check_laradock() {
     _msg time "install laradock to $path_laradock."
     mkdir -p "$path_laradock"
     git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_laradock"
+    $pre_sudo chown 1000:1000 "$path_laradock/spring"
     ## copy .env.example to .env
     _msg step "set laradock .env "
     if [ ! -f "$file_env" ]; then
