@@ -180,9 +180,9 @@ _update_php_ver() {
 _get_image() {
     [[ "$args" == "php-fpm" ]] || return 0
     _msg step "download docker image of php-fpm"
-    if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
-        cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
-    fi
+    # if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
+    #     cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
+    # fi
     sed -i -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" "$file_env"
     ref_url=http://www.flyh6.com/
     file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php:-7.1}.tar.gz"
@@ -279,7 +279,11 @@ _test_nginx_php() {
     _msg time "Test PHP Redis MySQL "
     sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
     $dco exec nginx nginx -s reload
-    curl --connect-timeout 3 localhost/test.php
+    until curl --connect-timeout 3 localhosttest.php; do
+        sleep 1
+        c=$((${c:-0} + 1))
+        [[ $c -gt 60 ]] && break
+    done
     # fi
 }
 
