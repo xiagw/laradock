@@ -251,13 +251,9 @@ _install_zsh() {
 
 _start_manual() {
     _msg step "manual startup "
-    echo '#########################################'
-    if command -v docker-compose &>/dev/null; then
-        _msg info "\n  cd $path_laradock && $dco up -d $args \n"
-    else
-        _msg info "\n  cd $path_laradock && $dco up -d $args \n"
-    fi
-    echo '#########################################'
+    _msg info '#########################################'
+    _msg info "\n  cd $path_laradock && $dco up -d $args \n"
+    _msg info '#########################################'
 }
 
 _test_nginx_php() {
@@ -293,8 +289,7 @@ _start_auto() {
         _msg "Please fix $file_env, manual start docker."
     fi
     _msg step "auto startup"
-    cd $path_laradock && $dco up -d redis mysql ${args:-php-fpm spring} nginx
-    _test_nginx_php
+    cd $path_laradock && $dco up -d nginx redis mysql ${args:-php-fpm spring}
 }
 
 _get_redis_mysql_info() {
@@ -387,7 +382,7 @@ main() {
     fi
     if [ -d "$path_laradock" ]; then
         _msg time "$path_laradock exist, git pull."
-        (cd "$path_laradock" && git pull)
+        cd "$path_laradock" && git pull
     else
         _check_timezone
         _check_dependence
@@ -395,6 +390,7 @@ main() {
         _get_image
         _start_manual
         _start_auto
+        _test_nginx_php
     fi
     [[ "${exec_new_app_php:-0}" -eq 1 ]] && _new_app_php
     [[ "${exec_install_zsh:-0}" -eq 1 ]] && _install_zsh

@@ -8,8 +8,8 @@ server {
 
     root /var/www/app;
     index index.php index.html index.htm;
-    error_log /var/log/nginx/app.error.log;
-    access_log /var/log/nginx/app.access.log;
+    error_log /var/log/nginx/app.example.com.error.log;
+    access_log /var/log/nginx/app.example.com.access.log;
 
     include conf.d/app.include.root;
     include conf.d/app.include.java;

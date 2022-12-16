@@ -14,7 +14,7 @@ RUN if [ ${CHANGE_SOURCE} = true ]; then \
 
 RUN apk update \
     && apk upgrade \
-    && apk --update add logrotate \
+    && apk --update add --no-cache logrotate \
     && apk add --no-cache openssl \
     && apk add --no-cache bash
 
@@ -37,7 +37,7 @@ COPY logrotate/nginx /etc/logrotate.d/
 RUN echo "upstream php-upstream { server ${PHP_UPSTREAM_CONTAINER}:${PHP_UPSTREAM_PORT}; }" > /etc/nginx/php-upstream.conf \
     && rm /etc/nginx/conf.d/default.conf
 
-ADD ./startup.sh /opt/startup.sh
+COPY ./startup.sh /opt/startup.sh
 RUN sed -i 's/\r//g' /opt/startup.sh
 CMD ["/bin/bash", "/opt/startup.sh"]
 
