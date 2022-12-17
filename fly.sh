@@ -133,10 +133,31 @@ _check_timezone() {
     fi
 }
 
+_get_image() {
+    [[ "$args" == php-fpm* ]] || return 0
+    _msg step "download docker image of php-fpm"
+    # if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
+    #     cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
+    # fi
+    sed -i -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" "$file_env"
+    ref_url=http://www.flyh6.com/
+    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php:-7.1}.tar.gz"
+    file_save=/tmp/laradock-php-fpm.tar.gz
+    ## download php image
+    curl --referer $ref_url -Lo $file_save "$file_url"
+    docker load <$file_save
+    docker tag laradock_php-fpm laradock-php-fpm
+    docker rmi laradock_php-fpm
+}
+
 _check_laradock() {
+    if [ -d "$path_laradock" ]; then
+        _msg time "$path_laradock exist, git pull."
+        (cd "$path_laradock" && git pull)
+        return 0
+    fi
     ## clone laradock or git pull
-    _msg step "git clone laradock "
-    _msg time "install laradock to $path_laradock."
+    _msg step "install laradock to $path_laradock."
     mkdir -p "$path_laradock"
     git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_laradock"
     $pre_sudo chown 1000:1000 "$path_laradock/spring"
@@ -167,6 +188,7 @@ _check_laradock() {
         "$file_env"
     ## set SHELL_OH_MY_ZSH=true
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env" || return 0
+    _get_image
 }
 
 _update_php_ver() {
@@ -175,23 +197,6 @@ _update_php_ver() {
         -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/true/" \
         "$file_env"
-}
-
-_get_image() {
-    [[ "$args" == "php-fpm" ]] || return 0
-    _msg step "download docker image of php-fpm"
-    # if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
-    #     cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
-    # fi
-    sed -i -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" "$file_env"
-    ref_url=http://www.flyh6.com/
-    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php:-7.1}.tar.gz"
-    file_save=/tmp/laradock-php-fpm.tar.gz
-    ## download php image
-    curl --referer $ref_url -C - -Lo $file_save "$file_url"
-    docker load <$file_save
-    docker tag laradock_php-fpm laradock-php-fpm
-    docker rmi laradock_php-fpm
 }
 
 _set_perm() {
@@ -252,7 +257,7 @@ _install_zsh() {
 _start_manual() {
     _msg step "manual startup "
     _msg info '#########################################'
-    _msg info "\n  cd $path_laradock && $dco up -d $args \n"
+    _msg info "\n cd $path_laradock && $dco up -d nginx redis mysql $args \n"
     _msg info '#########################################'
 }
 
@@ -284,7 +289,7 @@ _test_nginx_php() {
 }
 
 _start_auto() {
-    if ss -lntu4 | grep -E ':80|:443'; then
+    if ss -lntu4 | grep -E ':80|:443|:6379|:3306'; then
         _msg red "ERR: port already start"
         _msg "Please fix $file_env, manual start docker."
     fi
@@ -309,12 +314,13 @@ _usage() {
 Usage: $0 [parameters ...]
 
 Parameters:
-    -h, --help               Show this help message.
-    -v, --version            Show version info.
+    -h, --help          Show this help message.
+    -v, --version       Show version info.
     info                get mysql redis info
-    php new             create new domain for php
-    sql
-
+    7.1                 php-fpm 7.1
+    phpnew              create new domain for php
+    java                start spring
+    mysql               exec into mysql
 "
 }
 
@@ -326,9 +332,9 @@ main() {
     path_laradock="$HOME/docker/laradock"
     file_env="$path_laradock"/.env
 
-    case "${1:-nginx}" in
-    nginx)
-        args="nginx"
+    case "${1:-all}" in
+    all)
+        args="php-fpm spring"
         ;;
     5.6 | 7.1 | 7.4)
         args="php-fpm"
@@ -358,15 +364,19 @@ main() {
         ;;
     zsh)
         exec_install_zsh=1
+        disable_check=1
         ;;
     perm)
         exec_set_perm=1
+        disable_check=1
         ;;
     info)
         exec_get_redis_mysql_info=1
+        disable_check=1
         ;;
     mysql)
         exec_mysql_cmd=1
+        disable_check=1
         ;;
     *)
         _usage
@@ -380,18 +390,15 @@ main() {
     else
         dco="docker compose"
     fi
-    if [ -d "$path_laradock" ]; then
-        _msg time "$path_laradock exist, git pull."
-        cd "$path_laradock" && git pull
-    else
+    if [[ "${disable_check:-0}" -ne 1 ]]; then
         _check_timezone
         _check_dependence
         _check_laradock
-        _get_image
         _start_manual
         _start_auto
         _test_nginx_php
     fi
+
     [[ "${exec_new_app_php:-0}" -eq 1 ]] && _new_app_php
     [[ "${exec_install_zsh:-0}" -eq 1 ]] && _install_zsh
     [[ "${exec_set_perm:-0}" -eq 1 ]] && _set_perm
