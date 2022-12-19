@@ -292,6 +292,7 @@ _start_auto() {
     if ss -lntu4 | grep -E ':80|:443|:6379|:3306'; then
         _msg red "ERR: port already start"
         _msg "Please fix $file_env, manual start docker."
+        exit 1
     fi
     _msg step "auto startup"
     cd $path_laradock && $dco up -d nginx redis mysql ${args:-php-fpm spring}
