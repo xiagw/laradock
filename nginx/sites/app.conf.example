@@ -2,8 +2,15 @@ server {
     listen 80;
     listen [::]:80;
 
-    include conf.d/app.include.ssl;
-    ## !!! change me !!!
+    # For https
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    ssl_certificate conf.d/ssl/default.crt;
+    ssl_certificate_key conf.d/ssl/default.key;
+    # ssl_certificate conf.d/ssl/example.com.crt;
+    # ssl_certificate_key conf.d/ssl/example.com.key;
+
+    ##
     server_name app.example.com;
 
     root /var/www/app;
@@ -11,8 +18,43 @@ server {
     error_log /var/log/nginx/app.example.com.error.log;
     access_log /var/log/nginx/app.example.com.access.log;
 
-    include conf.d/app.include.root;
-    include conf.d/app.include.java;
-    include conf.d/app.include.php;
+    location / {
+        ## For VUE, static files
+        # try_files $uri $uri/ /index.html$request_uri;
+
+        ## For PHP
+        try_files $uri $uri/ /index.php/$request_uri;
+        #if (!-e $request_filename) {
+        #rewrite ^/(.*)$ /index.php/$1 last;
+        #break;
+        #}
+        # try_files $uri $uri/ /index.php$is_args$args;
+    }
+    location /spring {
+        proxy_pass http://spring:8080;
+    }
+    location /spring-ui {
+        proxy_pass http://spring:8081;
+    }
+    # location /spring1 {
+    #     proxy_pass http://spring1:8080;
+    # }
+    # location /spring1-ui {
+    #     proxy_pass http://spring1:8081;
+    # }
+    location ~ \.php(.*)$ {
+        #fastcgi_pass  unix:/var/run/php-fpm.sock;
+        # try_files $uri $uri/ /index.php =404;
+        fastcgi_pass php-fpm:9000;
+        fastcgi_index index.php;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+        fastcgi_split_path_info ^((?U).+\.php)(/?.+)$;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
+        fastcgi_param APP_ENV product;
+        include fastcgi_params;
+    }
     include conf.d/default.include;
 }
