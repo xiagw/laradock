@@ -55,11 +55,9 @@ _get_yes_no() {
 }
 
 _check_sudo() {
-    _msg step "check sudo."
-    # determine whether the user has permission to execute this script
     current_user=$(whoami)
     if [ "$current_user" != "root" ]; then
-        _msg time "Not root, check sudo"
+        _msg step "Not root, check sudo"
         has_root_permission=$(sudo -l -U "$current_user" | grep "ALL")
         if [ -n "$has_root_permission" ]; then
             _msg time "User $current_user has sudo permission."
@@ -101,7 +99,7 @@ _check_dependence() {
     ## install docker/compose
     [[ $install_docker ]] && {
         _msg step "install docker"
-        if grep -q '^ID=.alinux' /etc/os-release; then
+        if grep -q '^ID=alinux' /etc/os-release; then
             sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
             update_os_release=1
         fi
@@ -280,7 +278,7 @@ _test_nginx_php() {
     _msg time "Test PHP Redis MySQL "
     sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
     $dco exec nginx nginx -s reload
-    until curl --connect-timeout 3 localhosttest.php; do
+    until curl --connect-timeout 3 localhost/test.php; do
         sleep 1
         c=$((${c:-0} + 1))
         [[ $c -gt 60 ]] && break
@@ -292,7 +290,7 @@ _start_auto() {
     if ss -lntu4 | grep -E ':80|:443|:6379|:3306'; then
         _msg red "ERR: port already start"
         _msg "Please fix $file_env, manual start docker."
-        exit 1
+        return 1
     fi
     _msg step "auto startup"
     cd $path_laradock && $dco up -d nginx redis mysql ${args:-php-fpm spring}
@@ -365,19 +363,19 @@ main() {
         ;;
     zsh)
         exec_install_zsh=1
-        disable_check=1
+        enable_check=0
         ;;
     perm)
         exec_set_perm=1
-        disable_check=1
+        enable_check=0
         ;;
     info)
         exec_get_redis_mysql_info=1
-        disable_check=1
+        enable_check=0
         ;;
     mysql)
         exec_mysql_cmd=1
-        disable_check=1
+        enable_check=0
         ;;
     *)
         _usage
@@ -387,17 +385,16 @@ main() {
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
     if command -v docker-compose &>/dev/null; then
-        dco=docker-compose
+        dco="docker-compose"
     else
         dco="docker compose"
     fi
-    if [[ "${disable_check:-0}" -ne 1 ]]; then
+    if [[ "${enable_check:-1}" -eq 1 ]]; then
         _check_timezone
         _check_dependence
         _check_laradock
         _start_manual
-        _start_auto
-        _test_nginx_php
+        _start_auto && _test_nginx_php
     fi
 
     [[ "${exec_new_app_php:-0}" -eq 1 ]] && _new_app_php
