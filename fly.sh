@@ -96,6 +96,7 @@ _check_dependence() {
         _msg step "install git"
         $cmd install -y git zsh
     }
+    command -v strings || $cmd install -y binutils
     ## install docker/compose
     [[ $install_docker ]] && {
         _msg step "install docker"
@@ -103,7 +104,7 @@ _check_dependence() {
             sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
             update_os_release=1
         fi
-        curl -fsSL https://get.docker.com | $pre_sudo bash
+        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
         if [ "$current_user" != "root" ]; then
             _msg time "Add user $USER to group docker."
             $pre_sudo usermod -aG docker "$USER"
