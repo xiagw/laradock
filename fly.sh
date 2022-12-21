@@ -133,7 +133,7 @@ _check_timezone() {
 }
 
 _get_image() {
-    [[ "$args" == php-fpm* ]] || return 0
+    docker images | grep laradock-php-fpm && return 0
     _msg step "download docker image of php-fpm"
     # if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
     #     cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
@@ -187,7 +187,6 @@ _check_laradock() {
         "$file_env"
     ## set SHELL_OH_MY_ZSH=true
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env" || return 0
-    _get_image
 }
 
 _update_php_ver() {
@@ -394,6 +393,7 @@ main() {
         _check_timezone
         _check_dependence
         _check_laradock
+        _get_image
         _start_manual
         _start_auto && _test_nginx_php
     fi
