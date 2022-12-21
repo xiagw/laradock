@@ -266,6 +266,11 @@ _test_nginx_php() {
         c=$((${c:-0} + 1))
         [[ $c -gt 30 ]] && break
     done
+    if [[ "$args" =~ php-fpm ]]; then
+        :
+    else
+        return 0
+    fi
     ## create test.php
     \cp -avf "$path_laradock/php-fpm/test.php" "$path_laradock/../public/test.php"
     source $file_env
@@ -274,18 +279,16 @@ _test_nginx_php() {
         -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
         -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
         "$path_laradock/../public/test.php"
-    # if [[ "$args" == "php-fpm" ]]; then
     _msg time "Test PHP Redis MySQL "
     sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
     $dco exec nginx nginx -s reload
-    while [[ "${get_status:-200}" -gt 200 ]]; do
+    while [[ "${get_status:-502}" -gt 200 ]]; do
         curl --connect-timeout 3 localhost/test.php
         get_status="$(curl -Lo /dev/null -fsSL -w "%{http_code}" localhost/test.php)"
         sleep 2
         c=$((${c:-0} + 1))
         [[ $c -gt 30 ]] && break
     done
-    # fi
 }
 
 _start_auto() {
