@@ -262,9 +262,9 @@ _start_manual() {
 _test_nginx_php() {
     _msg time "Test nginx "
     until curl --connect-timeout 3 localhost; do
-        sleep 1
+        sleep 2
         c=$((${c:-0} + 1))
-        [[ $c -gt 60 ]] && break
+        [[ $c -gt 30 ]] && break
     done
     ## create test.php
     \cp -avf "$path_laradock/php-fpm/test.php" "$path_laradock/../public/test.php"
@@ -278,10 +278,12 @@ _test_nginx_php() {
     _msg time "Test PHP Redis MySQL "
     sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
     $dco exec nginx nginx -s reload
-    until curl --connect-timeout 3 localhost/test.php; do
-        sleep 1
+    while [[ "${get_status:-200}" -gt 200 ]]; do
+        curl --connect-timeout 3 localhost/test.php
+        get_status="$(curl -Lo /dev/null -fsSL -w "%{http_code}" localhost/test.php)"
+        sleep 2
         c=$((${c:-0} + 1))
-        [[ $c -gt 60 ]] && break
+        [[ $c -gt 30 ]] && break
     done
     # fi
 }
