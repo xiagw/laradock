@@ -96,7 +96,6 @@ _check_dependence() {
         _msg step "install git"
         $cmd install -y git zsh
     }
-    command -v strings || $cmd install -y binutils
     ## install docker/compose
     [[ $install_docker ]] && {
         _msg step "install docker"
@@ -116,6 +115,7 @@ _check_dependence() {
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
     }
+    command -v strings || $cmd install -y binutils
     return 0
 }
 
