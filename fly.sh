@@ -132,23 +132,6 @@ _check_timezone() {
     fi
 }
 
-_get_image() {
-    docker images | grep laradock-php-fpm && return 0
-    _msg step "download docker image of php-fpm"
-    # if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
-    #     cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
-    # fi
-    sed -i -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" "$file_env"
-    ref_url=http://www.flyh6.com/
-    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php:-7.1}.tar.gz"
-    file_save=/tmp/laradock-php-fpm.tar.gz
-    ## download php image
-    curl --referer $ref_url -Lo $file_save "$file_url"
-    docker load <$file_save
-    docker tag laradock_php-fpm laradock-php-fpm
-    docker rmi laradock_php-fpm
-}
-
 _check_laradock() {
     if [ -d "$path_laradock" ]; then
         _msg time "$path_laradock exist, git pull."
@@ -189,6 +172,23 @@ _check_laradock() {
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env" || return 0
 }
 
+_get_php_image() {
+    docker images | grep laradock-php-fpm && return 0
+    _msg step "download docker image of php-fpm"
+    # if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
+    #     cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
+    # fi
+    sed -i -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" "$file_env"
+    ref_url=http://www.flyh6.com/
+    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php:-7.1}.tar.gz"
+    file_save=/tmp/laradock-php-fpm.tar.gz
+    ## download php image
+    curl --referer $ref_url -Lo $file_save "$file_url"
+    docker load <$file_save
+    docker tag laradock_php-fpm laradock-php-fpm
+    docker rmi laradock_php-fpm
+}
+
 _update_php_ver() {
     sed -i \
         -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" \
@@ -198,8 +198,9 @@ _update_php_ver() {
 }
 
 _set_perm() {
-    find "$path_laradock/../app" -type d -exec chmod 755 {} \;
-    find "$path_laradock/../app" -type f -exec chmod 644 {} \;
+    find "$path_laradock/../{html,app}" -type d -exec chmod 755 {} \;
+    find "$path_laradock/../{html,app}" -type f -exec chmod 644 {} \;
+    find "$path_laradock/../{html,app}" -type d -iname runtime -exec chown -R 33:33 {} \;
     chown 1000:1000 "$path_laradock/spring"
 }
 
@@ -252,25 +253,16 @@ _install_zsh() {
     # sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
 }
 
-_start_manual() {
-    _msg step "manual startup "
-    _msg info '#########################################'
-    _msg info "\n cd $path_laradock && $dco up -d nginx redis mysql $args \n"
-    _msg info '#########################################'
-}
-
-_test_nginx_php() {
+_test_nginx() {
     _msg time "Test nginx "
     until curl --connect-timeout 3 localhost; do
         sleep 2
         c=$((${c:-0} + 1))
         [[ $c -gt 30 ]] && break
     done
-    if [[ "$args" =~ php-fpm ]]; then
-        :
-    else
-        return 0
-    fi
+}
+
+_test_php() {
     ## create test.php
     \cp -avf "$path_laradock/php-fpm/test.php" "$path_laradock/../public/test.php"
     source $file_env
@@ -289,6 +281,13 @@ _test_nginx_php() {
         c=$((${c:-0} + 1))
         [[ $c -gt 30 ]] && break
     done
+}
+
+_start_manual() {
+    _msg step "manual startup "
+    _msg info '#########################################'
+    _msg info "\n cd $path_laradock && $dco up -d nginx redis mysql $args \n"
+    _msg info '#########################################'
 }
 
 _start_auto() {
@@ -398,11 +397,19 @@ main() {
         _check_timezone
         _check_dependence
         _check_laradock
-        _get_image
-        _start_manual
-        _start_auto && _test_nginx_php
     fi
-
+    if [[ $args == *php-fpm* ]]; then
+        _get_php_image
+        _start_manual
+        _start_auto
+        _test_nginx
+        _test_php
+    fi
+    if [[ $args == *spring* ]]; then
+        _start_manual
+        _start_auto
+        _test_nginx
+    fi
     [[ "${exec_new_app_php:-0}" -eq 1 ]] && _new_app_php
     [[ "${exec_install_zsh:-0}" -eq 1 ]] && _install_zsh
     [[ "${exec_set_perm:-0}" -eq 1 ]] && _set_perm
