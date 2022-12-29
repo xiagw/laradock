@@ -1,46 +1,77 @@
 #!/usr/bin/env bash
 
-name_script="$(basename "$0")"
-path_script="$(dirname "$(readlink -f "$0")")"
-path_backup="$path_script"
-log_backup="$path_backup/${name_script}.log"
+_restore_db() {
+    ls "$backup_path"/*.sql
+    read -rp "Input file name: " read_sql_file
+    db=${read_sql_file#*.full.}
+    db=${db%.sql}
+    echo "Input file is: $read_sql_file"
+    echo "Get db name: $db"
+    $mysql_bin -e "create database if not exists $db;"
+    $mysql_bin "${db}" <"$read_sql_file"
+}
 
-## check permission
-if [ ! -w "$path_backup" ]; then
-    echo "permission denied to '$path_backup', exit."
-    exit 1
-fi
-## check mysql version
-ver_number=$(mysql --version | awk '{print $3}' | sed 's/\.//g')
-if [[ $ver_number -le 8025 ]]; then
-    mysql_dump='mysqldump --set-gtid-purged=OFF -E -R --triggers --master-data=2'
-else
-    mysql_dump='mysqldump --set-gtid-purged=OFF -E -R --triggers --source-data=2'
-fi
-## backup user/permission
-user_list=$path_backup/user.list.txt
-user_perm=$path_backup/user.perm.sql
-mysql -Ne 'select user,host from mysql.user' >"$user_list"
-while read -r line; do
-    IFS=" " read -r -a user_host <<<$line
-    mysql -Ne "show grants for ${user_host[0]}@'${user_host[1]}';" >>"$user_perm"
-done <"$user_list"
-## backup single/multiple databases
-backup_time="$(date +%s)"
-db_name="$1"
-if [[ -z "$db_name" ]]; then
-    dbs="$(mysql -Ne 'show databases' | grep -vE '^default$|information_schema|mysql|performance_schema|^sys$')"
-else
-    dbs="$db_name"
-fi
-for db in $dbs; do
-    backup_file="$path_backup/${backup_time}.full.${db}.sql"
-    if mysql "$db" -e 'select now()' >/dev/null; then
-        $mysql_dump "$db" -r "$backup_file"
-        echo "$(date) - $backup_file finish" | tee -a "$log_backup"
+main() {
+    me_name="$(basename "$0")"
+    me_path="$(dirname "$(readlink -f "$0")")"
+    me_log="$me_path/${me_name}.log"
+    backup_path="/backup"
+
+    ## check permission
+    if [ -w "$backup_path" ]; then
+        echo "[OK] $backup_path is writable."
     else
-        echo "database $db not exists."
+        echo "[Fail] permission denied to $backup_path, exit."
+        return 1
     fi
-done
+    ## .my.cnf
+    if [ -f "$me_path/.my.cnf" ]; then
+        mysql_cnf="--defaults-extra-file=$me_path/.my.cnf"
+    elif [ -f "$HOME/.my.cnf" ]; then
+        mysql_cnf="--defaults-extra-file=$HOME/.my.cnf"
+    else
+        mysql_cnf="--defaults-extra-file=/var/lib/mysql/.my.cnf"
+    fi
+    ## check mysql version
+    mysql_bin="mysql $mysql_cnf"
+    mysql_dump="mysqldump $mysql_cnf --set-gtid-purged=OFF -E -R --triggers"
+    ver_number=$(mysql --version | awk '{print $3}' | sed 's/\.//g')
+    if [[ $ver_number -le 8025 ]]; then
+        mysql_dump="$mysql_dump --master-data=2"
+    else
+        mysql_dump="$mysql_dump --source-data=2"
+    fi
+    ## backup user and grants
+    user_list=$backup_path/user.list.txt
+    user_perm=$backup_path/user.perm.sql
+    mysql -Ne 'select user,host from mysql.user' >"$user_list"
+    while read -r line; do
+        IFS=" " read -r -a user_host <<<$line
+        mysql -Ne "show grants for ${user_host[0]}@'${user_host[1]}';" >>"$user_perm"
+    done <"$user_list"
+    ## restore database
+    if [[ "$1" == restore ]]; then
+        _restore_db
+        return 0
+    fi
+    ## backup single/multiple databases
+    if [[ -z "$1" ]]; then
+        dbs="$($mysql_bin -Ne 'show databases' | grep -vE '^default$|information_schema|performance_schema|^sys$|^mysql$')"
+    else
+        dbs="$1"
+    fi
+    backup_time="$(date +%s)"
+    for db in $dbs; do
+        backup_file="$backup_path/${backup_time}.full.${db}.sql"
+        if $mysql_bin "$db" -e 'select now()' >/dev/null; then
+            $mysql_dump "$db" -r "$backup_file"
+            echo "$(date) - $backup_file finish" | tee -a "$me_log"
+        else
+            echo "database $db not exists."
+        fi
+    done
+}
 
-# rsync -a /var/lib/mysql/*-bin.?????? $path_backup/
+main "$@"
+
+# rsync -a /var/lib/mysql/*-bin.?????? $backup_path/
