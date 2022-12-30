@@ -85,9 +85,7 @@ _check_dependence() {
     command -v git && echo ok || install_git=1
     command -v curl && echo ok || install_curl=1
     command -v docker && echo ok || install_docker=1
-    if [[ $install_git || $install_curl || $install_docker ]]; then
-        _check_sudo
-    fi
+    _check_sudo
     [[ $install_curl ]] && {
         _msg step "install curl"
         $cmd install -y curl
@@ -264,13 +262,15 @@ _test_nginx() {
 
 _test_php() {
     ## create test.php
-    \cp -avf "$path_laradock/php-fpm/test.php" "$path_laradock/../html/test.php"
+    path_nginx_root="$path_laradock/../html"
+    $pre_sudo chown $USER:$USER "$path_nginx_root"
+    cp -avf "$path_laradock/php-fpm/test.php" "$path_nginx_root/test.php"
     source $file_env
     sed -i \
         -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
         -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
         -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
-        "$path_laradock/../html/test.php"
+        "$path_nginx_root/test.php"
     _msg time "Test PHP Redis MySQL "
     sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
     $dco exec nginx nginx -s reload
