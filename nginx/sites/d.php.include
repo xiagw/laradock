@@ -1,0 +1,4 @@
+upstream backend_php {
+    server 127.0.0.1:9000;
+    # server php-fpm:9000;
+}
