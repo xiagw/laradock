@@ -215,6 +215,7 @@ _get_php_image() {
 
 _set_file_perm() {
     for d in "$path_laradock"/../*/; do
+        [[ "$d" == *laradock* ]] && continue
         find "$d" -type d -exec chmod 755 {} \;
         find "$d" -type f -exec chmod 644 {} \;
         find "$d" -type d -iname runtime -exec chown -R 33:33 {} \;
