@@ -1,7 +1,5 @@
 #!/usr/bin/bash
 
-set -e
-
 _msg() {
     color_off='\033[0m' # Text Reset
     case "${1:-none}" in
@@ -55,15 +53,14 @@ _get_yes_no() {
 }
 
 _check_sudo() {
-    current_user=$(whoami)
-    if [ "$current_user" != "root" ]; then
+    if [ "$USER" != "root" ]; then
         _msg step "Not root, check sudo"
-        has_root_permission=$(sudo -l -U "$current_user" | grep "ALL")
+        has_root_permission=$(sudo -l -U "$USER" | grep "ALL")
         if [ -n "$has_root_permission" ]; then
-            _msg time "User $current_user has sudo permission."
+            _msg time "User $USER has sudo permission."
             pre_sudo="sudo"
         else
-            _msg time "User $current_user has no permission to execute this script!"
+            _msg time "User $USER has no permission to execute this script!"
             _msg time "Please run visudo with root, and set sudo to $USER"
             return 1
         fi
@@ -102,13 +99,17 @@ _check_dependence() {
             update_os_release=1
         fi
         curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
-        if [ "$current_user" != "root" ]; then
+        if [[ "$USER" != "root" ]]; then
             _msg time "Add user $USER to group docker."
             $pre_sudo usermod -aG docker "$USER"
             _msg red "Please logout $USER, and login again."
+            need_logout=1
         fi
-        if id ubuntu; then
+        if [[ "$USER" != ubuntu ]] && id ubuntu; then
             $pre_sudo usermod -aG docker ubuntu
+        fi
+        if [[ "$USER" != centos ]] && id centos; then
+            $pre_sudo usermod -aG docker centos
         fi
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
@@ -123,10 +124,8 @@ _check_timezone() {
     if timedatectl | grep -q 'Asia/Shanghai'; then
         _msg time "Timezone is already set to Asia/Shanghai."
     else
-        if [[ -n "$pre_sudo" || "$current_user" == "root" ]]; then
-            _msg time "Set timezone to Asia/Shanghai."
-            $pre_sudo timedatectl set-timezone Asia/Shanghai
-        fi
+        _msg time "Set timezone to Asia/Shanghai."
+        $pre_sudo timedatectl set-timezone Asia/Shanghai
     fi
 }
 
@@ -140,34 +139,61 @@ _check_laradock() {
     _msg step "install laradock to $path_laradock."
     mkdir -p "$path_laradock"
     git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_laradock"
+    ## jdk image, uid is 1000.(see spring/Dockerfile)
     $pre_sudo chown 1000:1000 "$path_laradock/spring"
-    ## copy .env.example to .env
-    _msg step "set laradock .env "
-    if [ ! -f "$file_env" ]; then
-        _msg time "copy .env.example to .env, and set password"
-        cp -vf "$file_env".example "$file_env"
-        pass_mysql="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
-        pass_mysql_default="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
-        pass_redis="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
-        pass_gitlab="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
-        sed -i \
-            -e "/^MYSQL_PASSWORD/s/=.*/=$pass_mysql_default/" \
-            -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
-            -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
-            -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
-            -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" \
-            -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
-            -e "/CHANGE_SOURCE=/s/false/true/" \
-            "$file_env"
+}
+
+_set_laradock_env() {
+    if [[ -f "$file_env" && "${force_update_env:-0}" -eq 0 ]]; then
+        return 0
     fi
+    _msg step "set laradock .env"
+    pass_mysql="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
+    pass_mysql_default="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
+    pass_redis="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
+    pass_gitlab="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
     ## change docker host ip
     docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
+
+    _msg time "copy .env.example to .env, and set password"
+    cp -vf "$file_env".example "$file_env"
     sed -i \
+        -e "/^MYSQL_PASSWORD/s/=.*/=$pass_mysql_default/" \
+        -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
+        -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
+        -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
+        -e "/PHP_VERSION=/s/=.*/=${php_ver:-7.1}/" \
+        -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
+        -e "/CHANGE_SOURCE=/s/false/true/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" \
         "$file_env"
     ## set SHELL_OH_MY_ZSH=true
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env" || return 0
+}
+
+_reload_nginx() {
+    cd $path_laradock && $dco exec nginx nginx -s reload
+}
+
+_set_nginx_php() {
+    ## setup php upstream
+    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$path_laradock/nginx/sites/d.php.include"
+    _reload_nginx
+}
+
+_set_nginx_java() {
+    ## setup java upstream
+    sed -i -e 's/127\.0\.0\.1/spring/g' "$path_laradock/nginx/sites/d.java.include"
+    _reload_nginx
+}
+
+_set_php_ver() {
+    sed -i \
+        -e "/PHP_VERSION=/s/=.*/=${php_ver:-7.1}/" \
+        -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
+        -e "/CHANGE_SOURCE=/s/false/true/" \
+        "$file_env"
 }
 
 _get_php_image() {
@@ -176,9 +202,9 @@ _get_php_image() {
     # if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
     #     cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
     # fi
-    sed -i -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" "$file_env"
+    _set_php_ver
     ref_url=http://www.flyh6.com/
-    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${ver_php:-7.1}.tar.gz"
+    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${php_ver:-7.1}.tar.gz"
     file_save=/tmp/laradock-php-fpm.tar.gz
     ## download php image
     curl --referer $ref_url -Lo $file_save "$file_url"
@@ -187,59 +213,11 @@ _get_php_image() {
     docker rmi laradock_php-fpm
 }
 
-_update_php_ver() {
-    sed -i \
-        -e "/PHP_VERSION=/s/=.*/=${ver_php:-7.1}/" \
-        -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
-        -e "/CHANGE_SOURCE=/s/false/true/" \
-        "$file_env"
-}
-
-_set_perm() {
-    find "$path_laradock/../{html,app}" -type d -exec chmod 755 {} \;
-    find "$path_laradock/../{html,app}" -type f -exec chmod 644 {} \;
-    find "$path_laradock/../{html,app}" -type d -iname runtime -exec chown -R 33:33 {} \;
+_set_file_perm() {
+    find "$path_laradock"/../{html,app} -type d -exec chmod 755 {} \;
+    find "$path_laradock"/../{html,app} -type f -exec chmod 644 {} \;
+    find "$path_laradock"/../{html,app} -type d -iname runtime -exec chown -R 33:33 {} \;
     chown 1000:1000 "$path_laradock/spring"
-}
-
-_new_app_php() {
-    ## create nginx app.conf
-    \cp -av "$path_laradock/nginx/sites/app.conf.example" "$path_laradock/nginx/sites/app.conf"
-    sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/app.conf"
-    cd $path_laradock && $dco exec nginx nginx -s reload
-    ## create dir 'app' for  php files
-    mkdir "$path_laradock/../app"
-    ## create test.php
-    cat >"$path_laradock/../app/test.php" <<EOF
-<?php
-echo 'This is test page for php';
-
-EOF
-}
-
-_new_app_java() {
-    ## create nginx app.conf
-    \cp -av "$path_laradock/nginx/sites/app.conf.example" "$path_laradock/nginx/sites/app.conf"
-    sed -i -e 's/127\.0\.0\.1/spring/' "$path_laradock/nginx/sites/app.include"
-    cd $path_laradock && $dco exec nginx nginx -s reload
-    ## create dir 'spring2'
-    mkdir "$path_laradock/spring2"
-    ## change docker-compose.override.yml
-    cat >>$path_laradock/docker-compose.override.yml <<EOF
-    spring2:
-      build:
-        context: ./spring2
-        args:
-          - CHANGE_SOURCE=${CHANGE_SOURCE}
-      restart: always
-      volumes:
-        - ./spring2:/app
-      networks:
-        - frontend
-        - backend
-EOF
-    ## start spring2
-    echo "cd $path_laradock && $dco up -d spring2"
 }
 
 _install_zsh() {
@@ -249,6 +227,23 @@ _install_zsh() {
     omz plugin enable z extract fzf docker-compose
     # sed -i -e 's/robbyrussell/ys/' ~/.zshrc
     # sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
+}
+
+_start_manual() {
+    _msg step "manual startup "
+    _msg info '#########################################'
+    _msg info "\n cd $path_laradock && $dco up -d nginx redis mysql $args \n"
+    _msg info '#########################################'
+}
+
+_start_auto() {
+    # if ss -lntu4 | grep -E ':80|:443|:6379|:3306'; then
+    #     _msg red "ERR: port already start"
+    #     _msg "Please fix $file_env, manual start docker."
+    #     return 1
+    # fi
+    _msg step "auto startup"
+    cd $path_laradock && $dco up -d nginx redis mysql ${args:-php-fpm spring}
 }
 
 _test_nginx() {
@@ -264,7 +259,7 @@ _test_php() {
     ## create test.php
     path_nginx_root="$path_laradock/../html"
     $pre_sudo chown $USER:$USER "$path_nginx_root"
-    cp -avf "$path_laradock/php-fpm/test.php" "$path_nginx_root/test.php"
+    $pre_sudo cp -avf "$path_laradock/php-fpm/test.php" "$path_nginx_root/test.php"
     source $file_env
     sed -i \
         -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
@@ -272,8 +267,7 @@ _test_php() {
         -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
         "$path_nginx_root/test.php"
     _msg time "Test PHP Redis MySQL "
-    sed -i -e 's/127\.0\.0\.1/php-fpm/' "$path_laradock/nginx/sites/default.conf"
-    $dco exec nginx nginx -s reload
+    _set_nginx_php
     while [[ "${get_status:-502}" -gt 200 ]]; do
         curl --connect-timeout 3 localhost/test.php
         get_status="$(curl -Lo /dev/null -fsSL -w "%{http_code}" localhost/test.php)"
@@ -283,21 +277,8 @@ _test_php() {
     done
 }
 
-_start_manual() {
-    _msg step "manual startup "
-    _msg info '#########################################'
-    _msg info "\n cd $path_laradock && $dco up -d nginx redis mysql $args \n"
-    _msg info '#########################################'
-}
-
-_start_auto() {
-    if ss -lntu4 | grep -E ':80|:443|:6379|:3306'; then
-        _msg red "ERR: port already start"
-        _msg "Please fix $file_env, manual start docker."
-        return 1
-    fi
-    _msg step "auto startup"
-    cd $path_laradock && $dco up -d nginx redis mysql ${args:-php-fpm spring}
+_test_java() {
+    _msg "Test spring."
 }
 
 _get_redis_mysql_info() {
@@ -309,7 +290,7 @@ _get_redis_mysql_info() {
 _mysql_cmd() {
     echo "exec mysql"
     password_default=$(awk -F= '/^MYSQL_PASSWORD/ {print $2}' "$file_env")
-    $dco exec mysql bash -c "mysql default -u default -p$password_default"
+    $dco exec mysql bash -c "LANG=C.UTF-8 mysql default -u default -p$password_default"
 }
 
 _usage() {
@@ -328,6 +309,7 @@ Parameters:
 }
 
 main() {
+    set -e
     me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
     me_log="${me_path}/${me_name}.log"
@@ -341,23 +323,24 @@ main() {
         ;;
     5.6 | 7.1 | 7.4)
         args="php-fpm"
-        ver_php="${1}"
+        php_ver="${1}"
         ubuntu_ver=20.04
-        exec_update_php_ver=1
+        exec_set_php_ver=1
+        exec_set_file_perm=1
+        exec_set_nginx_php=1
         ;;
     8.1 | 8.2)
         args="php-fpm"
-        ver_php="${1}"
+        php_ver="${1}"
         ubuntu_ver=22.04
-        exec_update_php_ver=1
-        ;;
-    phpnew)
-        args="php-fpm"
-        exec_new_app_php=1
+        exec_set_php_ver=1
+        exec_set_file_perm=1
+        exec_set_nginx_php=1
         ;;
     java)
         args="spring"
-        exec_set_perm=1
+        exec_set_file_perm=1
+        exec_set_nginx_java=1
         ;;
     gitlab)
         args="gitlab"
@@ -370,7 +353,7 @@ main() {
         enable_check=0
         ;;
     perm)
-        exec_set_perm=1
+        exec_set_file_perm=1
         enable_check=0
         ;;
     info)
@@ -397,7 +380,13 @@ main() {
         _check_timezone
         _check_dependence
         _check_laradock
+        _set_laradock_env
     fi
+    if [[ "$need_logout" -eq 1 ]]; then
+        return
+    fi
+    [[ "${exec_set_nginx_php:-0}" -eq 1 ]] && _set_nginx_php
+    [[ "${exec_set_nginx_java:-0}" -eq 1 ]] && _set_nginx_java
     if [[ $args == *php-fpm* ]]; then
         _get_php_image
         _start_manual
@@ -409,13 +398,13 @@ main() {
         _start_manual
         _start_auto
         _test_nginx
+        _test_java
     fi
-    [[ "${exec_new_app_php:-0}" -eq 1 ]] && _new_app_php
     [[ "${exec_install_zsh:-0}" -eq 1 ]] && _install_zsh
-    [[ "${exec_set_perm:-0}" -eq 1 ]] && _set_perm
+    [[ "${exec_set_file_perm:-0}" -eq 1 ]] && _set_file_perm
     [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]] && _get_redis_mysql_info
     [[ "${exec_mysql_cmd:-0}" -eq 1 ]] && _mysql_cmd
-    [[ "${exec_update_php_ver:-0}" -eq 1 ]] && _update_php_ver
+    [[ "${exec_set_php_ver:-0}" -eq 1 ]] && _set_php_ver
 }
 
 main "$@"

@@ -4,9 +4,9 @@
 trap "exit 0" HUP INT PIPE QUIT TERM
 
 [ -d /var/lib/php/sessions ] && chmod -R 777 /var/lib/php/sessions
-[ -d /var/www/public ] || mkdir /var/www/public
 [ -d /run/php ] || mkdir -p /run/php
-[ -f /var/www/public/index.html ] || date >/var/www/public/index.html
+[ -d /var/www/html ] || mkdir /var/www/html
+[ -f /var/www/html/index.html ] || date >>/var/www/html/index.html
 
 ## start php-fpm
 for i in /usr/sbin/php-fpm*; do
@@ -23,5 +23,5 @@ elif apachectl -t &>/dev/null; then
     ## start apache
     exec apachectl -k start -D FOREGROUND
 else
-    exec tail -f /var/www/public/index.html
+    exec tail -f /var/www/html/index.html
 fi

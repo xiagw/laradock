@@ -18,10 +18,8 @@ chmod 0644 /etc/logrotate.d/nginx
 chown 1000:0 /var/log/nginx
 
 ## /var/www/html
-if [ ! -d /var/www/html ]; then
-    mkdir -p /var/www/html
-    date >>/var/www/html/index.html
-fi
+[ -d /var/www/html ] || mkdir -p /var/www/html
+[ -f /var/www/html/index.html ] || date >>/var/www/html/index.html
 
 # Start crond in background
 crond -l 2 -b
