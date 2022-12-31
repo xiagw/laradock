@@ -214,13 +214,15 @@ _get_php_image() {
 }
 
 _set_file_perm() {
-    for d in "$path_laradock"/../*/; do
+    cd "$path_laradock"/../
+    for d in ./*/; do
         [[ "$d" == *laradock* ]] && continue
         find "$d" -type d -exec chmod 755 {} \;
         find "$d" -type f -exec chmod 644 {} \;
         find "$d" -type d -iname runtime -exec chown -R 33:33 {} \;
     done
     chown 1000:1000 "$path_laradock/spring"
+    cd -
 }
 
 _install_zsh() {
