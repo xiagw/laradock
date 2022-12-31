@@ -214,9 +214,11 @@ _get_php_image() {
 }
 
 _set_file_perm() {
-    find "$path_laradock"/../{html,app} -type d -exec chmod 755 {} \;
-    find "$path_laradock"/../{html,app} -type f -exec chmod 644 {} \;
-    find "$path_laradock"/../{html,app} -type d -iname runtime -exec chown -R 33:33 {} \;
+    for d in "$path_laradock"/../*/; do
+        find "$d" -type d -exec chmod 755 {} \;
+        find "$d" -type f -exec chmod 644 {} \;
+        find "$d" -type d -iname runtime -exec chown -R 33:33 {} \;
+    done
     chown 1000:1000 "$path_laradock/spring"
 }
 
