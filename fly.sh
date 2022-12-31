@@ -301,10 +301,10 @@ Parameters:
     -h, --help          Show this help message.
     -v, --version       Show version info.
     info                get mysql redis info
-    7.1                 php-fpm 7.1
-    phpnew              create new domain for php
-    java                start spring
-    mysql               exec into mysql
+    php                 install php-fpm 7.1
+    java                install jdk / spring
+    mysql               exec into mysql cli
+    perm                set file permission
 "
 }
 
@@ -321,9 +321,13 @@ main() {
     all)
         args="php-fpm spring"
         ;;
-    5.6 | 7.1 | 7.4)
+    php | 5.6 | 7.1 | 7.4)
         args="php-fpm"
-        php_ver="${1}"
+        if [[ "$1" == 'php' ]]; then
+            php_ver="7.1"
+        else
+            php_ver="${1}"
+        fi
         ubuntu_ver=20.04
         exec_set_php_ver=1
         exec_set_file_perm=1
