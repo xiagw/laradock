@@ -174,6 +174,7 @@ _set_laradock_env() {
 
 _reload_nginx() {
     cd $path_laradock && $dco exec nginx nginx -s reload
+    return 0
 }
 
 _set_nginx_php() {
