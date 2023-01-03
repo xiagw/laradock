@@ -174,19 +174,16 @@ _set_laradock_env() {
 
 _reload_nginx() {
     cd $path_laradock && $dco exec nginx nginx -s reload
-    return 0
 }
 
 _set_nginx_php() {
     ## setup php upstream
     sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$path_laradock/nginx/sites/d.php.include"
-    _reload_nginx
 }
 
 _set_nginx_java() {
     ## setup java upstream
     sed -i -e 's/127\.0\.0\.1/spring/g' "$path_laradock/nginx/sites/d.java.include"
-    _reload_nginx
 }
 
 _set_php_ver() {
@@ -274,6 +271,7 @@ _test_php() {
         "$path_nginx_root/test.php"
     _msg time "Test PHP Redis MySQL "
     _set_nginx_php
+    _reload_nginx
     while [[ "${get_status:-502}" -gt 200 ]]; do
         curl --connect-timeout 3 localhost/test.php
         get_status="$(curl -Lo /dev/null -fsSL -w "%{http_code}" localhost/test.php)"
@@ -402,12 +400,14 @@ main() {
         _start_manual
         _start_auto
         _test_nginx
+        _reload_nginx
         _test_php
     fi
     if [[ $args == *spring* ]]; then
         _start_manual
         _start_auto
         _test_nginx
+        _reload_nginx
         _test_java
     fi
     [[ "${exec_install_zsh:-0}" -eq 1 ]] && _install_zsh
