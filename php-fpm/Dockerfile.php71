@@ -1,6 +1,7 @@
 ARG UBUNTU_VERSION=${UBUNTU_VERSION}
 FROM ubuntu:${UBUNTU_VERSION}
 ARG LARADOCK_PHP_VERSION=${PHP_VERSION}
+ARG PHP_SESSION_REDIS=false
 ## for apt to be noninteractive
 ENV DEBIAN_FRONTEND noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN true
@@ -68,8 +69,16 @@ RUN set -xe \
         -e "/post_max_size/s/8M/1024M/" \
         -e "/upload_max_filesize/s/2M/1024M/" \
         -e "/max_file_uploads/s/20/256/" \
-        /etc/php/${LARADOCK_PHP_VERSION}/fpm/php.ini \
-    && chmod +x /opt/run.sh
+        -e '/disable_functions/s/$/phpinfo,/' \
+        -e '/max_execution_time/s/30/60/' \
+        /etc/php/${LARADOCK_PHP_VERSION}/fpm/php.ini; \
+    if [[ "${PHP_SESSION_REDIS:-false}" = true ]]; then \
+    sed -i \
+    -e "/session.save_handler/s/files/redis/" \
+    -e '/session.save_handler/a session.save_path = "tcp://127.0.0.1?auth=2kjYfzGCR2&database=1"' \
+    /etc/php/${LARADOCK_PHP_VERSION}/fpm/php.ini; \
+    fi; \
+    chmod +x /opt/run.sh
 
 ## copy nginx conf
 # COPY ./etc/ /etc/

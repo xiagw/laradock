@@ -10,42 +10,22 @@ server {
 
     server_name app.example.com;
     ## Fixed ThinkPHP public dir
-    root /var/www/app;
+    root /var/www/app/public;
     index index.php index.html index.htm;
     client_max_body_size 1024M;
-    error_log /var/log/nginx/app.example.com.error.log;
     access_log /var/log/nginx/app.example.com.access.log;
+    error_log /var/log/nginx/app.example.com.error.log;
 
     location / {
-        try_files $uri $uri/ /index.html$request_uri /index.php$request_uri;
+        try_files $uri $uri/ /index.html/$request_uri /index.php$request_uri;
         # if (!-e $request_filename) {
         #     rewrite ^/(.*)$ /index.php/$1 last;
         #     break;
         # }
         # try_files $uri $uri/ /index.php$is_args$args;
     }
-    ## Fixed ThinkPHP deploy subdir
-    location /tp {
-        rewrite /tp/(.*)/public/assets/(.*)$ /tp/$1/public/assets/$2 break;
-        rewrite /tp/(.*)/public/static/(.*)$ /tp/$1/public/static/$2 break;
-        rewrite /tp/(.*)/public/(.*)$ /tp/$1/public/index.php/$2 last;
-    }
-    location ~ \.php(.*)$ {
-        # try_files $uri uri/ /index.php =404;
-        fastcgi_pass backend_php;
-        fastcgi_index index.php;
-        fastcgi_buffers 16 16k;
-        fastcgi_buffer_size 32k;
-        ## Fixed ThinkPHP PATH_INFO
-        fastcgi_split_path_info ^((?U).+\.php)(/?.+)$;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
-        fastcgi_param APP_ENV product;
-        ## Fixes timeouts
-        fastcgi_read_timeout 600;
-        include fastcgi_params;
-    }
+    ## PHP
+    include conf.d/d.php.include;
     ## Java
     include conf.d/d.java.include;
     ## Global conf
