@@ -8,16 +8,19 @@ settings {
     nodaemon = true
 }
 
-targets = {'172.31.0.119:/home/ubuntu/docker/html/', '172.31.0.251:/home/ubuntu/docker/html/',
-           '172.31.0.177:/home/ubuntu/docker/html/'}
+sourcedir = "/root/docker/html/"
+
+targets = {
+    -- '172.16.0.2:/root/docker/html/',
+}
 
 for _, target in ipairs(targets) do
     sync {
         default.rsync,
         -- delete = running,
+        -- excludeFrom = '/root/lsyncd.exclude',
         exclude = {'runtime/*', 'Runtime/*', '.svn', '.git', '.gitignore', '.gitattributes', '.idea', '*.bak', '*.log'},
-        source = '/home/ubuntu/docker/html/',
-        -- excludeFrom = '/home/ubuntu/lsyncd.exclude',
+        source = sourcedir,
         target = target
     }
 end

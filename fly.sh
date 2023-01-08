@@ -215,9 +215,11 @@ _set_file_perm() {
     cd "$path_laradock"/../
     for d in ./*/; do
         [[ "$d" == *laradock* ]] && continue
-        find "$d" -type d -exec chmod 755 {} \;
-        find "$d" -type f -exec chmod 644 {} \;
-        find "$d" -type d -iname runtime -exec chown -R 33:33 {} \;
+        find "$d" | while read -r line; do
+            [ -d "$line" ] && chmod 755 "$line"
+            [ -f "$line" ] && chmod 644 "$line"
+            [[ "$line" == *runtime* ]] && chown -R 33:33 "$line"
+        done
     done
     chown 1000:1000 "$path_laradock/spring"
     cd -
@@ -297,6 +299,27 @@ _mysql_cmd() {
     $dco exec mysql bash -c "LANG=C.UTF-8 mysql default -u default -p$password_default"
 }
 
+_setup_lsyncd() {
+    _msg "install lsyncd"
+    _check_sudo
+    command -v lsyncd &>/dev/null || $cmd install -y lsyncd
+    _msg "new lsyncd.conf.lua"
+    lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
+    [ -d /etc/lsyncd/ ] || mkdir /etc/lsyncd/
+    cp "$path_laradock"/usvn$lsyncd_conf $lsyncd_conf
+    _msg "new key, ssh-keygen"
+    [ -f "$HOME/.ssh/id_ed25519" ] || ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -N ''
+    while read -rp "Enter ssh host IP [${count:=1}] (enter q break): " ssh_host_ip; do
+        [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
+        _msg "ssh-copy-id $ssh_host_ip"
+        ssh-copy-id "$ssh_host_ip"
+        _msg "update $lsyncd_conf"
+        line_num=$(grep -n '^targets' $lsyncd_conf | awk -F: '{print $1}')
+        sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
+        count=$((count + 1))
+    done
+}
+
 _usage() {
     echo "
 Usage: $0 [parameters ...]
@@ -372,6 +395,9 @@ main() {
         exec_mysql_cmd=1
         enable_check=0
         ;;
+    lsync)
+        exec_setup_lsyncd=1
+        ;;
     *)
         _usage
         return
@@ -415,6 +441,7 @@ main() {
     [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]] && _get_redis_mysql_info
     [[ "${exec_mysql_cmd:-0}" -eq 1 ]] && _mysql_cmd
     [[ "${exec_set_php_ver:-0}" -eq 1 ]] && _set_php_ver
+    [[ "${exec_setup_lsyncd:-0}" -eq 1 ]] && _setup_lsyncd
 }
 
 main "$@"
