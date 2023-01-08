@@ -305,8 +305,8 @@ _setup_lsyncd() {
     command -v lsyncd &>/dev/null || $cmd install -y lsyncd
     _msg "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
-    [ -d /etc/lsyncd/ ] || mkdir /etc/lsyncd/
-    cp "$path_laradock"/usvn$lsyncd_conf $lsyncd_conf
+    [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd/
+    $pre_sudo cp "$path_laradock"/usvn$lsyncd_conf $lsyncd_conf
     _msg "new key, ssh-keygen"
     [ -f "$HOME/.ssh/id_ed25519" ] || ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -N ''
     while read -rp "Enter ssh host IP [${count:=1}] (enter q break): " ssh_host_ip; do
@@ -315,7 +315,7 @@ _setup_lsyncd() {
         ssh-copy-id "$ssh_host_ip"
         _msg "update $lsyncd_conf"
         line_num=$(grep -n '^targets' $lsyncd_conf | awk -F: '{print $1}')
-        sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
+        $pre_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
         count=$((count + 1))
     done
 }
@@ -332,6 +332,7 @@ Parameters:
     java                install jdk / spring
     mysql               exec into mysql cli
     perm                set file permission
+    lsync               setup lsyncd
 "
 }
 
@@ -397,6 +398,7 @@ main() {
         ;;
     lsync)
         exec_setup_lsyncd=1
+        enable_check=0
         ;;
     *)
         _usage
