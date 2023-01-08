@@ -311,8 +311,8 @@ _setup_lsyncd() {
     [ -f "$HOME/.ssh/id_ed25519" ] || ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -N ''
     while read -rp "Enter ssh host IP [${count:=1}] (enter q break): " ssh_host_ip; do
         [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
-        _msg "ssh-copy-id $ssh_host_ip"
-        ssh-copy-id "$ssh_host_ip"
+        _msg "ssh-copy-id root@$ssh_host_ip"
+        ssh-copy-id "root@$ssh_host_ip"
         _msg "update $lsyncd_conf"
         line_num=$(grep -n '^targets' $lsyncd_conf | awk -F: '{print $1}')
         $pre_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
