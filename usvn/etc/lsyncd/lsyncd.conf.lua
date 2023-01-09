@@ -5,7 +5,7 @@ settings {
     maxProcesses = 3,
     statusInterval = 1,
     insist = true,
-    nodaemon = true
+    nodaemon = false
 }
 
 sourcedir = "/root/docker/html/"
