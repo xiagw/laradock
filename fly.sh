@@ -218,7 +218,16 @@ _set_file_perm() {
         find "$d" | while read -r line; do
             [ -d "$line" ] && chmod 755 "$line"
             [ -f "$line" ] && chmod 644 "$line"
-            [[ "$line" == *runtime* ]] && chown -R 33:33 "$line"
+            if [[ "$line" == *runtime ]]; then
+                rm -rf "${line:?}"/*
+                chown -R 33:33 "$line"
+            fi
+            if [[ "$line" == *config/app.php ]]; then
+                grep -q 'app_debug.*true' "$line" && sed -i -e '/app_debug/s/true/false/' "$line"
+            fi
+            if [[ "$line" == *config/log.php ]]; then
+                grep -q "'level'.*\[\]\," "$line" && sed -i -e "/'level'/s/\[/\['warning'/" "$line"
+            fi
         done
     done
     chown 1000:1000 "$path_laradock/spring"
