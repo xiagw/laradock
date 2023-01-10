@@ -315,8 +315,9 @@ _setup_lsyncd() {
     command -v lsyncd &>/dev/null || $cmd install -y lsyncd
     _msg "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
-    [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd/
+    [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd
     $pre_sudo cp "$path_laradock"/usvn$lsyncd_conf $lsyncd_conf
+    [[ "$USER" == "root" ]] || sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
     _msg "new key, ssh-keygen"
     [ -f "$HOME/.ssh/id_ed25519" ] || ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -N ''
     while read -rp "Enter ssh host IP [${count:=1}] (enter q break): " ssh_host_ip; do
