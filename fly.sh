@@ -55,7 +55,6 @@ _get_yes_no() {
 _check_sudo() {
     if [ "$USER" != "root" ]; then
         _msg step "Not root, check sudo"
-        not_root=1
         if sudo -l -U "$USER" | grep "ALL"; then
             _msg time "User $USER has sudo permission."
             pre_sudo="sudo"
@@ -199,7 +198,7 @@ _set_php_ver() {
 
 _get_php_image() {
     docker images | grep laradock-php-fpm && return 0
-    _msg step "download docker image of php-fpm"
+    _msg step "download docker image for php-fpm"
     # if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
     #     cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
     # fi
@@ -440,7 +439,7 @@ main() {
     if [[ $args == *php-fpm* ]]; then
         _get_php_image
         _start_manual
-        sleep 3
+        _msg red 'sleep 5' && sleep 5
         _start_auto
         _test_nginx
         _reload_nginx
@@ -448,7 +447,7 @@ main() {
     fi
     if [[ $args == *spring* ]]; then
         _start_manual
-        sleep 3
+        _msg red 'sleep 5' && sleep 5
         _start_auto
         _test_nginx
         _reload_nginx
