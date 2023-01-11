@@ -15,7 +15,7 @@ if [ ! -f $ssl_dir/dhparams.pem ]; then
 fi
 
 chmod 0644 /etc/logrotate.d/nginx
-chown 1000:0 /var/log/nginx
+chown 33:0 /var/log/nginx
 
 ## /var/www/html
 [ -d /var/www/html ] || mkdir -p /var/www/html

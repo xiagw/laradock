@@ -55,8 +55,8 @@ _get_yes_no() {
 _check_sudo() {
     if [ "$USER" != "root" ]; then
         _msg step "Not root, check sudo"
-        has_root_permission=$(sudo -l -U "$USER" | grep "ALL")
-        if [ -n "$has_root_permission" ]; then
+        not_root=1
+        if sudo -l -U "$USER" | grep "ALL"; then
             _msg time "User $USER has sudo permission."
             pre_sudo="sudo"
         else
@@ -110,6 +110,9 @@ _check_dependence() {
         fi
         if [[ "$USER" != centos ]] && id centos; then
             $pre_sudo usermod -aG docker centos
+        fi
+        if [[ "$USER" != ops ]] && id ops; then
+            $pre_sudo usermod -aG docker ops
         fi
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
@@ -437,6 +440,7 @@ main() {
     if [[ $args == *php-fpm* ]]; then
         _get_php_image
         _start_manual
+        sleep 3
         _start_auto
         _test_nginx
         _reload_nginx
@@ -444,6 +448,7 @@ main() {
     fi
     if [[ $args == *spring* ]]; then
         _start_manual
+        sleep 3
         _start_auto
         _test_nginx
         _reload_nginx

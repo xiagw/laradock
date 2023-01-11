@@ -21,8 +21,8 @@ RUN apk update \
 RUN apk add --no-cache curl
 
 RUN set -x ; \
-    addgroup -g 82 -S www-data ; \
-    adduser -u 82 -D -S -G www-data www-data && exit 0 ; exit 1
+    addgroup -g 33 -S www-data ; \
+    adduser -u 33 -D -S -G www-data www-data && exit 0 ; exit 1
 
 ARG PHP_UPSTREAM_CONTAINER=php-fpm
 ARG PHP_UPSTREAM_PORT=9000

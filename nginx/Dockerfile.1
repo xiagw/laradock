@@ -7,8 +7,8 @@ RUN if [ ${CHANGE_SOURCE} = true ]; then \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories \
 ;fi
 RUN set -x ; \
-    groupmod -g 1000 www-data ; \
-    usermod -u 1000 www-data ; \
+    groupmod -g 33 www-data ; \
+    usermod -u 33 www-data ; \
     grep www-data /etc/passwd /etc/group
 
 ARG PHP_UPSTREAM_CONTAINER=php-fpm
