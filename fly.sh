@@ -289,6 +289,7 @@ _test_php() {
     while [[ "${get_status:-502}" -gt 200 ]]; do
         curl --connect-timeout 3 localhost/test.php
         get_status="$(curl -Lo /dev/null -fsSL -w "%{http_code}" localhost/test.php)"
+        echo "http_code: $get_status"
         sleep 2
         c=$((${c:-0} + 1))
         [[ $c -gt 30 ]] && break
@@ -413,6 +414,10 @@ main() {
         exec_setup_lsyncd=1
         enable_check=0
         ;;
+    test)
+        exec_test=1
+        enable_check=0
+        ;;
     *)
         _usage
         return
@@ -459,6 +464,10 @@ main() {
     [[ "${exec_mysql_cmd:-0}" -eq 1 ]] && _mysql_cmd
     [[ "${exec_set_php_ver:-0}" -eq 1 ]] && _set_php_ver
     [[ "${exec_setup_lsyncd:-0}" -eq 1 ]] && _setup_lsyncd
+    if [[ "${exec_test:-0}" -eq 1 ]]; then
+        _test_php
+        _test_java
+    fi
 }
 
 main "$@"
