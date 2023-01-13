@@ -41,7 +41,8 @@ services:
           - TZ=${WORKSPACE_TIMEZONE}
       extra_hosts:
         - "dockerhost:${DOCKER_HOST_IP}"
-
+      # volumes:
+      #   - /data:/data
 ### MySQL ################################################
     mysql:
       restart: always

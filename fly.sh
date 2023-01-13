@@ -209,8 +209,6 @@ _get_php_image() {
     ## download php image
     curl --referer $ref_url -Lo $file_save "$file_url"
     docker load <$file_save
-    docker tag laradock_php-fpm laradock-php-fpm
-    docker rmi laradock_php-fpm
 }
 
 _set_file_perm() {
@@ -251,6 +249,7 @@ _start_manual() {
     _msg info '#########################################'
     _msg info "\n cd $path_laradock && $dco up -d nginx redis mysql $args \n"
     _msg info '#########################################'
+    _msg red 'sleep 10s' && sleep 10
 }
 
 _start_auto() {
@@ -274,6 +273,8 @@ _test_nginx() {
 
 _test_php() {
     ## create test.php
+    _check_sudo
+    _msg step "create test.php"
     path_nginx_root="$path_laradock/../html"
     $pre_sudo chown $USER:$USER "$path_nginx_root"
     $pre_sudo cp -avf "$path_laradock/php-fpm/test.php" "$path_nginx_root/test.php"
@@ -292,7 +293,10 @@ _test_php() {
         echo "http_code: $get_status"
         sleep 2
         c=$((${c:-0} + 1))
-        [[ $c -gt 30 ]] && break
+        [[ $c -gt 30 ]] && {
+            echo "break after 60s"
+            break
+        }
     done
 }
 
@@ -356,9 +360,6 @@ main() {
     me_name="$(basename "$0")"
     me_log="${me_path}/${me_name}.log"
 
-    path_laradock="$HOME/docker/laradock"
-    file_env="$path_laradock"/.env
-
     case "${1:-all}" in
     all)
         args="php-fpm spring"
@@ -401,28 +402,39 @@ main() {
     perm)
         exec_set_file_perm=1
         enable_check=0
+        have_installed=1
         ;;
     info)
         exec_get_redis_mysql_info=1
         enable_check=0
+        have_installed=1
         ;;
     mysql)
         exec_mysql_cmd=1
         enable_check=0
+        have_installed=1
         ;;
     lsync)
         exec_setup_lsyncd=1
         enable_check=0
+        have_installed=1
         ;;
     test)
         exec_test=1
         enable_check=0
+        have_installed=1
         ;;
     *)
         _usage
         return
         ;;
     esac
+
+    # read -rp "change install_root dir? [$HOME]: " read_install_root
+    # install_root="${read_install_root:-$HOME}"
+    [ "${have_installed:-0}" -eq 1 ] && path_laradock=$me_path
+    path_laradock="${path_laradock:-$HOME/docker/laradock}"
+    file_env="$path_laradock"/.env
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
     if command -v docker-compose &>/dev/null; then
@@ -444,7 +456,6 @@ main() {
     if [[ $args == *php-fpm* ]]; then
         _get_php_image
         _start_manual
-        _msg red 'sleep 5' && sleep 5
         _start_auto
         _test_nginx
         _reload_nginx
@@ -452,7 +463,6 @@ main() {
     fi
     if [[ $args == *spring* ]]; then
         _start_manual
-        _msg red 'sleep 5' && sleep 5
         _start_auto
         _test_nginx
         _reload_nginx
