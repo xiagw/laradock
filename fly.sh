@@ -197,18 +197,44 @@ _set_php_ver() {
 }
 
 _get_php_image() {
-    docker images | grep laradock-php-fpm && return 0
     _msg step "download docker image for php-fpm"
-    # if [ -f "$path_laradock/php-fpm/Dockerfile.php71" ]; then
-    #     cp -f "$path_laradock/php-fpm/Dockerfile.php71" "$path_laradock"/php-fpm/Dockerfile
-    # fi
     _set_php_ver
-    ref_url=http://www.flyh6.com/
-    file_url="http://cdn.flyh6.com/docker/laradock-php-fpm.${php_ver:-7.1}.tar.gz"
     file_save=/tmp/laradock-php-fpm.tar.gz
-    ## download php image
-    curl --referer $ref_url -Lo $file_save "$file_url"
+    curl -Lo $file_save "http://oss.flyh6.com/docker/laradock-php-fpm.${php_ver:-7.1}.tar.gz"
     docker load <$file_save
+    if docker --version | grep -q "version 19"; then
+        docker tag laradock-php-fpm laradock_php-fpm
+    fi
+}
+
+_get_java_image() {
+    _msg step "download docker image for java"
+    file_save=/tmp/laradock-spring.tar.gz
+    curl -Lo $file_save "http://oss.flyh6.com/docker/laradock-spring.tar.gz"
+    docker load <$file_save
+    if docker --version | grep -q "version 19"; then
+        docker tag laradock-spring laradock_spring
+    fi
+}
+
+_get_mysql_image() {
+    _msg step "download docker image for mysql"
+    file_save=/tmp/laradock-mysql.tar.gz
+    curl -Lo $file_save "http://oss.flyh6.com/docker/laradock-mysql.tar.gz"
+    docker load <$file_save
+    if docker --version | grep -q "version 19"; then
+        docker tag laradock-mysql laradock_mysql
+    fi
+}
+
+_get_redis_image() {
+    _msg step "download docker image for redis"
+    file_save=/tmp/laradock-redis.tar.gz
+    curl -Lo $file_save "http://oss.flyh6.com/docker/laradock-redis.tar.gz"
+    docker load <$file_save
+    if docker --version | grep -q "version 19"; then
+        docker tag laradock-redis laradock_redis
+    fi
 }
 
 _set_file_perm() {
@@ -338,6 +364,21 @@ _setup_lsyncd() {
     done
 }
 
+_upgrade_spring() {
+    cd $path_laradock
+    curl -Lo spring.tar.gz http://oss.flyh6.com/docker/srping.tar.gz
+    tar zxf spring.tar.gz
+    $dco stop ${args}
+    $dco rm -f
+    $dco up -d ${args}
+}
+
+_upgrade_php() {
+    cd $path_laradock/../html
+    curl -Lo tp.tar.gz http://oss.flyh6.com/docker/tp.tar.gz
+    tar zxf tp.tar.gz
+}
+
 _usage() {
     echo "
 Usage: $0 [parameters ...]
@@ -354,86 +395,86 @@ Parameters:
 "
 }
 
+_set_args() {
+    if [ -z "$1" ]; then
+        args="php-fpm spring"
+        return
+    fi
+
+    while [ "$#" -gt 0 ]; do
+        case "${1}" in
+        php)
+            args="php-fpm"
+            if [[ "$2" == upgrade ]]; then
+                exec_upgrade_php=1
+                enable_check=0
+            fi
+            php_ver="$2"
+            ubuntu_ver=20.04
+            [[ "$2" == 8.1 || "$2" == 8.2 ]] && ubuntu_ver=22.04
+            exec_set_php_ver=1
+            exec_set_file_perm=1
+            exec_set_nginx_php=1
+            shift
+            ;;
+        java)
+            args="spring"
+            exec_set_file_perm=1
+            exec_set_nginx_java=1
+            if [[ "$2" == upgrade ]]; then
+                exec_upgrade_spring=1
+                enable_check=0
+                shift
+            fi
+            ;;
+        gitlab)
+            args="gitlab"
+            ;;
+        svn)
+            args="usvn"
+            ;;
+        zsh)
+            exec_install_zsh=1
+            enable_check=0
+            ;;
+        perm)
+            exec_set_file_perm=1
+            enable_check=0
+            ;;
+        info)
+            exec_get_redis_mysql_info=1
+            enable_check=0
+            ;;
+        mysql)
+            exec_mysql_cmd=1
+            enable_check=0
+            ;;
+        lsync)
+            exec_setup_lsyncd=1
+            enable_check=0
+            ;;
+        test)
+            exec_test=1
+            enable_check=0
+            ;;
+        *)
+            _usage
+            return
+            ;;
+        esac
+        shift
+    done
+}
+
 main() {
     set -e
     me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
     me_log="${me_path}/${me_name}.log"
 
-    case "${1:-all}" in
-    all)
-        args="php-fpm spring"
-        ;;
-    php | 5.6 | 7.1 | 7.4)
-        args="php-fpm"
-        if [[ "$1" == 'php' ]]; then
-            php_ver="7.1"
-        else
-            php_ver="${1}"
-        fi
-        ubuntu_ver=20.04
-        exec_set_php_ver=1
-        exec_set_file_perm=1
-        exec_set_nginx_php=1
-        ;;
-    8.1 | 8.2)
-        args="php-fpm"
-        php_ver="${1}"
-        ubuntu_ver=22.04
-        exec_set_php_ver=1
-        exec_set_file_perm=1
-        exec_set_nginx_php=1
-        ;;
-    java)
-        args="spring"
-        exec_set_file_perm=1
-        exec_set_nginx_java=1
-        ;;
-    gitlab)
-        args="gitlab"
-        ;;
-    svn)
-        args="usvn"
-        ;;
-    zsh)
-        exec_install_zsh=1
-        enable_check=0
-        ;;
-    perm)
-        exec_set_file_perm=1
-        enable_check=0
-        have_installed=1
-        ;;
-    info)
-        exec_get_redis_mysql_info=1
-        enable_check=0
-        have_installed=1
-        ;;
-    mysql)
-        exec_mysql_cmd=1
-        enable_check=0
-        have_installed=1
-        ;;
-    lsync)
-        exec_setup_lsyncd=1
-        enable_check=0
-        have_installed=1
-        ;;
-    test)
-        exec_test=1
-        enable_check=0
-        have_installed=1
-        ;;
-    *)
-        _usage
-        return
-        ;;
-    esac
+    _set_args "$@"
 
-    # read -rp "change install_root dir? [$HOME]: " read_install_root
-    # install_root="${read_install_root:-$HOME}"
-    [ "${have_installed:-0}" -eq 1 ] && path_laradock=$me_path
-    path_laradock="${path_laradock:-$HOME/docker/laradock}"
+    path_laradock="${me_path:-$HOME}"/docker/laradock
     file_env="$path_laradock"/.env
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
@@ -451,6 +492,16 @@ main() {
     if [[ "$need_logout" -eq 1 ]]; then
         return
     fi
+
+    if [[ $exec_upgrade_spring -eq 1 ]]; then
+        _upgrade_spring
+        return
+    fi
+    if [[ $exec_upgrade_php -eq 1 ]]; then
+        _upgrade_php
+        return
+    fi
+
     [[ "${exec_set_nginx_php:-0}" -eq 1 ]] && _set_nginx_php
     [[ "${exec_set_nginx_java:-0}" -eq 1 ]] && _set_nginx_java
     if [[ $args == *php-fpm* ]]; then
@@ -461,6 +512,7 @@ main() {
         _reload_nginx
         _test_php
     fi
+
     if [[ $args == *spring* ]]; then
         _start_manual
         _start_auto
