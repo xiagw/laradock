@@ -13,7 +13,8 @@ RUN if [ ${CHANGE_SOURCE} = true ]; then \
 ;fi
 
 RUN apk update \
-    && apk upgrade \
+    ## fix build error
+    # && apk upgrade \
     && apk --update add --no-cache logrotate \
     && apk add --no-cache openssl \
     && apk add --no-cache bash
