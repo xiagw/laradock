@@ -29,15 +29,12 @@ RUN set -x; \
     sed -i 's/SSLv3\,\ TLSv1\,\ TLSv1\.1\,//g' /usr/local/openjdk-8/jre/lib/security/java.security || true; \
     curl -Lo /opt/run.sh https://gitee.com/xiagw/deploy.sh/raw/main/conf/dockerfile/run.sh; \
     chmod +x /opt/run.sh; \
+    useradd -u 1000 spring; \
     # apt-get autoremove -y \
-    apt-get clean all \
-    && rm -rf /var/lib/apt/lists/*
+    apt-get clean all && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 # COPY ./jar_file/ .
-RUN chown -R 1000:1000 /app \
-    # && touch "/app/profile.${MVN_PROFILE}" \
-    && [ -f run.sh ] && chmod +x run.sh || true
 
 USER 1000
 EXPOSE 8080 8081 8082
