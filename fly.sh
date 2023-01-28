@@ -1,9 +1,9 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 _msg() {
     color_off='\033[0m' # Text Reset
     case "${1:-none}" in
-    red | error | erro) color_on='\033[0;31m' ;;       # Red
+    red | error | err) color_on='\033[0;31m' ;;        # Red
     green | info) color_on='\033[0;32m' ;;             # Green
     yellow | warning | warn) color_on='\033[0;33m' ;;  # Yellow
     blue) color_on='\033[0;34m' ;;                     # Blue
@@ -237,7 +237,7 @@ _get_redis_image() {
     fi
 }
 
-_set_file_perm() {
+_set_file_mode() {
     _check_sudo
     cd "$path_laradock"/../
     for d in ./*/; do
@@ -263,7 +263,9 @@ _set_file_perm() {
 
 _install_zsh() {
     _msg step "install oh my zsh"
-    bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    # bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    git clone https://gitee.com/mirrors/ohmyzsh.git $HOME/.oh-my-zsh
+    cp $HOME/.oh-my-zsh/templates/zshrc.zsh-template $HOME/.zshrc
     omz theme set ys
     omz plugin enable z extract fzf docker-compose
     # sed -i -e 's/robbyrussell/ys/' ~/.zshrc
@@ -405,27 +407,29 @@ _set_args() {
         case "${1}" in
         php)
             args="php-fpm"
-            if [[ "$2" == upgrade ]]; then
-                exec_upgrade_php=1
-                enable_check=0
-            fi
             php_ver="$2"
-            ubuntu_ver=20.04
-            [[ "$2" == 8.1 || "$2" == 8.2 ]] && ubuntu_ver=22.04
+            if [[ "$2" =~ (5.6|7.0|7.1|7.2|7.4) ]]; then
+                ubuntu_ver=20.04
+            elif [[ "$2" =~ (8.0|8.1) ]]; then
+                ubuntu_ver=22.04
+            else
+                _msg err "ERR: php version $2. exit 1"
+                return 1
+            fi
             exec_set_php_ver=1
-            exec_set_file_perm=1
+            exec_set_file_mode=1
             exec_set_nginx_php=1
             shift
             ;;
         java)
             args="spring"
-            exec_set_file_perm=1
+            exec_set_file_mode=1
             exec_set_nginx_java=1
-            if [[ "$2" == upgrade ]]; then
-                exec_upgrade_spring=1
-                enable_check=0
-                shift
-            fi
+            ;;
+        upgrade)
+            [[ $args == *php-fpm* ]] && exec_upgrade_php=1
+            [[ $args == *spring* ]] && exec_upgrade_spring=1
+            enable_check=0
             ;;
         gitlab)
             args="gitlab"
@@ -438,7 +442,7 @@ _set_args() {
             enable_check=0
             ;;
         perm)
-            exec_set_file_perm=1
+            exec_set_file_mode=1
             enable_check=0
             ;;
         info)
@@ -457,6 +461,9 @@ _set_args() {
             exec_test=1
             enable_check=0
             ;;
+        '@')
+            :
+            ;;
         *)
             _usage
             return
@@ -468,12 +475,11 @@ _set_args() {
 
 main() {
     set -e
+    _set_args "$@"
+
     me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
     me_log="${me_path}/${me_name}.log"
-
-    _set_args "$@"
-
     path_laradock="${me_path:-$HOME}"/docker/laradock
     file_env="$path_laradock"/.env
 
@@ -483,13 +489,13 @@ main() {
     else
         dco="docker compose"
     fi
-    if [[ "${enable_check:-1}" -eq 1 ]]; then
-        _check_timezone
-        _check_dependence
-        _check_laradock
-        _set_laradock_env
+
+    if [[ "${exec_install_zsh:-0}" -eq 1 ]]; then
+        _install_zsh
+        return
     fi
-    if [[ "$need_logout" -eq 1 ]]; then
+    if [[ "${exec_setup_lsyncd:-0}" -eq 1 ]]; then
+        _setup_lsyncd
         return
     fi
 
@@ -501,9 +507,18 @@ main() {
         _upgrade_php
         return
     fi
-
+    if [[ "${enable_check:-1}" -eq 1 ]]; then
+        _check_timezone
+        _check_dependence
+        _check_laradock
+        _set_laradock_env
+    fi
+    if [[ "$need_logout" -eq 1 ]]; then
+        return
+    fi
     [[ "${exec_set_nginx_php:-0}" -eq 1 ]] && _set_nginx_php
     [[ "${exec_set_nginx_java:-0}" -eq 1 ]] && _set_nginx_java
+
     if [[ $args == *php-fpm* ]]; then
         _get_php_image
         _start_manual
@@ -514,18 +529,18 @@ main() {
     fi
 
     if [[ $args == *spring* ]]; then
+        # _get_spring_image
         _start_manual
         _start_auto
         _test_nginx
         _reload_nginx
         _test_java
     fi
-    [[ "${exec_install_zsh:-0}" -eq 1 ]] && _install_zsh
-    [[ "${exec_set_file_perm:-0}" -eq 1 ]] && _set_file_perm
+
+    [[ "${exec_set_file_mode:-0}" -eq 1 ]] && _set_file_mode
     [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]] && _get_redis_mysql_info
     [[ "${exec_mysql_cmd:-0}" -eq 1 ]] && _mysql_cmd
     [[ "${exec_set_php_ver:-0}" -eq 1 ]] && _set_php_ver
-    [[ "${exec_setup_lsyncd:-0}" -eq 1 ]] && _setup_lsyncd
     if [[ "${exec_test:-0}" -eq 1 ]]; then
         _test_php
         _test_java
