@@ -132,21 +132,21 @@ _check_timezone() {
 }
 
 _check_laradock() {
-    if [ -d "$path_laradock" ]; then
-        _msg time "$path_laradock exist, git pull."
-        (cd "$path_laradock" && git pull)
+    if [ -d "$laradock_path" ]; then
+        _msg time "$laradock_path exist, git pull."
+        (cd "$laradock_path" && git pull)
         return 0
     fi
     ## clone laradock or git pull
-    _msg step "install laradock to $path_laradock."
-    mkdir -p "$path_laradock"
-    git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$path_laradock"
+    _msg step "install laradock to $laradock_path."
+    mkdir -p "$laradock_path"
+    git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$laradock_path"
     ## jdk image, uid is 1000.(see spring/Dockerfile)
-    $pre_sudo chown 1000:1000 "$path_laradock/spring"
+    $pre_sudo chown 1000:1000 "$laradock_path/spring"
 }
 
 _set_laradock_env() {
-    if [[ -f "$file_env" && "${force_update_env:-0}" -eq 0 ]]; then
+    if [[ -f "$laradock_env" && "${force_update_env:-0}" -eq 0 ]]; then
         return 0
     fi
     _msg step "set laradock .env"
@@ -158,88 +158,63 @@ _set_laradock_env() {
     docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
 
     _msg time "copy .env.example to .env, and set password"
-    cp -vf "$file_env".example "$file_env"
+    cp -vf "$laradock_env".example "$laradock_env"
     sed -i \
         -e "/^MYSQL_PASSWORD/s/=.*/=$pass_mysql_default/" \
         -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
         -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
         -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
-        -e "/PHP_VERSION=/s/=.*/=${php_ver:-7.1}/" \
+        -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/true/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" \
-        "$file_env"
+        "$laradock_env"
     ## set SHELL_OH_MY_ZSH=true
-    echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$file_env" || return 0
+    echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$laradock_env" || return 0
 }
 
 _reload_nginx() {
-    cd $path_laradock && $dco exec nginx nginx -s reload
+    cd $laradock_path && $dco exec nginx nginx -s reload
 }
 
 _set_nginx_php() {
     ## setup php upstream
-    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$path_laradock/nginx/sites/d.php.include"
+    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$laradock_path/nginx/sites/d.php.include"
 }
 
 _set_nginx_java() {
     ## setup java upstream
-    sed -i -e 's/127\.0\.0\.1/spring/g' "$path_laradock/nginx/sites/d.java.include"
+    sed -i -e 's/127\.0\.0\.1/spring/g' "$laradock_path/nginx/sites/d.java.include"
 }
 
 _set_php_ver() {
     sed -i \
-        -e "/PHP_VERSION=/s/=.*/=${php_ver:-7.1}/" \
+        -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/true/" \
-        "$file_env"
+        "$laradock_env"
 }
 
-_get_php_image() {
-    _msg step "download docker image for php-fpm"
-    _set_php_ver
-    file_save=/tmp/laradock-php-fpm.tar.gz
-    curl -Lo $file_save "http://oss.flyh6.com/docker/laradock-php-fpm.${php_ver:-7.1}.tar.gz"
-    docker load <$file_save
-    if docker --version | grep -q "version 19"; then
-        docker tag laradock-php-fpm laradock_php-fpm
+_get_image() {
+    _msg step "download docker image for $1"
+    file_save=/tmp/laradock-${1}.tar.gz
+    if [[ $1 == *php-fpm* ]]; then
+        _set_php_ver
+        file_url="http://oss.flyh6.com/docker/laradock-${1}.${php_ver}.tar.gz"
+    else
+        file_url="http://oss.flyh6.com/docker/laradock-${1}.tar.gz"
     fi
-}
-
-_get_java_image() {
-    _msg step "download docker image for java"
-    file_save=/tmp/laradock-spring.tar.gz
-    curl -Lo $file_save "http://oss.flyh6.com/docker/laradock-spring.tar.gz"
+    curl -Lo $file_save "${file_url}"
     docker load <$file_save
     if docker --version | grep -q "version 19"; then
-        docker tag laradock-spring laradock_spring
-    fi
-}
-
-_get_mysql_image() {
-    _msg step "download docker image for mysql"
-    file_save=/tmp/laradock-mysql.tar.gz
-    curl -Lo $file_save "http://oss.flyh6.com/docker/laradock-mysql.tar.gz"
-    docker load <$file_save
-    if docker --version | grep -q "version 19"; then
-        docker tag laradock-mysql laradock_mysql
-    fi
-}
-
-_get_redis_image() {
-    _msg step "download docker image for redis"
-    file_save=/tmp/laradock-redis.tar.gz
-    curl -Lo $file_save "http://oss.flyh6.com/docker/laradock-redis.tar.gz"
-    docker load <$file_save
-    if docker --version | grep -q "version 19"; then
-        docker tag laradock-redis laradock_redis
+        docker tag laradock-$1 laradock_$1
     fi
 }
 
 _set_file_mode() {
     _check_sudo
-    cd "$path_laradock"/../
+    cd "$laradock_path"/../
     for d in ./*/; do
         [[ "$d" == *laradock* ]] && continue
         find "$d" | while read -r line; do
@@ -257,7 +232,7 @@ _set_file_mode() {
             fi
         done
     done
-    $pre_sudo chown 1000:1000 "$path_laradock/spring"
+    $pre_sudo chown 1000:1000 "$laradock_path/spring"
     cd -
 }
 
@@ -275,7 +250,7 @@ _install_zsh() {
 _start_manual() {
     _msg step "manual startup "
     _msg info '#########################################'
-    _msg info "\n cd $path_laradock && $dco up -d nginx redis mysql $args \n"
+    _msg info "\n cd $laradock_path && $dco up -d nginx redis mysql $args \n"
     _msg info '#########################################'
     _msg red 'sleep 10s' && sleep 10
 }
@@ -283,11 +258,11 @@ _start_manual() {
 _start_auto() {
     # if ss -lntu4 | grep -E ':80|:443|:6379|:3306'; then
     #     _msg red "ERR: port already start"
-    #     _msg "Please fix $file_env, manual start docker."
+    #     _msg "Please fix $laradock_env, manual start docker."
     #     return 1
     # fi
     _msg step "auto startup"
-    cd $path_laradock && $dco up -d nginx redis mysql ${args:-php-fpm spring}
+    cd $laradock_path && $dco up -d nginx redis mysql ${args:-php-fpm spring}
 }
 
 _test_nginx() {
@@ -303,10 +278,10 @@ _test_php() {
     ## create test.php
     _check_sudo
     _msg step "create test.php"
-    path_nginx_root="$path_laradock/../html"
+    path_nginx_root="$laradock_path/../html"
     $pre_sudo chown $USER:$USER "$path_nginx_root"
-    $pre_sudo cp -avf "$path_laradock/php-fpm/test.php" "$path_nginx_root/test.php"
-    source $file_env
+    $pre_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
+    source $laradock_env
     sed -i \
         -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
         -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
@@ -333,14 +308,14 @@ _test_java() {
 }
 
 _get_redis_mysql_info() {
-    grep ^REDIS_ $file_env | head -n 3
-    grep ^DB_HOST $file_env
-    grep ^MYSQL_ $file_env | sed -n '2,5 p'
+    grep ^REDIS_ $laradock_env | head -n 3
+    grep ^DB_HOST $laradock_env
+    grep ^MYSQL_ $laradock_env | sed -n '2,5 p'
 }
 
 _mysql_cmd() {
     echo "exec mysql"
-    password_default=$(awk -F= '/^MYSQL_PASSWORD/ {print $2}' "$file_env")
+    password_default=$(awk -F= '/^MYSQL_PASSWORD/ {print $2}' "$laradock_env")
     $dco exec mysql bash -c "LANG=C.UTF-8 mysql default -u default -p$password_default"
 }
 
@@ -351,7 +326,7 @@ _setup_lsyncd() {
     _msg "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
     [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd
-    $pre_sudo cp "$path_laradock"/usvn$lsyncd_conf $lsyncd_conf
+    $pre_sudo cp "$laradock_path"/usvn$lsyncd_conf $lsyncd_conf
     [[ "$USER" == "root" ]] || sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
     _msg "new key, ssh-keygen"
     [ -f "$HOME/.ssh/id_ed25519" ] || ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -N ''
@@ -367,7 +342,7 @@ _setup_lsyncd() {
 }
 
 _upgrade_spring() {
-    cd $path_laradock
+    cd $laradock_path
     curl -Lo spring.tar.gz http://oss.flyh6.com/docker/srping.tar.gz
     tar zxf spring.tar.gz
     $dco stop ${args}
@@ -376,7 +351,7 @@ _upgrade_spring() {
 }
 
 _upgrade_php() {
-    cd $path_laradock/../html
+    cd $laradock_path/../html
     curl -Lo tp.tar.gz http://oss.flyh6.com/docker/tp.tar.gz
     tar zxf tp.tar.gz
 }
@@ -400,6 +375,7 @@ Parameters:
 _set_args() {
     if [ -z "$1" ]; then
         args="php-fpm spring"
+        php_ver="${2:-7.1}"
         return
     fi
 
@@ -407,14 +383,10 @@ _set_args() {
         case "${1}" in
         php)
             args="php-fpm"
-            php_ver="$2"
-            if [[ "$2" =~ (5.6|7.0|7.1|7.2|7.4) ]]; then
-                ubuntu_ver=20.04
-            elif [[ "$2" =~ (8.0|8.1) ]]; then
+            php_ver="${2:-7.1}"
+            ubuntu_ver=20.04
+            if [[ "$2" =~ (8.0|8.1) ]]; then
                 ubuntu_ver=22.04
-            else
-                _msg err "ERR: php version $2. exit 1"
-                return 1
             fi
             exec_set_php_ver=1
             exec_set_file_mode=1
@@ -461,12 +433,9 @@ _set_args() {
             exec_test=1
             enable_check=0
             ;;
-        '@')
-            :
-            ;;
         *)
             _usage
-            return
+            # return
             ;;
         esac
         shift
@@ -477,11 +446,11 @@ main() {
     set -e
     _set_args "$@"
 
-    me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
+    me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
-    path_laradock="${me_path:-$HOME}"/docker/laradock
-    file_env="$path_laradock"/.env
+    laradock_path="${me_path:-$HOME}"/docker/laradock
+    laradock_env="$laradock_path"/.env
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
     if command -v docker-compose &>/dev/null; then
@@ -498,7 +467,6 @@ main() {
         _setup_lsyncd
         return
     fi
-
     if [[ $exec_upgrade_spring -eq 1 ]]; then
         _upgrade_spring
         return
@@ -520,21 +488,21 @@ main() {
     [[ "${exec_set_nginx_java:-0}" -eq 1 ]] && _set_nginx_java
 
     if [[ $args == *php-fpm* ]]; then
-        _get_php_image
+        _get_image $args
         _start_manual
         _start_auto
         _test_nginx
         _reload_nginx
-        _test_php
+        exec_test=1
     fi
 
     if [[ $args == *spring* ]]; then
-        # _get_spring_image
+        # _get_image $args
         _start_manual
         _start_auto
         _test_nginx
         _reload_nginx
-        _test_java
+        exec_test=1
     fi
 
     [[ "${exec_set_file_mode:-0}" -eq 1 ]] && _set_file_mode
