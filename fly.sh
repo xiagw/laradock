@@ -238,8 +238,10 @@ _set_file_mode() {
 
 _install_zsh() {
     _msg step "install oh my zsh"
+    _check_sudo
+    $cmd install zsh
     # bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    git clone https://gitee.com/mirrors/ohmyzsh.git $HOME/.oh-my-zsh
+    [ -d $HOME/.oh-my-zsh ] || git clone https://gitee.com/mirrors/ohmyzsh.git $HOME/.oh-my-zsh
     cp $HOME/.oh-my-zsh/templates/zshrc.zsh-template $HOME/.zshrc
     omz theme set ys
     omz plugin enable z extract fzf docker-compose
@@ -443,13 +445,17 @@ _set_args() {
 }
 
 main() {
-    set -e
     _set_args "$@"
-
+    set -e
     me_name="$(basename "$0")"
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
-    laradock_path="${me_path:-$HOME}"/docker/laradock
+    if [[ $me_name != 'fly.sh' ]]; then
+        laradock_path="${me_path:-$HOME}"/docker/laradock
+    else
+        laradock_path="${me_path:-$HOME}"
+    fi
+
     laradock_env="$laradock_path"/.env
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
