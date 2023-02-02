@@ -56,7 +56,7 @@ services:
         - TZ=${WORKSPACE_TIMEZONE}
       volumes:
         - ${DATA_PATH_HOST}/mysql_backup:/backup
-        - ./mysql/my.{MYSQL_VERSION}.cnf:/etc/mysql/conf.d/my.cnf
+        - ./mysql/my.${MYSQL_VERSION}.cnf:/etc/mysql/conf.d/my.cnf
       networks:
         - backend
         - frontend
