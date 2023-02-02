@@ -482,6 +482,7 @@ main() {
         return
     fi
     if [[ "${enable_check:-1}" -eq 1 ]]; then
+        _check_sudo
         _check_timezone
         _check_dependence
         _check_laradock
