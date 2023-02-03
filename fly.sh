@@ -54,13 +54,11 @@ _get_yes_no() {
 
 _check_sudo() {
     if [ "$USER" != "root" ]; then
-        _msg step "Not root, check sudo"
         if sudo -l -U "$USER" | grep "ALL"; then
-            _msg time "User $USER has sudo permission."
             pre_sudo="sudo"
         else
-            _msg time "User $USER has no permission to execute this script!"
-            _msg time "Please run visudo with root, and set sudo to $USER"
+            echo "User $USER has no permission to execute this script!"
+            echo "Please run visudo with root, and set sudo to $USER"
             return 1
         fi
     fi
@@ -162,6 +160,7 @@ _set_laradock_env() {
     sed -i \
         -e "/^MYSQL_PASSWORD/s/=.*/=$pass_mysql_default/" \
         -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
+        -e "/MYSQL_VERSION=latest/s/=.*/=5.7/" \
         -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
         -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
@@ -174,7 +173,7 @@ _set_laradock_env() {
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$laradock_env" || return 0
 }
 
-_reload_nginx() {
+_restart_nginx() {
     cd $laradock_path && $dco exec nginx nginx -s reload
 }
 
@@ -254,7 +253,7 @@ _start_manual() {
     _msg info '#########################################'
     _msg info "\n cd $laradock_path && $dco up -d nginx redis mysql $args \n"
     _msg info '#########################################'
-    _msg red 'sleep 10s' && sleep 10
+    _msg red 'startup automatic after sleep 15s' && sleep 15
 }
 
 _start_auto() {
@@ -277,11 +276,11 @@ _test_nginx() {
 }
 
 _test_php() {
-    ## create test.php
     _check_sudo
     _msg step "create test.php"
     path_nginx_root="$laradock_path/../html"
     $pre_sudo chown $USER:$USER "$path_nginx_root"
+    ## create test.php
     $pre_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
     source $laradock_env
     sed -i \
@@ -291,7 +290,7 @@ _test_php() {
         "$path_nginx_root/test.php"
     _msg time "Test PHP Redis MySQL "
     _set_nginx_php
-    _reload_nginx
+    _restart_nginx
     while [[ "${get_status:-502}" -gt 200 ]]; do
         curl --connect-timeout 3 localhost/test.php
         get_status="$(curl -Lo /dev/null -fsSL -w "%{http_code}" localhost/test.php)"
@@ -315,13 +314,13 @@ _get_redis_mysql_info() {
     grep ^MYSQL_ $laradock_env | sed -n '2,5 p'
 }
 
-_mysql_cmd() {
+_mysql_cli() {
     echo "exec mysql"
     password_default=$(awk -F= '/^MYSQL_PASSWORD/ {print $2}' "$laradock_env")
     $dco exec mysql bash -c "LANG=C.UTF-8 mysql default -u default -p$password_default"
 }
 
-_setup_lsyncd() {
+_install_lsyncd() {
     _msg "install lsyncd"
     _check_sudo
     command -v lsyncd &>/dev/null || $cmd install -y lsyncd
@@ -343,7 +342,7 @@ _setup_lsyncd() {
     done
 }
 
-_upgrade_spring() {
+_upgrade_java() {
     cd $laradock_path
     curl -Lo spring.tar.gz http://oss.flyh6.com/docker/srping.tar.gz
     tar zxf spring.tar.gz
@@ -395,14 +394,14 @@ _set_args() {
             exec_set_nginx_php=1
             shift
             ;;
-        java)
+        java | spring)
             args="spring"
             exec_set_file_mode=1
             exec_set_nginx_java=1
             ;;
         upgrade)
             [[ $args == *php-fpm* ]] && exec_upgrade_php=1
-            [[ $args == *spring* ]] && exec_upgrade_spring=1
+            [[ $args == *spring* ]] && exec_upgrade_java=1
             enable_check=0
             ;;
         gitlab)
@@ -424,11 +423,11 @@ _set_args() {
             enable_check=0
             ;;
         mysql)
-            exec_mysql_cmd=1
+            exec_mysql_cli=1
             enable_check=0
             ;;
         lsync)
-            exec_setup_lsyncd=1
+            exec_install_lsyncd=1
             enable_check=0
             ;;
         test)
@@ -450,6 +449,7 @@ main() {
     me_name="$(basename "$0")"
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
+    ## run with bash -c "remote_url" @ args
     if [[ $me_name != 'fly.sh' ]]; then
         laradock_path="${me_path:-$HOME}"/docker/laradock
     else
@@ -469,12 +469,12 @@ main() {
         _install_zsh
         return
     fi
-    if [[ "${exec_setup_lsyncd:-0}" -eq 1 ]]; then
-        _setup_lsyncd
+    if [[ "${exec_install_lsyncd:-0}" -eq 1 ]]; then
+        _install_lsyncd
         return
     fi
-    if [[ $exec_upgrade_spring -eq 1 ]]; then
-        _upgrade_spring
+    if [[ $exec_upgrade_java -eq 1 ]]; then
+        _upgrade_java
         return
     fi
     if [[ $exec_upgrade_php -eq 1 ]]; then
@@ -499,7 +499,7 @@ main() {
         _start_manual
         _start_auto
         _test_nginx
-        _reload_nginx
+        _restart_nginx
         exec_test=1
     fi
 
@@ -508,13 +508,13 @@ main() {
         _start_manual
         _start_auto
         _test_nginx
-        _reload_nginx
+        _restart_nginx
         exec_test=1
     fi
 
     [[ "${exec_set_file_mode:-0}" -eq 1 ]] && _set_file_mode
     [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]] && _get_redis_mysql_info
-    [[ "${exec_mysql_cmd:-0}" -eq 1 ]] && _mysql_cmd
+    [[ "${exec_mysql_cli:-0}" -eq 1 ]] && _mysql_cli
     [[ "${exec_set_php_ver:-0}" -eq 1 ]] && _set_php_ver
     if [[ "${exec_test:-0}" -eq 1 ]]; then
         _test_php
