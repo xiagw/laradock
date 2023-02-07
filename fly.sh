@@ -53,8 +53,9 @@ _get_yes_no() {
 }
 
 _check_sudo() {
+    [[ "$check_sudo_flag" -eq 1 ]] && return 0
     if [ "$USER" != "root" ]; then
-        if sudo -l -U "$USER" | grep "ALL"; then
+        if sudo -l -U "$USER" | grep -q "ALL"; then
             pre_sudo="sudo"
         else
             echo "User $USER has no permission to execute this script!"
@@ -72,6 +73,7 @@ _check_sudo() {
         _msg time "not found apt/yum/dnf, exit 1"
         return 1
     fi
+    check_sudo_flag=1
 }
 
 _check_dependence() {
