@@ -3,12 +3,12 @@
 ### 国内(gitee)  branch: in-china
 ```
 ## sudo apt install curl (default php-7.1)
-bash -c "$(curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh)"
+curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php
 ```
 ### 国外(github) branch: in-china
 ```
 ## sudo apt install curl (default php-7.1)
-bash -c "$(curl -fsSL https://github.com/xiagw/laradock/raw/in-china/fly.sh)"
+curl -fsSL https://github.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php
 ```
 
 [![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://zalt.me)
