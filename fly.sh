@@ -52,6 +52,19 @@ _get_yes_no() {
     fi
 }
 
+_command_exists() {
+    command -v "$@" &>/dev/null
+}
+
+_get_distribution() {
+    if [ -r /etc/os-release ]; then
+        lsb_dist="$(. /etc/os-release && echo "$ID")"
+        lsb_dist="$(echo "$lsb_dist" | tr '[:upper:]' '[:lower:]')"
+    else
+        lsb_dist='unknown'
+    fi
+}
+
 _check_sudo() {
     [[ "$check_sudo_flag" -eq 1 ]] && return 0
     if [ "$USER" != "root" ]; then
@@ -63,11 +76,11 @@ _check_sudo() {
             return 1
         fi
     fi
-    if command -v apt; then
+    if _command_exists apt; then
         cmd="$pre_sudo apt"
-    elif command -v yum; then
+    elif _command_exists yum; then
         cmd="$pre_sudo yum"
-    elif command -v dnf; then
+    elif _command_exists dnf; then
         cmd="$pre_sudo dnf"
     else
         _msg time "not found apt/yum/dnf, exit 1"
@@ -77,27 +90,20 @@ _check_sudo() {
 }
 
 _check_dependence() {
-    _msg step "check command: git/curl/docker"
-    command -v git && echo ok || install_git=1
-    command -v curl && echo ok || install_curl=1
-    command -v docker && echo ok || install_docker=1
-    _check_sudo
-    [[ $install_curl ]] && {
-        _msg step "install curl"
+    _msg step "check command: curl/git/docker"
+    _command_exists curl || {
         $cmd install -y curl
     }
-    [[ $install_git ]] && {
-        _msg step "install git"
+    _command_exists git || {
         $cmd install -y git zsh
     }
     ## install docker/compose
-    [[ $install_docker ]] && {
-        _msg step "install docker"
+    if ! _command_exists docker; then
         if grep -q '^ID=alinux' /etc/os-release; then
             sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
             update_os_release=1
         fi
-        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
+        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash -s --mirror Aliyun
         if [[ "$USER" != "root" ]]; then
             _msg time "Add user $USER to group docker."
             $pre_sudo usermod -aG docker "$USER"
@@ -115,8 +121,8 @@ _check_dependence() {
         fi
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
-    }
-    command -v strings || $cmd install -y binutils
+    fi
+    _command_exists strings || $cmd install -y binutils
     return 0
 }
 
@@ -325,7 +331,7 @@ _mysql_cli() {
 _install_lsyncd() {
     _msg "install lsyncd"
     _check_sudo
-    command -v lsyncd &>/dev/null || $cmd install -y lsyncd
+    _command_exists lsyncd &>/dev/null || $cmd install -y lsyncd
     _msg "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
     [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd
@@ -461,7 +467,7 @@ main() {
     laradock_env="$laradock_path"/.env
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
-    if command -v docker-compose &>/dev/null; then
+    if _command_exists docker-compose &>/dev/null; then
         dco="docker-compose"
     else
         dco="docker compose"
