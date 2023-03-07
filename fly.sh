@@ -331,7 +331,7 @@ _mysql_cli() {
 _install_lsyncd() {
     _msg "install lsyncd"
     _check_sudo
-    _command_exists lsyncd &>/dev/null || $cmd install -y lsyncd
+    _command_exists lsyncd || $cmd install -y lsyncd
     _msg "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
     [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd
@@ -467,7 +467,8 @@ main() {
     laradock_env="$laradock_path"/.env
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
-    if _command_exists docker-compose &>/dev/null; then
+    # curl -SL https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+    if _command_exists docker-compose; then
         dco="docker-compose"
     else
         dco="docker compose"
