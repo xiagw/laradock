@@ -79,7 +79,7 @@ services:
         args:
           - TZ=${WORKSPACE_TIMEZONE}
 
-### watchtower ################################################
+### gitlab ################################################
     gitlab:
       # container_name: gitlab
       ports:
@@ -99,8 +99,9 @@ services:
       volumes:
         - /var/run/docker.sock:/var/run/docker.sock
         # - /home/ubuntu/.docker/config.json:/config.json
-      ## schedule, 05 21 = 21:05 UTC = 05:05 Asia/Shanghai
-      command: --cleanup --schedule "0 05 21 * * *" laradock_gitlab_1 laradock_watchtower_1
+      ## schedule, 05 21 = 21:05 Asia/Shanghai, 05:05 UTC
+      # command: --cleanup --schedule "0 05 21 * * *" laradock_gitlab_1 laradock_watchtower_1
+      command: --cleanup --schedule "0 05 21 * * *"
       #command: --interval 300
 
 ### awvs ################################################
