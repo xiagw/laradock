@@ -27,7 +27,7 @@ RUN set -xe \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/lastlog /var/log/faillog
 
-ARG ZENTAO_VERSION=17.1
+ARG ZENTAO_VERSION=18.2
 
 WORKDIR /app
 
