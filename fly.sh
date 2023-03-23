@@ -103,7 +103,9 @@ _check_dependence() {
             sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
             update_os_release=1
         fi
-        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash -s "--mirror Aliyun"
+        install_docker_sh="/tmp/getdocker.sh"
+        curl -fsSLo $install_docker_sh --connect-timeout 10 https://get.docker.com
+        $pre_sudo bash $install_docker_sh --mirror Aliyun
         if [[ "$USER" != "root" ]]; then
             _msg time "Add user $USER to group docker."
             $pre_sudo usermod -aG docker "$USER"
@@ -122,6 +124,7 @@ _check_dependence() {
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
     fi
+    rm -f "$install_docker_sh"
     _command_exists strings || $cmd install -y binutils
     return 0
 }
