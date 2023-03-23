@@ -15,11 +15,13 @@ if [ ! -f $ssl_dir/dhparams.pem ]; then
 fi
 
 chmod 0644 /etc/logrotate.d/nginx
-chown 82:0 /var/log/nginx
+chown 1000:0 /var/log/nginx
 
 ## /var/www/html
+[ -d /var/www/html/.well-known/acme-challenge ] || mkdir -p /var/www/html/.well-known/acme-challenge
 [ -d /var/www/html ] || mkdir -p /var/www/html
 [ -f /var/www/html/index.html ] || date >>/var/www/html/index.html
+chown -R 1000:1000 /var/www/html
 
 # Start crond in background
 crond -l 2 -b

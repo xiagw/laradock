@@ -14,6 +14,6 @@ location ~ /\.(htaccess|htpasswd|env) {
     deny all;
 }
 location /.well-known/acme-challenge/ {
-    root /var/www/letsencrypt/;
+    #root /var/www/letsencrypt/;
     log_not_found off;
 }
