@@ -23,6 +23,14 @@ chown 1000:0 /var/log/nginx
 [ -f /var/www/html/index.html ] || date >>/var/www/html/index.html
 chown -R 1000:1000 /var/www/html
 
+## nginx 4xx 5xx
+if [ ! -f /var/www/html/4xx.html ]; then
+    echo 'Error page: 4xx' >>/var/www/html/4xx.html
+fi
+if [ ! -f /var/www/html/5xx.html ]; then
+    echo 'Error page: 5xx' >>/var/www/html/5xx.html
+fi
+
 # Start crond in background
 crond -l 2 -b
 

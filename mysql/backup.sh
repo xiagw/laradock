@@ -56,7 +56,7 @@ main() {
     fi
     ## backup single/multiple databases
     if [[ -z "$1" ]]; then
-        dbs="$($mysql_bin -Ne 'show databases' | grep -vE '^default$|information_schema|performance_schema|^sys$|^mysql$')"
+        dbs="$($mysql_bin -Ne 'show databases' | grep -vE 'information_schema|performance_schema|^sys$|^mysql$')"
     else
         dbs="$1"
     fi
