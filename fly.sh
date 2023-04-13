@@ -190,12 +190,12 @@ _restart_nginx() {
 
 _set_nginx_php() {
     ## setup php upstream
-    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$laradock_path/nginx/sites/d.php.include"
+    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$laradock_path/nginx/sites/d.php.inc"
 }
 
 _set_nginx_java() {
     ## setup java upstream
-    sed -i -e 's/127\.0\.0\.1/spring/g' "$laradock_path/nginx/sites/d.java.include"
+    sed -i -e 's/127\.0\.0\.1/spring/g' "$laradock_path/nginx/sites/d.java.inc"
 }
 
 _set_php_ver() {
@@ -461,10 +461,10 @@ main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
     ## run with bash -c "remote_url" @ args
-    if [[ $me_name != 'fly.sh' ]]; then
-        laradock_path="${me_path:-$HOME}"/docker/laradock
-    else
+    if [[ $me_name == 'fly.sh' ]]; then
         laradock_path="${me_path:-$HOME}"
+    else
+        laradock_path="${me_path:-$HOME}"/docker/laradock
     fi
 
     laradock_env="$laradock_path"/.env
