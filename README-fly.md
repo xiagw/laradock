@@ -1,0 +1,105 @@
+## 服务器配置推荐
+- CPU >= 2 core(核)
+- 内存 >= 8 GB
+- 系统硬盘 >= 60 GB
+- 网络带宽>= 100M(按量付费) ， 或 网络带宽 >= 10M(固定带宽付费)
+- 如不是云服务器，带宽请自行根据实际业务情况配置网络带宽
+- 建议所有采购项目初期使用按量付费，之后再根据每日账单确定采购固定消费套餐
+
+## 软件版本
+- (单机)操作系统： Ubuntu 22.04，CentOS 7，AliyunOS 等 Linux 系统
+- (集群)操作系统： Kubernetes (根据云厂商自动推荐)
+- Nginx >= 1.16
+- PHP >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)
+- JDK >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB)
+- MySQL >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB)
+- Redis >= 5.0 （内存 >=1GB）
+
+
+## 部署方式一 单机/多机，docker-compose 部署参考（推荐）
+```sh
+## 初始化安装环境, docker / php-fpm 7.1 / jdk
+## 默认安装路径为 当前 $PWD/docker/laradock 或 $HOME/docker/laradock
+curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh ｜ bash -s php
+curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh ｜ bash -s java
+
+## （必须进入此目录）
+cd $HOME/docker/laradock ## 或 cd $PWD/docker/laradock
+## 启动服务 php-fpm
+docker compose up -d nginx redis mysql php-fpm
+## 启动服务 java or spring
+docker compose up -d nginx redis mysql spring
+
+## 配置文件 nginx
+$HOME/docker/laradock/nginx/sites/{default.conf,app.conf,app.inc}
+## 1, 目录 $HOME/docker/html 为缺省默认 web 目录，存放 前端静态文件 或 php 文件
+## 2, 若需要修改目录，例如 $HOME/docker/app1, $HOME/docker/app2 等等，则修改相应 nginx 配置内的 root , 并创建相应目录
+## 3, 目录 $HOME/docker/laradock/spring 存放 *.jar 程序 / *.yml 文件
+## 4, 若需要修改目录，例如 $HOME/docker/laradock/spring2 等等，则修改相应 nginx 配置并创建相应目录，然后再修改调整 $HOME/docker/laradock/docker-compose-override.yml
+## 5, 在线链接
+https://gitee.com/xiagw/laradock/tree/in-china/nginx/sites
+```
+
+## 部署方式二 K8S 集群， helm 部署参考（推荐）
+```sh
+## 1. 前提条件，命令 kubectl / helm 工作正常
+## 2. 通过 helm create <project_name> 生成 helm 文件， 例如:
+cd /path/to/helm/
+helm create project_app
+
+## 3. 根据需要自行修改 project_app/*.yml 文件，或使用软件服务商提供的 yml 文件
+## 4. 执行 k8s 部署
+helm upgrade spring  /path/to/helm/project_app/ --install --history-max 1 \
+--namespace dev --create-namespace \
+--set image.repository=registry-vpc.cn-hangzhou.aliyuncs.com/ns/repo \
+--set image.tag=spring-b962e447-1669878102 \
+--set image.pullPolicy=Always --timeout 120s
+```
+
+## 部署方式三 单机/多机，传统方式部署参考（不推荐）
+```sh
+### 安装 jdk (参考)
+# yum install -y java-1.8.0-openjdk
+apt install -y openjdk-18-jdk
+### 安装 nginx(参考)
+# yum install -y epel-release; yum install -y nginx
+apt install -y nginx
+### 安装 php71(参考)
+## 安装yum仓库
+yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+## 安装php71
+yum -y install php71 php71-php php71-php-fpm php71-php-gd php71-php-json php71-php-mbstring php71-php-mysqlnd php71-php-xml php71-php-xmlrpc php71-php-redis php71-php-pecl-mongodb php71-php-pecl-imagick php71-php-mcrypt php71-php-bcmath php71-php-gmp php71-php-pecl-mysql php71-php-pecl-zip php71-php-soap php71-php-process php71-php-gnupg php71-php-amqp php71-php-opcache
+## 启动 php-fpm
+systemctl start php71-php-fpm
+### 安装 Mysql5.7(参考)
+## 下载 yum 源
+wget -i -c http://dev.mysql.com/get/mysql57-community-release-el7-10.noarch.rpm
+## 安装 yum 源
+yum -y install mysql57-community-release-el7-10.noarch.rpm
+## 安装 mysql5.7
+yum -y install mysql-community-client mysql-community-devel mysql-community-libs mysql-community-server
+## 启动 mysql
+systemctl start mysqld
+### 安装Redis4.0(参考)
+yum -y install redis
+## 启动 redis
+systemctl start redis
+### java 程序启动(参考)
+# 启动 jar
+exec run.sh start
+```
+
+## 文件临时传递
+- 文件非机密内容
+- 文件敏感性低的可以压缩文件并加复杂密码
+- 禁止传递敏感性高的文件
+
+奶牛快传｜免费大文件传输工具上传下载不限速 CowTransfer
+https://cowtransfer.com/
+
+Wormhole - 简单、私密的文件共享
+https://wormhole.app/1PZKN#ti-XEHaU2ZpXi6MHctjVxg
+
+文叔叔 - 传文件，找文叔叔（大文件、永不限速）
+https://www.wenshushu.cn/
+
