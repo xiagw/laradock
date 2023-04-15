@@ -89,6 +89,14 @@ systemctl start redis
 exec run.sh start
 ```
 
+## Windows 服务器部署 PHP
+1. Download URL: https://cdn.flyh6.com/docker/xampp.zip
+1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
+1. 目录存放一般位于 C:\xampp\htdocs\ （此目录对应站点根目录，例如 http://xxx.yyy.com/）
+1. C:\xampp\htdocs\tp (PHP 代码文件)
+1. C:\xampp\htdocs\static (前端静态资源文件)
+
+
 ## 文件临时传递
 - 文件非机密内容
 - 文件敏感性低的可以压缩文件并加复杂密码
