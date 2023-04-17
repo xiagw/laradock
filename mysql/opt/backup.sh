@@ -47,7 +47,7 @@ main() {
     mysql -Ne 'select user,host from mysql.user' >"$user_list"
     while read -r line; do
         IFS=" " read -r -a user_host <<<$line
-        mysql -Ne "show grants for ${user_host[0]}@'${user_host[1]}';" >>"$user_perm"
+        mysql -Ne "show grants for \`${user_host[0]}\`@'${user_host[1]}';" >>"$user_perm"
     done <"$user_list"
     ## restore database
     if [[ "$1" == restore ]]; then

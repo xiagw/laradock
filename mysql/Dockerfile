@@ -12,12 +12,12 @@ ENV TZ ${TZ}
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && chown -R mysql:root /var/lib/mysql/
 
 COPY my.cnf /etc/mysql/conf.d/my.cnf
-COPY backup.sh /opt/
+COPY /opt/ /opt/
 
 ARG MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
 ARG MYSQL_SLAVE=false
 RUN chmod 0444 /etc/mysql/conf.d/my.cnf \
-    && chmod +x /opt/backup.sh \
+    && chmod +x /opt/backup.sh /opt/run.sh \
     && chmod o-rw /var/run/mysqld \
     && sed -i '/skip-host-cache/d' /etc/my.cnf \
     && printf "[client]\npassword=%s\n" "${MYSQL_ROOT_PASSWORD}" >/root/.my.cnf \
