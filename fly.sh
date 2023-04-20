@@ -103,9 +103,7 @@ _check_dependence() {
             sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
             update_os_release=1
         fi
-        install_docker_sh="/tmp/getdocker.sh"
-        curl -fsSLo $install_docker_sh --connect-timeout 10 https://get.docker.com
-        $pre_sudo bash $install_docker_sh --mirror Aliyun
+        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash -s - --mirror Aliyun
         if [[ "$USER" != "root" ]]; then
             _msg time "Add user $USER to group docker."
             $pre_sudo usermod -aG docker "$USER"
@@ -124,7 +122,6 @@ _check_dependence() {
         [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
         $pre_sudo systemctl start docker
     fi
-    rm -f "$install_docker_sh"
     _command_exists strings || $cmd install -y binutils
     return 0
 }
@@ -460,10 +457,10 @@ main() {
     me_name="$(basename "$0")"
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
-    ## run with bash -c "remote_url" @ args
     if [[ $me_name == 'fly.sh' ]]; then
         laradock_path="${me_path:-$HOME}"
     else
+        ## curl "remote_url" | bash -s args
         laradock_path="${me_path:-$HOME}"/docker/laradock
     fi
 
