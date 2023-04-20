@@ -6,17 +6,19 @@ ARG PHP_SESSION_REDIS=false
 ENV DEBIAN_FRONTEND noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN true
 ENV TIME_ZOME Asia/Shanghai
-RUN set -xe \
-    && sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list \
+RUN set -xe; \
+    if [ "$CHANGE_SOURCE" = true ]; then \
+    sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list; \
+    fi; \
     ## preesed tzdata, update package index, upgrade packages and install needed software
-    && truncate -s0 /tmp/preseed.cfg \
+    truncate -s0 /tmp/preseed.cfg \
     && echo "tzdata tzdata/Areas select Asia" >> /tmp/preseed.cfg \
     && echo "tzdata tzdata/Zones/Asia select Shanghai" >> /tmp/preseed.cfg \
     && debconf-set-selections /tmp/preseed.cfg \
     && rm -f /etc/timezone /etc/localtime \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends apt-utils tzdata \
-    && apt-get install -y --no-install-recommends  locales \
+    && apt-get install -y --no-install-recommends locales \
     && grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen \
     && locale-gen en_US.UTF-8; \
     if [ "$LARADOCK_PHP_VERSION" != '8.1' ]; then \
