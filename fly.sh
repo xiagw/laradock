@@ -208,9 +208,9 @@ _get_image() {
     file_save=/tmp/laradock-${1}.tar.gz
     if [[ $1 == *php-fpm* ]]; then
         _set_php_ver
-        file_url="http://oss.flyh6.com/docker/laradock-${1}.${php_ver}.tar.gz"
+        file_url="http://cdn.flyh6.com/docker/laradock-${1}.${php_ver}.tar.gz"
     else
-        file_url="http://oss.flyh6.com/docker/laradock-${1}.tar.gz"
+        file_url="http://cdn.flyh6.com/docker/laradock-${1}.tar.gz"
     fi
     curl -Lo $file_save "${file_url}"
     docker load <$file_save
@@ -352,7 +352,7 @@ _install_lsyncd() {
 
 _upgrade_java() {
     cd $laradock_path
-    curl -Lo spring.tar.gz http://oss.flyh6.com/docker/srping.tar.gz
+    curl -Lo spring.tar.gz http://cdn.flyh6.com/docker/srping.tar.gz
     tar zxf spring.tar.gz
     $dco stop ${args}
     $dco rm -f
@@ -361,7 +361,7 @@ _upgrade_java() {
 
 _upgrade_php() {
     cd $laradock_path/../html
-    curl -Lo tp.tar.gz http://oss.flyh6.com/docker/tp.tar.gz
+    curl -Lo tp.tar.gz http://cdn.flyh6.com/docker/tp.tar.gz
     tar zxf tp.tar.gz
 }
 
@@ -391,7 +391,7 @@ _set_args() {
     while [ "$#" -gt 0 ]; do
         case "${1}" in
         php)
-            args="php-fpm"
+            args="php-fpm ${args:+${args}}"
             php_ver="${2:-7.1}"
             ubuntu_ver=20.04
             if [[ "$2" =~ (8.0|8.1) ]]; then
@@ -403,7 +403,7 @@ _set_args() {
             shift
             ;;
         java | spring)
-            args="spring"
+            args="spring ${args:+${args}}"
             exec_set_file_mode=1
             exec_set_nginx_java=1
             ;;

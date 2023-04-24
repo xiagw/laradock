@@ -20,8 +20,8 @@
 ```sh
 ## 初始化安装环境, docker / php-fpm 7.1 / jdk
 ## 默认安装路径为 当前 $PWD/docker/laradock 或 $HOME/docker/laradock
-curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh ｜ bash -s php
-curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh ｜ bash -s java
+curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php
+curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java
 
 ## （必须进入此目录）
 cd $HOME/docker/laradock ## 或 cd $PWD/docker/laradock
