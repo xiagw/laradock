@@ -204,6 +204,9 @@ _set_php_ver() {
 }
 
 _get_image() {
+    if [[ $args == *spring* ]]; then
+        return
+    fi
     _msg step "download docker image for $1"
     file_save=/tmp/laradock-${1}.tar.gz
     if [[ $1 == *php-fpm* ]]; then
@@ -458,9 +461,10 @@ main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
     if [[ $me_name == 'fly.sh' ]]; then
+        ## 从本机当前目录执行 fly.sh
         laradock_path="${me_path:-$HOME}"
     else
-        ## curl "remote_url" | bash -s args
+        ## 从远程执行 fly.sh , curl "remote_url" | bash -s args
         laradock_path="${me_path:-$HOME}"/docker/laradock
     fi
 
@@ -505,15 +509,6 @@ main() {
 
     if [[ $args == *php-fpm* ]]; then
         _get_image $args
-        _start_manual
-        _start_auto
-        _test_nginx
-        _restart_nginx
-        exec_test=1
-    fi
-
-    if [[ $args == *spring* ]]; then
-        # _get_image $args
         _start_manual
         _start_auto
         _test_nginx
