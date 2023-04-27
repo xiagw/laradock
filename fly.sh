@@ -428,6 +428,7 @@ _set_args() {
             ;;
         github)
             IN_CHINA=false
+            shift
             ;;
         gitlab)
             args="gitlab"
