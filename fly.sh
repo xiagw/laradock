@@ -103,7 +103,11 @@ _check_dependence() {
             sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
             update_os_release=1
         fi
-        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash -s - --mirror Aliyun
+        if [[ "${IN_CHINA:-true}" == true ]]; then
+            curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash -s - --mirror Aliyun
+        else
+            curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
+        fi
         if [[ "$USER" != "root" ]]; then
             _msg time "Add user $USER to group docker."
             $pre_sudo usermod -aG docker "$USER"
@@ -146,7 +150,11 @@ _check_laradock() {
     ## clone laradock or git pull
     _msg step "install laradock to $laradock_path."
     mkdir -p "$laradock_path"
-    git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$laradock_path"
+    if [[ "${IN_CHINA:-true}" == true ]]; then
+        git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$laradock_path"
+    else
+        git clone -b in-china --depth 1 https://github.com/xiagw/laradock.git "$laradock_path"
+    fi
     ## jdk image, uid is 1000.(see spring/Dockerfile)
     $pre_sudo chown 1000:1000 "$laradock_path/spring"
 }
@@ -247,8 +255,11 @@ _install_zsh() {
     _msg step "install oh my zsh"
     _check_sudo
     $cmd install zsh
-    # bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    [ -d $HOME/.oh-my-zsh ] || git clone https://gitee.com/mirrors/ohmyzsh.git $HOME/.oh-my-zsh
+    if [[ "${IN_CHINA:-true}" == true ]]; then
+        [ -d "$HOME"/.oh-my-zsh ] || git clone https://gitee.com/mirrors/ohmyzsh.git $HOME/.oh-my-zsh
+    else
+        bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    fi
     cp $HOME/.oh-my-zsh/templates/zshrc.zsh-template $HOME/.zshrc
     omz theme set ys
     omz plugin enable z extract fzf docker-compose
@@ -411,6 +422,9 @@ _set_args() {
             [[ $args == *php-fpm* ]] && exec_upgrade_php=1
             [[ $args == *spring* ]] && exec_upgrade_java=1
             enable_check=0
+            ;;
+        github)
+            IN_CHINA=false
             ;;
         gitlab)
             args="gitlab"
