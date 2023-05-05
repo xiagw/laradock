@@ -99,7 +99,7 @@ _check_dependence() {
     }
     ## install docker/compose
     if ! _command_exists docker; then
-        if grep -q '^ID=alinux' /etc/os-release; then
+        if grep -q '^ID=.*alinux.*' /etc/os-release; then
             sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
             update_os_release=1
         fi
