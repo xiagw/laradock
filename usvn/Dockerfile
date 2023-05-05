@@ -46,13 +46,8 @@ RUN set -xe \
   && apt-get install -y apt-utils tzdata vim libapache2-mod-svn subversion rsync lsyncd openssh-client locales inotify-tools \
   && grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen \
   && locale-gen en_US.UTF-8 \
-  && a2enmod dav \
-  && a2enmod dav_fs \
-  && a2enmod rewrite \
-  && a2enmod authz_svn \
-  && a2enmod dav_svn \
-  && curl -sSLo /tmp/usvn.tgz https://github.com/usvn/usvn/archive/1.0.10.tar.gz \
-  && tar --strip-components=1 -C /tmp/ -xzf /tmp/usvn.tgz \
+  && a2enmod dav dav_fs rewrite authz_svn dav_svn \
+  && curl -fsSLo - https://github.com/usvn/usvn/archive/1.0.10.tar.gz | tar --strip-components=1 -C /tmp/ -xz
   && mkdir -p /var/www/usvn_src \
   && cp -af /tmp/src/* /var/www/usvn_src/ \
   && chown -R www-data:www-data /var/www/ \

@@ -11,14 +11,14 @@ main() {
     fi
 
     ## svn update /root/tool/svn_checkout/
-    if [ -f ~/tool/svn-update.sh ]; then
-        bash ~/tool/svn-update.sh &
-    elif [ -f ~/svn-update.sh ]; then
-        bash ~/svn-update.sh &
+    if [ -f $HOME/tool/svn-update.sh ]; then
+        bash $HOME/tool/svn-update.sh &
+    elif [ -f $HOME/svn-update.sh ]; then
+        bash $HOME/svn-update.sh &
     fi
     ## lsyncd /root/tool/lsyncd.conf
-    if [ -f ~/tool/lsyncd.conf.lua ]; then
-        lsyncd ~/tool/lsyncd.conf.lua
+    if [ -f $HOME/tool/lsyncd.conf.lua ]; then
+        lsyncd $HOME/tool/lsyncd.conf.lua
     fi
 
     trap _cleanup INT TERM EXIT HUP

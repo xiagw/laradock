@@ -15,19 +15,18 @@ _log() {
 
 _generate_ssh_key() {
     ## generate ssh key
-    [ -f ~/.ssh/id_ed25519 ] && return
-    mkdir -p ~/.ssh
-    chmod 700 ~/.ssh
-    ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f ~/.ssh/id_ed25519
+    [ -f $HOME/.ssh/id_ed25519 ] && return
+    mkdir -m 700 $HOME/.ssh
+    ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f $HOME/.ssh/id_ed25519
     (
         echo 'Host *'
-        echo 'IdentityFile ~/.ssh/id_ed25519'
+        echo 'IdentityFile $HOME/.ssh/id_ed25519'
         echo 'StrictHostKeyChecking no'
         echo 'GSSAPIAuthentication no'
         echo 'Compression yes'
-    ) >~/.ssh/config
-    chmod 600 ~/.ssh/config
-    # cat ~/.ssh/id_ed25519.pub
+    ) >$HOME/.ssh/config
+    chmod 600 $HOME/.ssh/config
+    # cat $HOME.ssh/id_ed25519.pub
 }
 
 _schedule_svn_update() {
@@ -79,6 +78,8 @@ _chown_chmod() {
 main() {
     path_svn_pre=/var/www/usvn/files/svn
     path_svn_checkout=${me_path}/svn_checkout
+    bin_svn=/usr/bin/svn
+    bin_svnlook=/usr/bin/svnlook
     ## allow only one instance
     if [ -f "$me_lock" ]; then
         _log "$me_lock exist, exit."
@@ -103,16 +104,16 @@ main() {
                 continue
             fi
             ## svnlook dirs-change
-            sleep 2 ## because inotifywait is too fast, need to wait svn write to disk
-            for dir_changed in $(/usr/bin/svnlook dirs-changed -r "${file}" "$path_svn_pre/${repo_name}"); do
+            sleep 2 ## because "inotifywait" is too fast, so need to wait until "svn" write to disk
+            for dir_changed in $($bin_svnlook dirs-changed -r "${file}" "$path_svn_pre/${repo_name}"); do
                 _log "svnlook dirs-changed: $dir_changed"
                 ## not found svn repo in $path_svn_checkout, then svn checkout
                 if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
-                    /usr/bin/svn checkout "file://$path_svn_pre/$repo_name" "$path_svn_checkout/$repo_name"
+                    $bin_svn checkout "file://$path_svn_pre/$repo_name" "$path_svn_checkout/$repo_name"
                 fi
                 ## svn update
                 echo "${dir_changed}" | grep runtime >>"$me_path"/runtime.log
-                /usr/bin/svn update "$path_svn_checkout/$repo_name/${dir_changed}"
+                $bin_svn update "$path_svn_checkout/$repo_name/${dir_changed}"
                 _chown_chmod "$path_svn_checkout/$repo_name/${dir_changed}"
             done
         done
