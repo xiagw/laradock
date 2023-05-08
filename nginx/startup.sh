@@ -19,9 +19,11 @@ chown 1000:0 /var/log/nginx
 
 ## /var/www/html
 [ -d /var/www/html/.well-known/acme-challenge ] || mkdir -p /var/www/html/.well-known/acme-challenge
-[ -d /var/www/html ] || mkdir -p /var/www/html
+if [ ! -d /var/www/html ]; then
+    mkdir -p /var/www/html
+    chown -R 1000:1000 /var/www/html
+fi
 [ -f /var/www/html/index.html ] || date >>/var/www/html/index.html
-chown -R 1000:1000 /var/www/html
 
 ## nginx 4xx 5xx
 if [ ! -f /var/www/html/4xx.html ]; then
