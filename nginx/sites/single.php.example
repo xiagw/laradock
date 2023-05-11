@@ -1,0 +1,77 @@
+server_tokens off;
+open_log_file_cache max=10;
+## error_page enable
+fastcgi_intercept_errors on;
+
+### log rotate by date #############################################
+map $time_iso8601 $logsplit {
+    '~^(?<ymd>\d{4}-\d{2}-\d{2})' $ymd;
+    default 'date-not-found';
+}
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server ipv6only=on;
+
+    # For https
+    # listen 443 ssl;
+    # listen [::]:443 ssl;
+    # ssl_certificate conf.d/ssl/default.crt;
+    # ssl_certificate_key conf.d/ssl/default.key;
+
+    server_name _;
+    ## Fixed ThinkPHP public dir
+    root /var/www/html;
+    index index.php index.html index.htm;
+    client_max_body_size 1024M;
+    ## disable nginx log
+    # access_log /dev/null;
+    ## separate disk for nginx log
+    # access_log /data/log/nginx/default.access.$logsplit.log;
+    access_log /var/log/nginx/default.access.$logsplit.log;
+    error_log /var/log/nginx/default.error.log;
+
+    ## Global conf
+    location ~* /(.*)(favicon.ico|robots.txt) {
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~* /(.*)\.(htaccess|htpasswd|env) {
+        deny all;
+    }
+
+    location /.well-known/acme-challenge/ {
+        # root /app/public/letsencrypt/;
+        log_not_found off;
+    }
+    #error_page   400 404 /4xx.html;
+    #error_page   500 501 502 503 504  /5xx.html;
+    location / {
+        try_files $uri $uri/ /index.php/$request_uri /index.html$request_uri;
+    }
+
+    ## PHP
+    location /tp {
+        rewrite /tp/(.*)/public/assets/(.*)$ /tp/$1/public/assets/$2 break;
+        rewrite /tp/(.*)/public/static/(.*)$ /tp/$1/public/static/$2 break;
+        rewrite /tp/(.*)/public/(.*)$ /tp/$1/public/index.php/$2 last;
+    }
+    location ~ \.php(.*)$ {
+        # try_files $uri uri/ /index.php =404;
+        fastcgi_pass 127.0.0.1:9000;
+        # fastcgi_pass php-fpm:9000;
+        fastcgi_index index.php;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+        ## Fixed ThinkPHP PATH_INFO
+        fastcgi_split_path_info ^((?U).+\.php)(/?.+)$;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
+        fastcgi_param APP_ENV product;
+        ## fixes timeouts
+        fastcgi_read_timeout 600;
+        include fastcgi_params;
+    }
+}
