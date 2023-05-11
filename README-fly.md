@@ -23,21 +23,41 @@
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java
 
-## （!!! 必须进入此目录 !!!）
+## !!! 必须进入此目录 !!!
 cd $HOME/docker/laradock ## 或 cd $PWD/docker/laradock
 ## 启动服务 php-fpm
 docker compose up -d nginx redis mysql php-fpm
 ## 启动服务 java (spring)
 docker compose up -d nginx redis mysql spring
 
-## nginx 配置文件 
-$HOME/docker/laradock/nginx/sites/{default.conf,app.conf,app.inc}
-## 1, 目录 $HOME/docker/html 为缺省默认 web 目录，存放 前端静态文件 或 php 文件
-## 2, 若需要修改目录，例如 $HOME/docker/app1, $HOME/docker/app2 等等，则修改相应 nginx 配置内的 root , 并创建相应目录
-## 3, 目录 $HOME/docker/laradock/spring 存放 *.jar 程序 / *.yml 文件
-## 4, 若需要修改目录，例如 $HOME/docker/laradock/spring2 等等，则修改相应 nginx 配置并创建相应目录，然后再修改调整 $HOME/docker/laradock/docker-compose-override.yml
-## 5, nginx 配置文件在线链接
+## docker 目录 和目录说明
+
+## 站点根目录
+## (https://www.xxx.com/)
+cd $HOME/docker/html/
+
+## 前端： VUE/TS 前端静态文件 （若开启 CDN 则只需针对此目录）
+## (https://www.xxx.com/static/)
+cd $HOME/docker/html/static/
+
+## 后端： PHP 文件存放目录，假如多个 PHP 项目，例如： $HOME/docker/html/tp/app1, $HOME/docker/html/tp/app2 等。
+## (https://www.xxx.com/tp/)
+cd $HOME/docker/html/tp/
+
+## 后端： Jar 程序文件存放目录
+cd $HOME/docker/laradock/spring/
+
+## nginx 配置文件存放目录， 修改配置文件 d.php.inc, d.java.inc, app*.conf
+cd $HOME/docker/laradock/nginx/sites/
+## 若需要修改目录，例如 $HOME/docker/laradock/spring2 等等，则修改相应 nginx 配置并创建相应目录，然后再修改调整 $HOME/docker/laradock/docker-compose-override.yml
+## nginx 配置文件在线链接
 https://gitee.com/xiagw/laradock/tree/in-china/nginx/sites
+
+##  恢复文件权限
+sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp
+sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime
+sudo chown -R 1000:1000 $HOME/docker/laradock/spring
+
 ```
 
 ## 部署方式二 K8S 集群， helm 部署参考（推荐）
