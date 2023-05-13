@@ -1,5 +1,6 @@
 ARG UBUNTU_VERSION=${UBUNTU_VERSION}
 FROM ubuntu:${UBUNTU_VERSION}
+ARG CHANGE_SOURCE=false
 ARG LARADOCK_PHP_VERSION=${PHP_VERSION}
 ARG PHP_SESSION_REDIS=false
 ARG PHP_SESSION_REDIS_SERVER=${REDIS_HOST}
@@ -16,22 +17,22 @@ RUN set -xe; \
     sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list; \
     fi; \
     ## preesed tzdata, update package index, upgrade packages and install needed software
-    truncate -s0 /tmp/preseed.cfg \
-    && echo "tzdata tzdata/Areas select Asia" >> /tmp/preseed.cfg \
-    && echo "tzdata tzdata/Zones/Asia select Shanghai" >> /tmp/preseed.cfg \
-    && debconf-set-selections /tmp/preseed.cfg \
-    && rm -f /etc/timezone /etc/localtime \
-    && apt-get update -y \
-    && apt-get install -y --no-install-recommends apt-utils tzdata \
-    && apt-get install -y --no-install-recommends locales \
-    && grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen \
-    && locale-gen en_US.UTF-8; \
+    truncate -s0 /tmp/preseed.cfg; \
+    echo "tzdata tzdata/Areas select Asia" >> /tmp/preseed.cfg; \
+    echo "tzdata tzdata/Zones/Asia select Shanghai" >> /tmp/preseed.cfg; \
+    debconf-set-selections /tmp/preseed.cfg; \
+    rm -f /etc/timezone /etc/localtime; \
+    apt-get update -y; \
+    apt-get install -y --no-install-recommends apt-utils tzdata; \
+    apt-get install -y --no-install-recommends locales; \
+    grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen; \
+    locale-gen en_US.UTF-8; \
     if [ "$LARADOCK_PHP_VERSION" != '8.1' ]; then \
-    apt-get install -y --no-install-recommends software-properties-common \
-    && add-apt-repository ppa:ondrej/php; \
+    apt-get install -y --no-install-recommends software-properties-common; \
+    add-apt-repository ppa:ondrej/php; \
     fi; \
-    apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends \
+    apt-get upgrade -y; \
+    apt-get install -y --no-install-recommends \
         vim \
         curl \
         nginx \
@@ -60,9 +61,8 @@ RUN set -xe; \
     fi; \
     apt-get clean all && rm -rf /tmp/*
 
-COPY ./run.sh /opt/
-RUN set -xe \
-    && sed -i \
+RUN set -xe; \
+    sed -i \
         -e '/fpm.sock/s/^/;/' \
         -e '/fpm.sock/a listen = 9000' \
         -e '/rlimit_files/a rlimit_files = 51200' \
@@ -70,8 +70,8 @@ RUN set -xe \
         -e '/pm.start_servers/s/2/10/'  \
         -e '/pm.min_spare_servers/s/1/10/'  \
         -e '/pm.max_spare_servers/s/3/20/' \
-        /etc/php/${LARADOCK_PHP_VERSION}/fpm/pool.d/www.conf \
-    && sed -i \
+        /etc/php/${LARADOCK_PHP_VERSION}/fpm/pool.d/www.conf; \
+    sed -i \
         -e "/memory_limit/s/128M/256M/" \
         -e "/post_max_size/s/8M/1024M/" \
         -e "/upload_max_filesize/s/2M/1024M/" \
@@ -80,15 +80,18 @@ RUN set -xe \
         -e '/max_execution_time/s/30/60/' \
         /etc/php/${LARADOCK_PHP_VERSION}/fpm/php.ini; \
     if [ "${PHP_SESSION_REDIS:-false}" = true ]; then \
-    sed -i \
-    -e "/session.save_handler/s/files/redis/" \
+    sed -i -e "/session.save_handler/s/files/redis/" \
     -e "/session.save_handler/a session.save_path = \"tcp://${PHP_SESSION_REDIS_SERVER}:${PHP_SESSION_REDIS_PORT}?auth=${PHP_SESSION_REDIS_PASS}&database=${PHP_SESSION_REDIS_DB}\"" \
     /etc/php/${LARADOCK_PHP_VERSION}/fpm/php.ini; \
     fi; \
+    rm -f /etc/nginx/sites-enabled/default; \
+    curl -Lo /etc/nginx/sites-enabled/default https://gitee.com/xiagw/laradock/raw/in-china/nginx/sites/single.php.example; \
+    curl -Lo /opt/run.sh https://gitee.com/xiagw/laradock/raw/in-china/php-fpm/run.sh; \
     chmod +x /opt/run.sh
 
-## copy nginx conf
-# COPY ./etc/ /etc/
+# ONBUILD COPY ./tp/ /var/www/html/tp/
+# ONBUILD COPY ./static/ /var/www/html/static/
+ONBUILD COPY ./root/ /
 
 EXPOSE 80 443 9000
 
