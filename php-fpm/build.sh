@@ -46,7 +46,7 @@ main() {
     fi
     ## build php image
     echo "FROM $image_tag_base" >Dockerfile
-    [[ -f root ]] || mkdir root
+    [[ -d root ]] || mkdir root
     $build_opt -t $image_tag -f Dockerfile .
 }
 
