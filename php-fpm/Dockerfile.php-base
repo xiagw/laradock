@@ -36,6 +36,7 @@ RUN set -xe; \
         vim \
         curl \
         nginx \
+        ca-certificates \
         php${LARADOCK_PHP_VERSION} \
         php${LARADOCK_PHP_VERSION}-redis \
         php${LARADOCK_PHP_VERSION}-mongodb \
