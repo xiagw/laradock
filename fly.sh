@@ -92,41 +92,44 @@ _check_sudo() {
 _check_dependence() {
     _msg step "check command: curl/git/docker"
     _command_exists curl || {
+        $cmd update
         $cmd install -y curl
     }
     _command_exists git || {
         $cmd install -y git zsh
     }
-    ## install docker/compose
-    if ! _command_exists docker; then
-        if grep -q '^ID=.*alinux.*' /etc/os-release; then
-            sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
-            update_os_release=1
-        fi
-        if [[ "${IN_CHINA:-true}" == true ]]; then
-            curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash -s - --mirror Aliyun
-        else
-            curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
-        fi
-        if [[ "$USER" != "root" ]]; then
-            _msg time "Add user $USER to group docker."
-            $pre_sudo usermod -aG docker "$USER"
-            _msg red "Please logout $USER, and login again."
-            need_logout=1
-        fi
-        if [[ "$USER" != ubuntu ]] && id ubuntu; then
-            $pre_sudo usermod -aG docker ubuntu
-        fi
-        if [[ "$USER" != centos ]] && id centos; then
-            $pre_sudo usermod -aG docker centos
-        fi
-        if [[ "$USER" != ops ]] && id ops; then
-            $pre_sudo usermod -aG docker ops
-        fi
-        [[ ${update_os_release:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
-        $pre_sudo systemctl start docker
-    fi
     _command_exists strings || $cmd install -y binutils
+    ## install docker/compose
+    if _command_exists docker; then
+        return
+    fi
+    if grep -q '^ID=.*alinux.*' /etc/os-release; then
+        sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
+        aliyun_os=1
+    fi
+    if [[ "${IN_CHINA:-true}" == true && "${USE_ALIYUN:-true}" == true ]]; then
+        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash -s - --mirror Aliyun
+    else
+        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
+    fi
+    if [[ "$USER" != "root" ]]; then
+        _msg time "Add user $USER to group docker."
+        $pre_sudo usermod -aG docker "$USER"
+        _msg red "Please logout $USER, and login again."
+        _msg red "Then exec again."
+        need_logout=1
+    fi
+    if [[ "$USER" != ubuntu ]] && id ubuntu; then
+        $pre_sudo usermod -aG docker ubuntu
+    fi
+    if [[ "$USER" != centos ]] && id centos; then
+        $pre_sudo usermod -aG docker centos
+    fi
+    if [[ "$USER" != ops ]] && id ops; then
+        $pre_sudo usermod -aG docker ops
+    fi
+    [[ ${aliyun_os:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
+    $pre_sudo systemctl start docker
     return 0
 }
 
@@ -180,7 +183,7 @@ _set_laradock_env() {
         -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
         -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
+        -e "/UBUNTU_VERSION=/s/=.*/=${os_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/true/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" \
@@ -189,8 +192,8 @@ _set_laradock_env() {
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$laradock_env" || return 0
 }
 
-_restart_nginx() {
-    cd $laradock_path && $dco exec nginx nginx -s reload
+_reload_nginx() {
+    cd "$laradock_path" && $dco exec -T nginx nginx -s reload
 }
 
 _set_nginx_php() {
@@ -203,37 +206,39 @@ _set_nginx_java() {
     sed -i -e 's/127\.0\.0\.1/spring/g' "$laradock_path/nginx/sites/d.java.inc"
 }
 
-_set_php_ver() {
+_set_env_php_ver() {
     sed -i \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/UBUNTU_VERSION=/s/=.*/=${ubuntu_ver}/" \
+        -e "/UBUNTU_VERSION=/s/=.*/=${os_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/true/" \
         "$laradock_env"
 }
 
 _get_image() {
-    if [[ $args == *spring* ]]; then
-        return
+    img_name=$1
+    if docker images | grep -E "laradock-$img_name|laradock_$img_name"; then
+        if [[ "${force_get_image:-false}" == false ]]; then
+            return
+        fi
     fi
-    _msg step "download docker image for $1"
-    file_save=/tmp/laradock-${1}.tar.gz
-    if [[ $1 == *php-fpm* ]]; then
-        _set_php_ver
-        file_url="http://cdn.flyh6.com/docker/laradock-${1}.${php_ver}.tar.gz"
+    _msg step "download docker image $img_name"
+    file_save=/tmp/laradock-${img_name}.tar.gz
+    if [[ $img_name == *php-fpm* ]]; then
+        _set_env_php_ver
+        file_url="http://cdn.flyh6.com/docker/laradock-${img_name}.${php_ver}.tar.gz"
     else
-        file_url="http://cdn.flyh6.com/docker/laradock-${1}.tar.gz"
+        file_url="http://cdn.flyh6.com/docker/laradock-${img_name}.tar.gz"
     fi
-    curl -Lo $file_save "${file_url}"
-    docker load <$file_save
+    curl -Lo "$file_save" "${file_url}"
+    docker load <"$file_save"
     if docker --version | grep -q "version 19"; then
-        docker tag laradock-$1 laradock_$1
+        docker tag laradock-$img_name laradock_$img_name
     fi
 }
 
 _set_file_mode() {
     _check_sudo
-    cd "$laradock_path"/../
-    for d in ./*/; do
+    for d in "$laradock_path"/../*/; do
         [[ "$d" == *laradock* ]] && continue
         find "$d" | while read -r line; do
             [ -d "$line" ] && $pre_sudo chmod 755 "$line"
@@ -251,7 +256,6 @@ _set_file_mode() {
         done
     done
     $pre_sudo chown 1000:1000 "$laradock_path/spring"
-    cd -
 }
 
 _install_zsh() {
@@ -263,17 +267,17 @@ _install_zsh() {
     else
         bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     fi
-    cp $HOME/.oh-my-zsh/templates/zshrc.zsh-template $HOME/.zshrc
-    omz theme set ys
-    omz plugin enable z extract fzf docker-compose
+    cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
+    sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
+    sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
+    # sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
     # sed -i -e 's/robbyrussell/ys/' ~/.zshrc
-    # sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
 }
 
 _start_manual() {
     _msg step "manual startup "
     _msg info '#########################################'
-    _msg info "\n cd $laradock_path && $dco up -d nginx redis mysql $args \n"
+    _msg info "\n cd $laradock_path && $dco up -d $args \n"
     _msg info '#########################################'
     _msg red 'startup automatic after sleep 15s' && sleep 15
 }
@@ -285,7 +289,7 @@ _start_auto() {
     #     return 1
     # fi
     _msg step "auto startup"
-    cd $laradock_path && $dco up -d nginx redis mysql ${args:-php-fpm spring}
+    cd "$laradock_path" && $dco up -d $args
 }
 
 _test_nginx() {
@@ -301,10 +305,10 @@ _test_php() {
     _check_sudo
     _msg step "create test.php"
     path_nginx_root="$laradock_path/../html"
-    $pre_sudo chown $USER:$USER "$path_nginx_root"
+    $pre_sudo chown "$USER:$USER" "$path_nginx_root"
     ## create test.php
     $pre_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
-    source $laradock_env
+    source "$laradock_env"
     sed -i \
         -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
         -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
@@ -312,17 +316,14 @@ _test_php() {
         "$path_nginx_root/test.php"
     _msg time "Test PHP Redis MySQL "
     _set_nginx_php
-    _restart_nginx
-    while [[ "${get_status:-502}" -gt 200 ]]; do
-        curl --connect-timeout 3 localhost/test.php
-        get_status="$(curl -Lo /dev/null -fsSL -w "%{http_code}" localhost/test.php)"
-        echo "http_code: $get_status"
-        sleep 2
+    _reload_nginx
+    until curl --connect-timeout 3 -fsSL localhost/test.php; do
         c=$((${c:-0} + 1))
-        [[ $c -gt 30 ]] && {
-            echo "break after 60s"
+        [[ $((c + 1)) -gt 30 ]] && {
+            echo "timeout 60s"
             break
         }
+        sleep 2
     done
 }
 
@@ -331,9 +332,10 @@ _test_java() {
 }
 
 _get_redis_mysql_info() {
-    grep ^REDIS_ $laradock_env | head -n 3
-    grep ^DB_HOST $laradock_env
-    grep ^MYSQL_ $laradock_env | sed -n '2,5 p'
+    grep ^REDIS_ "$laradock_env" | head -n 3
+    echo
+    grep ^DB_HOST "$laradock_env"
+    grep ^MYSQL_ "$laradock_env" | sed -n '2,5 p'
 }
 
 _mysql_cli() {
@@ -365,18 +367,16 @@ _install_lsyncd() {
 }
 
 _upgrade_java() {
-    cd $laradock_path
-    curl -Lo spring.tar.gz http://cdn.flyh6.com/docker/srping.tar.gz
-    tar zxf spring.tar.gz
-    $dco stop ${args}
+    cd "$laradock_path"
+    curl -fLhttp://cdn.flyh6.com/docker/srping.tar.gz | tar vzx
+    $dco stop spring
     $dco rm -f
-    $dco up -d ${args}
+    $dco up -d spring
 }
 
 _upgrade_php() {
-    cd $laradock_path/../html
-    curl -Lo tp.tar.gz http://cdn.flyh6.com/docker/tp.tar.gz
-    tar zxf tp.tar.gz
+    cd "$laradock_path"/../html
+    curl -fL http://cdn.flyh6.com/docker/tp.tar.gz | tar vzx
 }
 
 _usage() {
@@ -388,36 +388,50 @@ Parameters:
     -v, --version       Show version info.
     info                get mysql redis info
     php                 install php-fpm 7.1
+    build               build php image
     java                install jdk / spring
     mysql               exec into mysql cli
     perm                set file permission
     lsync               setup lsyncd
 "
+    exit 1
 }
 
 _set_args() {
-    if [ -z "$1" ]; then
-        args="php-fpm spring"
-        php_ver="${2:-7.1}"
-        return
-    fi
-
+    IN_CHINA=true
+    # args="nginx mysql redis"
+    os_ver=20.04
+    php_ver="7.1"
     while [ "$#" -gt 0 ]; do
         case "${1}" in
-        php)
-            args="php-fpm ${args:+${args}}"
-            php_ver="${2:-7.1}"
-            ubuntu_ver=20.04
-            if [[ "$2" =~ (8.0|8.1) ]]; then
-                ubuntu_ver=22.04
-            fi
-            exec_set_php_ver=1
+        nginx)
+            args="${args} nginx"
+            ;;
+        mysql)
+            args="${args} mysql"
+            ;;
+        redis)
+            args="${args} redis"
+            ;;
+        php | php-fpm | fpm)
+            args="${args} php-fpm"
+            exec_set_env_php_ver=1
             exec_set_file_mode=1
             exec_set_nginx_php=1
-            shift
+            os_ver=20.04
+            ;;
+        8.0 | 8.1 | 8.2)
+            os_ver=22.04
+            php_ver=$1
+            ;;
+        5.6 | 7.1 | 7.2 | 7.4)
+            php_ver=$1
+            ;;
+        build)
+            exec_build_php=1
             ;;
         java | spring)
-            args="spring ${args:+${args}}"
+            args="${args} spring"
             exec_set_file_mode=1
             exec_set_nginx_java=1
             ;;
@@ -427,8 +441,10 @@ _set_args() {
             enable_check=0
             ;;
         github)
-            IN_CHINA=false
-            shift
+            IN_CHINA='false'
+            ;;
+        docker)
+            USE_ALIYUN='false'
             ;;
         gitlab)
             args="gitlab"
@@ -448,7 +464,7 @@ _set_args() {
             exec_get_redis_mysql_info=1
             enable_check=0
             ;;
-        mysql)
+        mysqlcli)
             exec_mysql_cli=1
             enable_check=0
             ;;
@@ -462,11 +478,30 @@ _set_args() {
             ;;
         *)
             _usage
-            # return
             ;;
         esac
         shift
     done
+}
+
+_build_php() {
+    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg UBUNTU_VERSION=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    image_tag_base=deploy/php:${php_ver}-base
+    image_tag=deploy/php:${php_ver}
+    file_url=https://gitee.com/xiagw/laradock/raw/in-china/php-fpm
+    file_base=Dockerfile.php-base
+    ## php base image ready?
+    cd "$me_path" || exit 1
+    if ! docker images | grep -q "$image_tag_base"; then
+        if [[ ! -f $file_base ]]; then
+            curl -fLO $file_url/$file_base
+        fi
+        $build_opt -t $image_tag_base -f $file_base . || return 1
+    fi
+    ## build php image
+    echo "FROM $image_tag_base" >Dockerfile
+    [[ -d root ]] || mkdir root
+    $build_opt -t $image_tag -f Dockerfile .
 }
 
 main() {
@@ -475,14 +510,18 @@ main() {
     me_name="$(basename "$0")"
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
-    if [[ $me_name == 'fly.sh' ]]; then
-        ## 从本机当前目录执行 fly.sh
-        laradock_path="${me_path:-$HOME}"
+
+    if [[ -f "$me_path"/fly.sh && -f "$me_path/.env" ]]; then
+        ## 从本机已安装目录执行 fly.sh
+        laradock_path="$me_path"
     else
         ## 从远程执行 fly.sh , curl "remote_url" | bash -s args
-        laradock_path="${me_path:-$HOME}"/docker/laradock
+        if [[ -d "$HOME"/docker/laradock ]]; then
+            laradock_path="$HOME"/docker/laradock
+        else
+            laradock_path="$me_path"/docker/laradock
+        fi
     fi
-
     laradock_env="$laradock_path"/.env
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
@@ -493,6 +532,10 @@ main() {
         dco="docker compose"
     fi
 
+    if [[ "${exec_build_php:-0}" -eq 1 ]]; then
+        _build_php
+        return
+    fi
     if [[ "${exec_install_zsh:-0}" -eq 1 ]]; then
         _install_zsh
         return
@@ -521,20 +564,28 @@ main() {
     fi
     [[ "${exec_set_nginx_php:-0}" -eq 1 ]] && _set_nginx_php
     [[ "${exec_set_nginx_java:-0}" -eq 1 ]] && _set_nginx_java
-
-    if [[ $args == *php-fpm* ]]; then
-        _get_image $args
-        _start_manual
-        _start_auto
-        _test_nginx
-        _restart_nginx
-        exec_test=1
-    fi
-
     [[ "${exec_set_file_mode:-0}" -eq 1 ]] && _set_file_mode
     [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]] && _get_redis_mysql_info
     [[ "${exec_mysql_cli:-0}" -eq 1 ]] && _mysql_cli
-    [[ "${exec_set_php_ver:-0}" -eq 1 ]] && _set_php_ver
+    [[ "${exec_set_env_php_ver:-0}" -eq 1 ]] && _set_env_php_ver
+
+    for i in $args; do
+        case $i in
+        spring) : ;; #_get_image spring ;;
+        php*) _get_image php-fpm ;;
+        mysql) : ;; #_get_image mysql ;;
+        nginx) : ;; #_get_image nginx ;;
+        redis) : ;; #_get_image redis ;;
+        esac
+    done
+    if [[ $args == *php-fpm* ]]; then
+        _start_manual
+        _start_auto
+        _test_nginx
+        _reload_nginx
+        exec_test=1
+    fi
+
     if [[ "${exec_test:-0}" -eq 1 ]]; then
         _test_php
         _test_java
