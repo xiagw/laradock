@@ -193,7 +193,16 @@ _set_laradock_env() {
 }
 
 _reload_nginx() {
-    cd "$laradock_path" && $dco exec -T nginx nginx -s reload
+    cd "$laradock_path" || exit 1
+    for i in {1..10}; do
+        if $dco exec -T nginx nginx -t; then
+            $dco exec -T nginx nginx -s reload
+            break
+        else
+            _ms "nginx test err."
+        fi
+        sleep 2
+    done
 }
 
 _set_nginx_php() {
@@ -225,25 +234,20 @@ _get_image() {
             return
         fi
     fi
-    _msg step "download docker image $img_name"
-    file_save=/tmp/laradock-${img_name}.tar.gz
-    if [[ $img_name == *php-fpm* ]]; then
-        _set_env_php_ver
-        file_url="$url_fly/laradock-${img_name}.${php_ver}.tar.gz"
-    else
-        file_url="$url_fly/laradock-${img_name}.tar.gz"
-    fi
-    curl -Lo "$file_save" "${file_url}"
-    docker load <"$file_save"
+
+    _msg step "download docker image laradock-$img_name"
+    img_save=/tmp/laradock-${img_name}.tar.gz
+    curl -Lo "$img_save" "${url_image}"
+    docker load <"$img_save"
     if docker --version | grep -q "version 19"; then
-        docker tag laradock-$img_name laradock_$img_name
+        docker tag "laradock-$img_name" "laradock_$img_name"
     fi
 }
 
 _set_file_mode() {
     _check_sudo
     for d in "$laradock_path"/../*/; do
-        [[ "$d" == *laradock* ]] && continue
+        [[ "$d" == *laradock/ ]] && continue
         find "$d" | while read -r line; do
             [ -d "$line" ] && $pre_sudo chmod 755 "$line"
             [ -f "$line" ] && $pre_sudo chmod 644 "$line"
@@ -298,37 +302,43 @@ _start_auto() {
 
 _test_nginx() {
     _msg time "Test nginx "
-    until curl --connect-timeout 3 localhost; do
-        sleep 2
-        c=$((${c:-0} + 1))
-        [[ $c -gt 30 ]] && break
+    for i in {1..15}; do
+        if curl --connect-timeout 3 localhost; then
+            break
+        else
+            sleep 2
+        fi
     done
 }
 
 _test_php() {
     _check_sudo
-    _msg step "create test.php"
+
+    _msg step "Test PHP Redis MySQL "
     path_nginx_root="$laradock_path/../html"
     $pre_sudo chown "$USER:$USER" "$path_nginx_root"
-    ## create test.php
-    $pre_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
-    source "$laradock_env"
-    sed -i \
-        -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
-        -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
-        -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
-        "$path_nginx_root/test.php"
-    _msg time "Test PHP Redis MySQL "
+    if [[ ! -f "$path_nginx_root/test.php" ]]; then
+        _msg "Create test.php"
+        $pre_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
+        source "$laradock_env"
+        sed -i \
+            -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
+            -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
+            -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
+            "$path_nginx_root/test.php"
+    fi
+
     _set_nginx_php
     _reload_nginx
-    until curl --connect-timeout 3 -fsSL localhost/test.php; do
-        c=$((${c:-0} + 1))
-        [[ $((c + 1)) -gt 30 ]] && {
-            echo "timeout 60s"
+
+    for i in {1..15}; do
+        if curl --connect-timeout 3 -fsSL localhost/test.php; then
             break
-        }
-        sleep 2
+        else
+            sleep 2
+        fi
     done
+
 }
 
 _test_java() {
@@ -355,9 +365,11 @@ _install_lsyncd() {
 
     _msg "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
-    [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd
-    $pre_sudo cp "$laradock_path"/usvn$lsyncd_conf $lsyncd_conf
-    [[ "$USER" == "root" ]] || sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
+    if [ ! -d /etc/lsyncd/ ]; then
+        $pre_sudo mkdir /etc/lsyncd
+        $pre_sudo cp "$laradock_path"/usvn$lsyncd_conf $lsyncd_conf
+        [[ "$USER" == "root" ]] || sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
+    fi
 
     _msg "new key, ssh-keygen"
     id_file="$HOME/.ssh/id_ed25519"
@@ -581,24 +593,29 @@ main() {
     for i in $args; do
         case $i in
         nginx)
-            #_get_image nginx
+            url_image="$url_fly/laradock-nginx.tar.gz"
+            _get_image nginx
             _set_nginx_dockerfile
             exec_test=1
             ;;
         mysql)
             :
+            # url_image="$url_fly/laradock-mysql.tar.gz"
             # _get_image mysql
             ;;
         redis)
             :
+            # url_image="$url_fly/laradock-redis.tar.gz"
             # _get_image redis
             ;;
         spring)
+            # url_image="$url_fly/laradock-spring.tar.gz"
             # _get_image spring
             _set_file_mode
             _set_nginx_java
             ;;
         php*)
+            url_image="$url_fly/laradock-php-fpm.${php_ver}.tar.gz"
             _set_env_php_ver
             _set_file_mode
             _set_nginx_php
