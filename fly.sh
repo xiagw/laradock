@@ -183,7 +183,7 @@ _set_laradock_env() {
         -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
         -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/UBUNTU_VERSION=/s/=.*/=${os_ver}/" \
+        -e "/OS_VER=/s/=.*/=${os_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/true/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" \
@@ -209,7 +209,7 @@ _set_nginx_java() {
 _set_env_php_ver() {
     sed -i \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/UBUNTU_VERSION=/s/=.*/=${os_ver}/" \
+        -e "/OS_VER=/s/=.*/=${os_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/true/" \
         "$laradock_env"
 }
@@ -485,7 +485,7 @@ _set_args() {
 }
 
 _build_php() {
-    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg UBUNTU_VERSION=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=deploy/php:${php_ver}-base
     image_tag=deploy/php:${php_ver}
     file_url=https://gitee.com/xiagw/laradock/raw/in-china/php-fpm

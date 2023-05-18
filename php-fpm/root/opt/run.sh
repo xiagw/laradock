@@ -1,17 +1,20 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-## catch the TERM signal and exit cleanly
-trap "exit 0" HUP INT PIPE QUIT TERM
+# set -x
 
+_kill() {
+    echo "[INFO] Receive SIGTERM, kill $pids"
+    for pid in $pids; do
+        kill "$pid"
+        wait "$pid"
+    done
+}
+
+## index for default site
 [ -d /var/lib/php/sessions ] && chmod -R 777 /var/lib/php/sessions
 [ -d /run/php ] || mkdir -p /run/php
 [ -d /var/www/html ] || mkdir /var/www/html
 [ -f /var/www/html/index.html ] || date >>/var/www/html/index.html
-
-## start php-fpm
-for i in /usr/sbin/php-fpm*; do
-    [ -x "$i" ] && $i
-done
 
 pre_path=/var/www
 html_path=$pre_path/html
@@ -27,6 +30,13 @@ while true; do
     done
     sleep 60
 done &
+
+## start php-fpm
+for i in /usr/sbin/php-fpm*; do
+    [ -x "$i" ] && $i -F &
+    pids="${pids} $!"
+done
+
 ## schedule task
 for file in $pre_path/*/task.sh; do
     if [[ -f $file ]]; then
@@ -34,12 +44,19 @@ for file in $pre_path/*/task.sh; do
     fi
 done &
 
-if nginx -t &>/dev/null; then
+if command -v nginx && nginx -t; then
     ## start nginx
-    exec nginx -g "daemon off;"
-elif apachectl -t &>/dev/null; then
+    exec nginx -g "daemon off;" &
+    pids="${pids} $!"
+elif command -v apachectl && apachectl -t; then
     ## start apache
-    exec apachectl -k start -D FOREGROUND
+    exec apachectl -k start -D FOREGROUND &
+    pids="${pids} $!"
 else
-    exec tail -f /var/www/html/index.html
+    exec tail -f /var/www/html/index.html &
 fi
+
+## 识别中断信号，停止 java 进程
+trap _kill HUP INT PIPE QUIT TERM
+
+wait

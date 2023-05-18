@@ -31,23 +31,28 @@ main() {
         shift
     done
 
-    build_opt="$build_opt --build-arg UBUNTU_VERSION=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    build_opt="$build_opt --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=deploy/php:${php_ver}-base
     image_tag=deploy/php:${php_ver}
     file_url=https://gitee.com/xiagw/laradock/raw/in-china/php-fpm
     file_base=Dockerfile.php-base
+
+    cd "$me_path" || exit 1
+
     ## php base image ready?
-    cd $me_path || exit 1
+    echo "Check php base image [$image_tag_base] ..."
     if ! docker images | grep -q "$image_tag_base"; then
         if [[ ! -f $file_base ]]; then
             curl -fsSLO $file_url/$file_base
         fi
-        $build_opt -t $image_tag_base -f $file_base . || return 1
+        $build_opt -t "$image_tag_base" -f $file_base . || return 1
     fi
+
     ## build php image
+    echo "Build php image [$image_tag] ..."
     echo "FROM $image_tag_base" >Dockerfile
     [[ -d root ]] || mkdir root
-    $build_opt -t $image_tag -f Dockerfile .
+    $build_opt -t "$image_tag" -f Dockerfile .
 }
 
 main "$@"
