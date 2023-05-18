@@ -15,6 +15,8 @@ ARG PHP_SESSION_REDIS_DB=1
 ENV DEBIAN_FRONTEND noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN true
 ENV TIME_ZOME Asia/Shanghai
+ENV OS_VER=${OS_VER}
+ENV LARADOCK_PHP_VERSION=${LARADOCK_PHP_VERSION}
 
 # COPY ./root/opt/build.sh /opt/build.sh
 RUN curl -Lo /opt/build.sh https://gitee.com/xiagw/laradock/raw/in-china/php-fpm/root/opt/build.sh; bash /opt/build.sh
