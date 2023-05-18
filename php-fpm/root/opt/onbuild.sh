@@ -29,7 +29,7 @@ fi
 ## setup nginx for ThinkPHP
 rm -f /etc/nginx/sites-enabled/default
 curl -Lo /etc/nginx/sites-enabled/default \
-    https://gitee.com/xiagw/laradock/raw/in-china/php-fpm/root/etc/nginx/sites/php.conf
+    https://gitee.com/xiagw/laradock/raw/in-china/php-fpm/root/etc/nginx/sites-available/php.conf
 
 ## startup run.sh
 curl -Lo /opt/run.sh \

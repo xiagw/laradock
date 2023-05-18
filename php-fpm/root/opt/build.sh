@@ -26,7 +26,6 @@ if [ "$LARADOCK_PHP_VERSION" != '8.1' ]; then
 fi
 apt-get upgrade -y
 apt-get install -y --no-install-recommends \
-    vim curl ca-certificates \
     php"${LARADOCK_PHP_VERSION}" \
     php"${LARADOCK_PHP_VERSION}"-redis \
     php"${LARADOCK_PHP_VERSION}"-mongodb \

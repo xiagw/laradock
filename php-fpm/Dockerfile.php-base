@@ -19,7 +19,15 @@ ENV OS_VER=${OS_VER}
 ENV LARADOCK_PHP_VERSION=${LARADOCK_PHP_VERSION}
 
 # COPY ./root/opt/build.sh /opt/build.sh
-RUN curl -Lo /opt/build.sh https://gitee.com/xiagw/laradock/raw/in-china/php-fpm/root/opt/build.sh; bash /opt/build.sh
+RUN set -xe; \
+    if [ "$CHANGE_SOURCE" = true ]; then \
+    sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list; \
+    fi; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends curl vim ca-certificates; \
+    curl -Lo /opt/build.sh https://gitee.com/xiagw/laradock/raw/in-china/php-fpm/root/opt/build.sh; \
+    bash /opt/build.sh; \
+    apt-get clean all && rm -rf /tmp/*
 
 EXPOSE 80 443 9000
 WORKDIR /var/www/html
