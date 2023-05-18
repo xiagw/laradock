@@ -56,7 +56,7 @@ else
     exec tail -f /var/www/html/index.html &
 fi
 
-## 识别中断信号，停止 java 进程
+## 识别中断信号，停止进程
 trap _kill HUP INT PIPE QUIT TERM
 
 wait

@@ -225,9 +225,9 @@ _get_image() {
     file_save=/tmp/laradock-${img_name}.tar.gz
     if [[ $img_name == *php-fpm* ]]; then
         _set_env_php_ver
-        file_url="http://cdn.flyh6.com/docker/laradock-${img_name}.${php_ver}.tar.gz"
+        file_url="$url_fly/laradock-${img_name}.${php_ver}.tar.gz"
     else
-        file_url="http://cdn.flyh6.com/docker/laradock-${img_name}.tar.gz"
+        file_url="$url_fly/laradock-${img_name}.tar.gz"
     fi
     curl -Lo "$file_save" "${file_url}"
     docker load <"$file_save"
@@ -348,17 +348,20 @@ _install_lsyncd() {
     _msg "install lsyncd"
     _check_sudo
     _command_exists lsyncd || $cmd install -y lsyncd
+
     _msg "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
     [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd
     $pre_sudo cp "$laradock_path"/usvn$lsyncd_conf $lsyncd_conf
     [[ "$USER" == "root" ]] || sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
+
     _msg "new key, ssh-keygen"
-    [ -f "$HOME/.ssh/id_ed25519" ] || ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -N ''
+    id_file="$HOME/.ssh/id_ed25519"
+    [ -f "$id_file" ] || ssh-keygen -t ed25519 -f "$id_file" -N ''
     while read -rp "Enter ssh host IP [${count:=1}] (enter q break): " ssh_host_ip; do
         [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
-        _msg "ssh-copy-id root@$ssh_host_ip"
-        ssh-copy-id "root@$ssh_host_ip"
+        _msg "ssh-copy-id -i $id_file root@$ssh_host_ip"
+        ssh-copy-id -i "$id_file" "root@$ssh_host_ip"
         _msg "update $lsyncd_conf"
         line_num=$(grep -n '^targets' $lsyncd_conf | awk -F: '{print $1}')
         $pre_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
@@ -368,7 +371,7 @@ _install_lsyncd() {
 
 _upgrade_java() {
     cd "$laradock_path"
-    curl -fLhttp://cdn.flyh6.com/docker/srping.tar.gz | tar vzx
+    curl -fL $url_fly/srping.tar.gz | tar vzx
     $dco stop spring
     $dco rm -f
     $dco up -d spring
@@ -376,7 +379,7 @@ _upgrade_java() {
 
 _upgrade_php() {
     cd "$laradock_path"/../html
-    curl -fL http://cdn.flyh6.com/docker/tp.tar.gz | tar vzx
+    curl -fL $url_fly/tp.tar.gz | tar vzx
 }
 
 _usage() {
@@ -397,11 +400,33 @@ Parameters:
     exit 1
 }
 
+_build_php() {
+    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    image_tag_base=deploy/php:${php_ver}-base
+    image_tag=deploy/php:${php_ver}
+    file_url=https://gitee.com/xiagw/laradock/raw/in-china/php-fpm
+    file_base=Dockerfile.php-base
+
+    ## php base image ready?
+    cd "$me_path" || exit 1
+    if ! docker images | grep -q "$image_tag_base"; then
+        if [[ ! -f $file_base ]]; then
+            curl -fLO $file_url/$file_base
+        fi
+        $build_opt -t "$image_tag_base" -f $file_base . || return 1
+    fi
+
+    ## build php image
+    echo "FROM $image_tag_base" >Dockerfile
+    [[ -d root ]] || mkdir root
+    $build_opt -t "$image_tag" -f Dockerfile .
+}
+
 _set_args() {
     IN_CHINA=true
-    # args="nginx mysql redis"
     os_ver=20.04
-    php_ver="7.1"
+    php_ver=7.1
+
     while [ "$#" -gt 0 ]; do
         case "${1}" in
         nginx)
@@ -413,12 +438,17 @@ _set_args() {
         redis)
             args="${args} redis"
             ;;
+        gitlab)
+            args="gitlab"
+            ;;
+        svn)
+            args="usvn"
+            ;;
         php | php-fpm | fpm)
             args="${args} php-fpm"
             exec_set_env_php_ver=1
             exec_set_file_mode=1
             exec_set_nginx_php=1
-            os_ver=20.04
             ;;
         8.0 | 8.1 | 8.2)
             os_ver=22.04
@@ -426,9 +456,6 @@ _set_args() {
             ;;
         5.6 | 7.1 | 7.2 | 7.4)
             php_ver=$1
-            ;;
-        build)
-            exec_build_php=1
             ;;
         java | spring)
             args="${args} spring"
@@ -440,17 +467,17 @@ _set_args() {
             [[ $args == *spring* ]] && exec_upgrade_java=1
             enable_check=0
             ;;
-        github)
+        github | not_china | not_cn | ncn)
             IN_CHINA='false'
+            ;;
+        build)
+            exec_build_php=1
             ;;
         docker)
             USE_ALIYUN='false'
             ;;
-        gitlab)
-            args="gitlab"
-            ;;
-        svn)
-            args="usvn"
+        force_get_image)
+            force_get_image='true'
             ;;
         zsh)
             exec_install_zsh=1
@@ -484,32 +511,14 @@ _set_args() {
     done
 }
 
-_build_php() {
-    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
-    image_tag_base=deploy/php:${php_ver}-base
-    image_tag=deploy/php:${php_ver}
-    file_url=https://gitee.com/xiagw/laradock/raw/in-china/php-fpm
-    file_base=Dockerfile.php-base
-    ## php base image ready?
-    cd "$me_path" || exit 1
-    if ! docker images | grep -q "$image_tag_base"; then
-        if [[ ! -f $file_base ]]; then
-            curl -fLO $file_url/$file_base
-        fi
-        $build_opt -t $image_tag_base -f $file_base . || return 1
-    fi
-    ## build php image
-    echo "FROM $image_tag_base" >Dockerfile
-    [[ -d root ]] || mkdir root
-    $build_opt -t $image_tag -f Dockerfile .
-}
-
 main() {
     _set_args "$@"
     set -e
     me_name="$(basename "$0")"
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
+
+    url_fly="http://cdn.flyh6.com/docker"
 
     if [[ -f "$me_path"/fly.sh && -f "$me_path/.env" ]]; then
         ## 从本机已安装目录执行 fly.sh
@@ -552,6 +561,15 @@ main() {
         _upgrade_php
         return
     fi
+    if [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]]; then
+        _get_redis_mysql_info
+        return
+    fi
+    if [[ "${exec_mysql_cli:-0}" -eq 1 ]]; then
+        _mysql_cli
+        return
+    fi
+
     if [[ "${enable_check:-1}" -eq 1 ]]; then
         _check_sudo
         _check_timezone
@@ -559,32 +577,33 @@ main() {
         _check_laradock
         _set_laradock_env
     fi
+
+    ## if install docker and add normal user (not root) to group "docker"
     if [[ "$need_logout" -eq 1 ]]; then
         return
     fi
+
     [[ "${exec_set_nginx_php:-0}" -eq 1 ]] && _set_nginx_php
     [[ "${exec_set_nginx_java:-0}" -eq 1 ]] && _set_nginx_java
     [[ "${exec_set_file_mode:-0}" -eq 1 ]] && _set_file_mode
-    [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]] && _get_redis_mysql_info
-    [[ "${exec_mysql_cli:-0}" -eq 1 ]] && _mysql_cli
     [[ "${exec_set_env_php_ver:-0}" -eq 1 ]] && _set_env_php_ver
 
     for i in $args; do
         case $i in
         spring) : ;; #_get_image spring ;;
-        php*) _get_image php-fpm ;;
+        php*)
+            _get_image php-fpm
+            _start_manual
+            _start_auto
+            _test_nginx
+            _reload_nginx
+            exec_test=1
+            ;;
         mysql) : ;; #_get_image mysql ;;
         nginx) : ;; #_get_image nginx ;;
         redis) : ;; #_get_image redis ;;
         esac
     done
-    if [[ $args == *php-fpm* ]]; then
-        _start_manual
-        _start_auto
-        _test_nginx
-        _reload_nginx
-        exec_test=1
-    fi
 
     if [[ "${exec_test:-0}" -eq 1 ]]; then
         _test_php
