@@ -15,7 +15,7 @@ _default_key() {
         openssl x509 -req -days 365 -in "$default_csr" -signkey "$default_key" -out "$default_crt"
     fi
 
-    if [ ! -f $dhparams ]; then
+    if [[ -s $dhparams || ! -f $dhparams || $(stat -c %s $dhparams) -lt 1500 ]]; then
         openssl dhparam -dsaparam -out $dhparams 4096
     fi
 

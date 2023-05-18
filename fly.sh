@@ -206,6 +206,10 @@ _set_nginx_java() {
     sed -i -e 's/127\.0\.0\.1/spring/g' "$laradock_path/nginx/sites/d.java.inc"
 }
 
+_set_nginx_dockerfile() {
+    cp -vf "$laradock_path"/nginx/Dockerfile.base "$laradock_path"/nginx/Dockerfile
+}
+
 _set_env_php_ver() {
     sed -i \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
@@ -446,9 +450,6 @@ _set_args() {
             ;;
         php | php-fpm | fpm)
             args="${args} php-fpm"
-            exec_set_env_php_ver=1
-            exec_set_file_mode=1
-            exec_set_nginx_php=1
             ;;
         8.0 | 8.1 | 8.2)
             os_ver=22.04
@@ -459,8 +460,6 @@ _set_args() {
             ;;
         java | spring)
             args="${args} spring"
-            exec_set_file_mode=1
-            exec_set_nginx_java=1
             ;;
         upgrade)
             [[ $args == *php-fpm* ]] && exec_upgrade_php=1
@@ -481,10 +480,6 @@ _set_args() {
             ;;
         zsh)
             exec_install_zsh=1
-            enable_check=0
-            ;;
-        perm)
-            exec_set_file_mode=1
             enable_check=0
             ;;
         info)
@@ -583,29 +578,41 @@ main() {
         return
     fi
 
-    [[ "${exec_set_nginx_php:-0}" -eq 1 ]] && _set_nginx_php
-    [[ "${exec_set_nginx_java:-0}" -eq 1 ]] && _set_nginx_java
-    [[ "${exec_set_file_mode:-0}" -eq 1 ]] && _set_file_mode
-    [[ "${exec_set_env_php_ver:-0}" -eq 1 ]] && _set_env_php_ver
-
     for i in $args; do
         case $i in
-        spring) : ;; #_get_image spring ;;
-        php*)
-            _get_image php-fpm
-            _start_manual
-            _start_auto
-            _test_nginx
-            _reload_nginx
+        nginx)
+            #_get_image nginx
+            _set_nginx_dockerfile
             exec_test=1
             ;;
-        mysql) : ;; #_get_image mysql ;;
-        nginx) : ;; #_get_image nginx ;;
-        redis) : ;; #_get_image redis ;;
+        mysql)
+            :
+            # _get_image mysql
+            ;;
+        redis)
+            :
+            # _get_image redis
+            ;;
+        spring)
+            # _get_image spring
+            _set_file_mode
+            _set_nginx_java
+            ;;
+        php*)
+            _set_env_php_ver
+            _set_file_mode
+            _set_nginx_php
+            _get_image php-fpm
+            exec_test=1
+            ;;
         esac
     done
 
     if [[ "${exec_test:-0}" -eq 1 ]]; then
+        # _start_manual
+        _start_auto
+        _reload_nginx
+        _test_nginx
         _test_php
         _test_java
     fi
