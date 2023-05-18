@@ -15,7 +15,7 @@ _default_key() {
         openssl x509 -req -days 365 -in "$default_csr" -signkey "$default_key" -out "$default_crt"
     fi
 
-    if [[ -s $dhparams || ! -f $dhparams || $(stat -c %s $dhparams) -lt 1500 ]]; then
+    if [[ ! -f $dhparams || $(stat -c %s $dhparams) -lt 1500 ]]; then
         openssl dhparam -dsaparam -out $dhparams 4096
     fi
 
@@ -23,7 +23,7 @@ _default_key() {
     chmod 600 $ssl_dir/*.key
 }
 
-_default_key &
+_default_key
 
 html_dir=/var/www/html
 [ -d $html_dir/.well-known/acme-challenge ] || mkdir -p $html_dir/.well-known/acme-challenge
