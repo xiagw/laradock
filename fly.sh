@@ -319,7 +319,7 @@ _test_php() {
     $pre_sudo chown "$USER:$USER" "$path_nginx_root"
     if [[ ! -f "$path_nginx_root/test.php" ]]; then
         _msg "Create test.php"
-        $pre_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
+        $pre_sudo cp -avf "$laradock_path/php-fpm/root/opt/test.php" "$path_nginx_root/test.php"
         source "$laradock_env"
         sed -i \
             -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \

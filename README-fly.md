@@ -1,14 +1,16 @@
-## 服务器配置推荐
+## 服务器/网络/配置推荐
 - CPU 处理器     >= 2 core(核)
 - MEM 内存       >= 8 GB
 - Disk 系统硬盘   >= 60 GB
 - Net 网络带宽    >= 100M(按量付费) ， 或 网络带宽 >= 10M(固定带宽付费)
 - 如不是云服务器，带宽请自行根据实际业务情况配置网络带宽
 - 建议所有采购项目初期使用“按量付费”，之后再根据每日账单确定采购“固定消费”套餐
+- 防火墙/安全组/开放端口 22/80/443
 
 ## 软件版本
 - (单机)操作系统： Ubuntu 22.04（推荐），CentOS 7，AliyunOS 等 Linux 系统
 - (集群)操作系统： Kubernetes (根据云厂商自动推荐)
+- 极不推荐 windows 系统
 - Nginx >= 1.16
 - PHP   >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)
 - JDK   >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB)
@@ -16,7 +18,7 @@
 - Redis >= 5.0（内存 >=1GB）
 
 
-## 部署方式一 单机/多机，docker-compose 部署参考（推荐）
+## 部署方式一 容器/单机/多机，docker-compose 部署参考（推荐）
 ```sh
 ## 初始化系统环境, docker / php-fpm 7.1 / jdk 1.8
 ## 以下在线脚本默认安装路径为 当前 $PWD/docker/laradock 或 $HOME/docker/laradock
@@ -60,7 +62,7 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/spring
 
 ```
 
-## 部署方式二 K8S 集群， helm 部署参考（推荐）
+## 部署方式二 容器/ K8S 集群， helm 部署参考（推荐）
 ```sh
 ## 1. 前提条件，确保命令 kubectl / helm 工作正常
 ## 2. 使用命令 helm create <project_name> 生成 helm 文件， 例如:
@@ -112,12 +114,15 @@ exec run.sh start
 ## Windows 服务器部署 PHP
 1. Download URL: https://cdn.flyh6.com/docker/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
-1. 文件存放一般位于 C:\xampp\htdocs\ （此目录对应站点根目录 http://xxx.yyy.com/）
-1. C:\xampp\htdocs\tp (PHP 代码文件)（此目录对应站点/目录 http://xxx.yyy.com/tp/）
-1. C:\xampp\htdocs\static (前端静态资源文件)（此目录对应站点/目录 http://xxx.yyy.com/static/）
+1. 文件存放一般位于 C:\xampp\htdocs\ （此目录对应站点根目录，例如 http://xxx.yyy.com/）
+1. C:\xampp\htdocs\tp\ (PHP 代码文件)（此目录对应站点目录，例如 http://xxx.yyy.com/tp/）
+1. C:\xampp\htdocs\static\ (前端静态资源文件)（此目录对应站点目录，例如 http://xxx.yyy.com/static/）
+```bat
+curl.exe -LO https://cdn.flyh6.com/docker/xampp.zip
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.zip C:\xampp\"
+```
 
-
-## 在线公开文件临时传递
+## 文件临时传递/在线公开方式（不加密）
 - 文件非机密内容，可以公开传送
 - 文件敏感性低的可以压缩文件并加复杂密码
 - 禁止传递敏感性高的文件

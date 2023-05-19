@@ -11,15 +11,15 @@ _kill() {
 }
 
 ## index for default site
-[ -d /var/lib/php/sessions ] && chmod -R 777 /var/lib/php/sessions
-[ -d /run/php ] || mkdir -p /run/php
-[ -d /var/www/html ] || mkdir /var/www/html
-[ -f /var/www/html/index.html ] || date >>/var/www/html/index.html
-
 pre_path=/var/www
 html_path=$pre_path/html
+[ -d /var/lib/php/sessions ] && chmod -R 777 /var/lib/php/sessions
+[ -d /run/php ] || mkdir -p /run/php
+[ -d $html_path ] || mkdir $html_path
+[ -f $html_path/index.html ] || date >>$html_path/index.html
+
 ## create runtime for ThinkPHP
-while true; do
+while [ -d $html_path ]; do
     for dir in $html_path/ $html_path/tp/ $html_path/tp/*/; do
         [ -d $dir ] || continue
         if [[ -f "$dir"/think && -d $dir/thinkphp && -d $dir/application ]]; then
@@ -36,14 +36,6 @@ for i in /usr/sbin/php-fpm*; do
     [ -x "$i" ] && $i -F &
     pids="${pids} $!"
 done
-
-## schedule task
-for file in $pre_path/*/task.sh; do
-    if [[ -f $file ]]; then
-        cd "${file##*/}" && bash $file
-    fi
-done &
-
 if command -v nginx && nginx -t; then
     ## start nginx
     exec nginx -g "daemon off;" &
