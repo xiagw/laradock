@@ -418,8 +418,8 @@ Parameters:
 
 _build_php() {
     build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
-    image_tag_base=deploy/php:${php_ver}-base
-    image_tag=deploy/php:${php_ver}
+    image_tag_base=fly/php:${php_ver}-base
+    image_tag=fly/php:${php_ver}
     file_url=https://gitee.com/xiagw/laradock/raw/in-china/php-fpm
     file_base=Dockerfile.php-base
 
