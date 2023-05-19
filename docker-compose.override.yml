@@ -60,6 +60,29 @@ services:
       networks:
         - backend
         - frontend
+      depends_on:
+        - mysqlbak
+
+### MySQL backup ################################################
+    mysqlbak:
+      restart: always
+      image: databack/mysql-backup
+      environment:
+        - DB_DUMP_FREQ=60
+        - DB_DUMP_BEGIN=0130
+        - DB_DUMP_TARGET=/backup
+        - DB_SERVER=${DB_HOST}
+        - DB_PORT=${MYSQL_PORT}
+        - DB_USER=root
+        - DB_PASS=${MYSQL_ROOT_PASSWORD}
+        # - DB_DUMP_DEBUG=true
+        - DB_DUMP_BY_SCHEMA=true
+      volumes:
+        - ${DATA_PATH_HOST}/mysql_backup:/backup
+      networks:
+        - backend
+        - frontend
+
 ### Percona ################################################
     percona:
       restart: always
