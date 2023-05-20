@@ -68,15 +68,15 @@ services:
       restart: always
       image: databack/mysql-backup
       environment:
-        - DB_DUMP_FREQ=60
-        - DB_DUMP_BEGIN=0130
+        - DB_DUMP_FREQ=1440
+        - DB_DUMP_BEGIN=1705
         - DB_DUMP_TARGET=/backup
         - DB_SERVER=${DB_HOST}
         - DB_PORT=${MYSQL_PORT}
         - DB_USER=root
         - DB_PASS=${MYSQL_ROOT_PASSWORD}
-        # - DB_DUMP_DEBUG=true
         - DB_DUMP_BY_SCHEMA=true
+        # - DB_DUMP_DEBUG=true
       volumes:
         - ${DATA_PATH_HOST}/mysql_backup:/backup
       networks:

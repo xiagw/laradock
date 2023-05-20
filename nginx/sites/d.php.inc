@@ -1,5 +1,5 @@
 ## Fixed ThinkPHP deploy subdir
-location /tp {
+location /tp/ {
     rewrite /tp/(.*)/public/assets/(.*)$ /tp/$1/public/assets/$2 break;
     rewrite /tp/(.*)/public/static/(.*)$ /tp/$1/public/static/$2 break;
     rewrite /tp/(.*)/public/(.*)$ /tp/$1/public/index.php/$2 last;
