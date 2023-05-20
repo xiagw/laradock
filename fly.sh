@@ -599,7 +599,16 @@ main() {
             exec_test=1
             ;;
         mysql)
-            :
+            cat >"$laradock_path"/mysql/docker-entrypoint-initdb.d/create.defautldb.sql <<'EOF'
+CREATE DATABASE IF NOT EXISTS `defaultdb` COLLATE 'utf8mb4_general_ci' ;
+GRANT ALL ON `defaultdb`.* TO 'defaultdb'@'%' ;
+CREATE DATABASE IF NOT EXISTS `flydev` COLLATE 'utf8mb4_general_ci' ;
+GRANT ALL ON `flydev`.* TO 'defaultdb'@'%' ;
+CREATE DATABASE IF NOT EXISTS `flytest` COLLATE 'utf8mb4_general_ci' ;
+GRANT ALL ON `flytest`.* TO 'defaultdb'@'%' ;
+CREATE DATABASE IF NOT EXISTS `flyprod` COLLATE 'utf8mb4_general_ci' ;
+GRANT ALL ON `flyprod`.* TO 'defaultdb'@'%' ;
+EOF
             # url_image="$url_fly/laradock-mysql.tar.gz"
             # _get_image mysql
             ;;
