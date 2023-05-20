@@ -25,7 +25,7 @@ while [ -d $html_path ]; do
         if [[ -f "$dir"/think && -d $dir/thinkphp && -d $dir/application ]]; then
             run_dir="$dir/runtime"
             [[ -d "$run_dir" ]] || mkdir "$run_dir"
-            [[ "$(stat -t -c %u $run_dir)" == 33 ]] || chown -R 33:33 "$run_dir"
+            [[ "$(stat -t -c %u $run_dir)" == 1000 ]] || chown -R 1000:1000 "$run_dir"
         fi
     done
     sleep 60

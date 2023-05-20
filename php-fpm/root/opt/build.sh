@@ -13,6 +13,9 @@ debconf-set-selections /tmp/preseed.cfg
 
 rm -f /etc/timezone /etc/localtime
 
+usermod -u 1000 www-data
+groupmod -g 1000 www-data
+
 apt-get update -y
 apt-get install -y --no-install-recommends apt-utils tzdata
 apt-get install -y --no-install-recommends locales
