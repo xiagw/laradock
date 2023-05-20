@@ -5,6 +5,14 @@ set -xe
 if [ "$IN_CHINA" = true ] || [ "$CHANGE_SOURCE" = true ]; then
     sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
 fi
+
+usermod -u 1000 www-data
+groupmod -g 1000 www-data
+
+apt_opt="apt-get install -y -q --no-install-recommends"
+apt-get update -y
+$apt_opt apt-utils
+
 ## preesed tzdata, update package index, upgrade packages and install needed software
 truncate -s0 /tmp/preseed.cfg
 echo "tzdata tzdata/Areas select Asia" >>/tmp/preseed.cfg
@@ -13,12 +21,8 @@ debconf-set-selections /tmp/preseed.cfg
 
 rm -f /etc/timezone /etc/localtime
 
-usermod -u 1000 www-data
-groupmod -g 1000 www-data
-
-apt-get update -y
-apt-get install -y --no-install-recommends apt-utils tzdata
-apt-get install -y --no-install-recommends locales
+$apt_opt tzdata
+$apt_opt locales
 
 grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen
 locale-gen en_US.UTF-8
@@ -28,14 +32,14 @@ case "$LARADOCK_PHP_VERSION" in
     :
     ;;
 *)
-    apt-get install -y --no-install-recommends software-properties-common
+    $apt_opt software-properties-common
     add-apt-repository ppa:ondrej/php
-    apt-get install -y --no-install-recommends php"${PHP_VER}"-mcrypt
+    $apt_opt php"${LARADOCK_PHP_VERSION}"-mcrypt
     ;;
 esac
 
 apt-get upgrade -y
-apt-get install -y --no-install-recommends \
+$apt_opt \
     php"${LARADOCK_PHP_VERSION}" \
     php"${LARADOCK_PHP_VERSION}"-redis \
     php"${LARADOCK_PHP_VERSION}"-mongodb \
@@ -58,7 +62,7 @@ apt-get install -y --no-install-recommends \
 # php"${LARADOCK_PHP_VERSION}"-pecl-mcrypt  replace by  php"${LARADOCK_PHP_VERSION}"-libsodium
 
 if [ "$INSTALL_APACHE" = true ]; then
-    apt-get install -y --no-install-recommends \
+    $apt_opt \
         apache2 libapache2-mod-fcgid \
         libapache2-mod-php"${LARADOCK_PHP_VERSION}"
     sed -i -e '1 i ServerTokens Prod' \
@@ -66,7 +70,7 @@ if [ "$INSTALL_APACHE" = true ]; then
         -e '1 i ServerName www.example.com' \
         /etc/apache2/sites-available/000-default.conf
 else
-    apt-get install -y --no-install-recommends nginx
+    $apt_opt nginx
 fi
 
 apt-get clean all && rm -rf /tmp/*
