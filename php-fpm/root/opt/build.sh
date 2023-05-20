@@ -38,7 +38,7 @@ case "$LARADOCK_PHP_VERSION" in
     ;;
 esac
 
-apt-get upgrade -y
+apt-get upgrade -yqq
 $apt_opt \
     php"${LARADOCK_PHP_VERSION}" \
     php"${LARADOCK_PHP_VERSION}"-redis \
