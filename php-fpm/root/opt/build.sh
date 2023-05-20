@@ -9,8 +9,8 @@ fi
 usermod -u 1000 www-data
 groupmod -g 1000 www-data
 
-apt_opt="apt-get install -y -q --no-install-recommends"
-apt-get update -y
+apt_opt="apt-get install -yqq --no-install-recommends"
+apt-get update -yqq
 $apt_opt apt-utils
 
 ## preesed tzdata, update package index, upgrade packages and install needed software
