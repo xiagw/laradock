@@ -36,12 +36,12 @@ for i in /usr/sbin/php-fpm*; do
     [ -x "$i" ] && $i -F &
     pids="${pids} $!"
 done
+## start nginx
 if command -v nginx && nginx -t; then
-    ## start nginx
     exec nginx -g "daemon off;" &
     pids="${pids} $!"
+## start apache
 elif command -v apachectl && apachectl -t; then
-    ## start apache
     exec apachectl -k start -D FOREGROUND &
     pids="${pids} $!"
 else

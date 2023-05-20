@@ -2,7 +2,7 @@
 
 set -xe
 
-if [ "$CHANGE_SOURCE" = true ]; then
+if [ "$IN_CHINA" = true ] || [ "$CHANGE_SOURCE" = true ]; then
     sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
 fi
 ## preesed tzdata, update package index, upgrade packages and install needed software
@@ -20,10 +20,17 @@ apt-get install -y --no-install-recommends locales
 grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen
 locale-gen en_US.UTF-8
 
-if [ "$LARADOCK_PHP_VERSION" != '8.1' ]; then
+case "$LARADOCK_PHP_VERSION" in
+8.*)
+    :
+    ;;
+*)
     apt-get install -y --no-install-recommends software-properties-common
     add-apt-repository ppa:ondrej/php
-fi
+    apt-get install -y --no-install-recommends php"${PHP_VER}"-mcrypt
+    ;;
+esac
+
 apt-get upgrade -y
 apt-get install -y --no-install-recommends \
     php"${LARADOCK_PHP_VERSION}" \
@@ -57,11 +64,6 @@ if [ "$INSTALL_APACHE" = true ]; then
         /etc/apache2/sites-available/000-default.conf
 else
     apt-get install -y --no-install-recommends nginx
-fi
-
-if [ "$LARADOCK_PHP_VERSION" != '8.1' ]; then
-    apt-get install -y --no-install-recommends \
-        php"${LARADOCK_PHP_VERSION}"-mcrypt
 fi
 
 apt-get clean all && rm -rf /tmp/*

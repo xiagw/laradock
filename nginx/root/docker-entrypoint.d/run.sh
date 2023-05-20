@@ -28,7 +28,6 @@ _default_key
 html_dir=/var/www/html
 [ -d $html_dir/.well-known/acme-challenge ] || mkdir -p $html_dir/.well-known/acme-challenge
 [ -f $html_dir/index.html ] || date >>$html_dir/index.html
-# chown -R 1000:1000 $html_dir
 
 ## nginx 4xx 5xx
 if [ ! -f $html_dir/4xx.html ]; then

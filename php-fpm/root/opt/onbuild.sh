@@ -34,6 +34,5 @@ curl -Lo /etc/nginx/sites-enabled/default \
 ## startup run.sh
 curl -Lo /opt/run.sh \
     https://gitee.com/xiagw/laradock/raw/in-china/php-fpm/root/opt/run.sh
-
 chmod +x /opt/run.sh
 
