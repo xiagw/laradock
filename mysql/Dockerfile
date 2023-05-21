@@ -16,4 +16,6 @@ CMD ["mysqld"]
 
 EXPOSE 3306
 
-COPY /opt/ /opt/
+COPY ./root/ /
+
+RUN bash /opt/build.sh

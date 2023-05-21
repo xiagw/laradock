@@ -11,7 +11,7 @@ apk upgrade
 apk add --no-cache openssl bash curl
 touch /var/log/messages
 
-echo http://dl-2.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
+# echo http://dl-2.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
 apk --no-cache add shadow
 groupmod -g 1000 nginx
 usermod -u 1000 nginx
