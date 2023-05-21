@@ -496,7 +496,7 @@ _set_args() {
             IN_CHINA='false'
             ;;
         build)
-            exec_build_php=1
+            exec_build_image=1
             ;;
         docker)
             USE_ALIYUN='false'
@@ -562,8 +562,13 @@ main() {
         dco="docker compose"
     fi
 
-    if [[ "${exec_build_php:-0}" -eq 1 ]]; then
-        _build_php
+    if [[ "${exec_build_image:-0}" -eq 1 ]]; then
+        if [[ "${args}" == *php* ]]; then
+            _build_php
+        fi
+        if [[ "${args}" == *nginx* ]]; then
+            _build_nginx
+        fi
         return
     fi
     if [[ "${exec_install_zsh:-0}" -eq 1 ]]; then
