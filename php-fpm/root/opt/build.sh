@@ -29,9 +29,10 @@ locale-gen en_US.UTF-8
 
 case "$LARADOCK_PHP_VERSION" in
 8.*)
-    :
+    echo "Use repo of OS."
     ;;
 *)
+    echo "Use ppa:ondrej/php."
     $apt_opt software-properties-common
     add-apt-repository ppa:ondrej/php
     $apt_opt php"${LARADOCK_PHP_VERSION}"-mcrypt
