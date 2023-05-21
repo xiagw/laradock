@@ -416,6 +416,21 @@ Parameters:
     exit 1
 }
 
+_build_nginx() {
+    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA}"
+    image_tag=fly/nginx
+    file_url=https://gitee.com/xiagw/laradock/raw/in-china/nginx
+    file_base=Dockerfile.base
+
+    ## build php image
+    if [[ ! -f $file_base ]]; then
+        curl -fLO $file_url/$file_base
+    fi
+    [[ -d root ]] || mkdir root
+
+    $build_opt -t "$image_tag" -f $file_base .
+}
+
 _build_php() {
     build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base
@@ -424,7 +439,6 @@ _build_php() {
     file_base=Dockerfile.php-base
 
     ## php base image ready?
-    cd "$me_path" || exit 1
     if ! docker images | grep -q "$image_tag_base"; then
         if [[ ! -f $file_base ]]; then
             curl -fLO $file_url/$file_base
