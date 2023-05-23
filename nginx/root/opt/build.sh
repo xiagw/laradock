@@ -11,7 +11,6 @@ apk upgrade
 apk add --no-cache openssl bash curl
 touch /var/log/messages
 
-# echo http://dl-2.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
 apk --no-cache add shadow
 groupmod -g 1000 nginx
 usermod -u 1000 nginx
@@ -23,3 +22,6 @@ echo "upstream php-upstream { server ${PHP_UPSTREAM_CONTAINER}:${PHP_UPSTREAM_PO
 sed -i 's/\r//g' /docker-entrypoint.d/run.sh
 chmod +x /docker-entrypoint.d/run.sh
 
+## install acme.sh
+email="email=$(date | md5sum | cut -c 1-6)@deploy.sh"
+curl -fL https://get.acme.sh | sh -s "$email"

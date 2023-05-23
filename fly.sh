@@ -199,7 +199,7 @@ _reload_nginx() {
             $dco exec -T nginx nginx -s reload
             break
         else
-            _ms "nginx test err."
+            _msg "[$((i * 2))] reload nginx err."
         fi
         sleep 2
     done
@@ -306,6 +306,7 @@ _test_nginx() {
         if curl --connect-timeout 3 localhost; then
             break
         else
+            _msg "[$((i * 2))] test nginx err."
             sleep 2
         fi
     done
@@ -329,12 +330,14 @@ _test_php() {
     fi
 
     _set_nginx_php
+
     _reload_nginx
 
     for i in {1..15}; do
         if curl --connect-timeout 3 -fsSL localhost/test.php; then
             break
         else
+            _msg "[$((i * 2))] test php err."
             sleep 2
         fi
     done
