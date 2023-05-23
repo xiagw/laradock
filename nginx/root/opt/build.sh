@@ -8,10 +8,10 @@ fi
 
 apk update
 apk upgrade
-apk add --no-cache openssl bash curl
+apk add --no-cache bash curl shadow openssl openssh-client
 touch /var/log/messages
 
-apk --no-cache add shadow
+apk --no-cache add
 groupmod -g 1000 nginx
 usermod -u 1000 nginx
 
@@ -25,3 +25,5 @@ chmod +x /docker-entrypoint.d/run.sh
 ## install acme.sh
 email="email=$(date | md5sum | cut -c 1-6)@deploy.sh"
 curl -fL https://get.acme.sh | sh -s "$email"
+ln -s /root/.acme.sh/acme.sh /usr/local/bin/acme.sh
+# crontab -l | grep acme.sh | sed 's#> /dev/null#>/proc/1/fd/1 2>/proc/1/fd/2#' | crontab -

@@ -36,3 +36,7 @@ fi
 if [ ! -f $html_dir/5xx.html ]; then
     echo 'Error page: 5xx' >>$html_dir/5xx.html
 fi
+
+
+# Start crond in background
+crond -l 2 -b
