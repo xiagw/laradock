@@ -425,7 +425,7 @@ _build_nginx() {
     file_url=https://gitee.com/xiagw/laradock/raw/in-china/nginx
     file_base=Dockerfile.base
 
-    ## build php image
+    ## build nginx image
     if [[ ! -f $file_base ]]; then
         curl -fLO $file_url/$file_base
     fi

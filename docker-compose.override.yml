@@ -39,10 +39,8 @@ services:
         context: ./nginx
         args:
           - TZ=${WORKSPACE_TIMEZONE}
-      extra_hosts:
-        - "dockerhost:${DOCKER_HOST_IP}"
-      # volumes:
-      #   - /data:/data
+      volumes:
+        - ${NGINX_SSL_PATH}:/acmedata
 ### MySQL ################################################
     mysql:
       restart: always
