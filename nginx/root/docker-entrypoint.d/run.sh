@@ -1,7 +1,6 @@
 #!/bin/bash
 
 _default_key() {
-    ssl_dir="/etc/nginx/conf.d/ssl"
     default_key="$ssl_dir/default.key"
     default_csr="$ssl_dir/default.csr"
     default_crt="$ssl_dir/default.crt"
@@ -23,7 +22,25 @@ _default_key() {
     chmod 600 $ssl_dir/*.key
 }
 
+_issue_cert() {
+    c=0
+    while read -r domain; do
+        [[ -z $domain || -d $LE_CONFIG_HOME/$domain ]] && continue
+        c=$((c + 1))
+        acme.sh --issue --nginx -d "$domain"
+        if [[ $c = 1 ]]; then
+            acme.sh --install-cert -d "$domain" --key-file $ssl_dir/default.key --fullchain-file $ssl_dir/default.crt
+        else
+            acme.sh --install-cert -d "$domain" --key-file $ssl_dir/"$domain".key --fullchain-file $ssl_dir/"$domain".crt
+        fi
+    done <$ssl_dir/domains.txt
+}
+
+ssl_dir="/etc/nginx/conf.d/ssl"
+
 _default_key
+
+_issue_cert &
 
 html_dir=/var/www/html
 [ -d $html_dir/.well-known/acme-challenge ] || mkdir -p $html_dir/.well-known/acme-challenge
@@ -36,7 +53,6 @@ fi
 if [ ! -f $html_dir/5xx.html ]; then
     echo 'Error page: 5xx' >>$html_dir/5xx.html
 fi
-
 
 # Start crond in background
 crond -l 2 -b
