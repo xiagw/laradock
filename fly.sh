@@ -338,7 +338,7 @@ _test_php() {
     if [[ ! -f "$path_nginx_root/test.php" ]]; then
         _msg "Create test.php"
         $pre_sudo cp -avf "$laradock_path/php-fpm/root/opt/test.php" "$path_nginx_root/test.php"
-        source "$laradock_env"
+        source "$laradock_env" 2>/dev/null
         sed -i \
             -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
             -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
