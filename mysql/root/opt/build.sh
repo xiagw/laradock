@@ -23,7 +23,9 @@ chmod 0444 $my_cnf
 if [ "$MYSQL_SLAVE" = 'true' ]; then
     sed -i -e "/server_id/s/1/${MYSQL_SLAVE_ID:-2}/" -e "/auto_increment_offset/s/1/2/" $my_cnf
 fi
-sed -i '/skip-host-cache/d' /etc/my.cnf
+if [ -f /etc/my.cnf ]; then
+    sed -i '/skip-host-cache/d' /etc/my.cnf
+fi
 
 printf "[client]\npassword=%s\n" "${MYSQL_ROOT_PASSWORD}" >/root/.my.cnf
 printf "export LANG=C.UTF-8" >/root/.bashrc
