@@ -24,10 +24,12 @@ _default_key() {
 
 _issue_cert() {
     c=0
+    # email="email=$(date | md5sum | cut -c 1-6)@deploy.sh"
+    # acme.sh --register-account -m $email
     while read -r domain; do
         [[ -z $domain || -d $LE_CONFIG_HOME/$domain ]] && continue
         c=$((c + 1))
-        acme.sh --issue --nginx -d "$domain"
+        acme.sh --issue -w /var/www/html -d "$domain"
         if [[ $c = 1 ]]; then
             acme.sh --install-cert -d "$domain" --key-file $ssl_dir/default.key --fullchain-file $ssl_dir/default.crt
         else
@@ -40,7 +42,7 @@ ssl_dir="/etc/nginx/conf.d/ssl"
 
 _default_key
 
-_issue_cert &
+_issue_cert
 
 html_dir=/var/www/html
 [ -d $html_dir/.well-known/acme-challenge ] || mkdir -p $html_dir/.well-known/acme-challenge

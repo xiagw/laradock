@@ -154,10 +154,11 @@ _check_laradock() {
     _msg step "install laradock to $laradock_path."
     mkdir -p "$laradock_path"
     if [[ "${IN_CHINA:-true}" == true ]]; then
-        git clone -b in-china --depth 1 https://gitee.com/xiagw/laradock.git "$laradock_path"
+        git_url=https://gitee.com/xiagw/laradock.git
     else
-        git clone -b in-china --depth 1 https://github.com/xiagw/laradock.git "$laradock_path"
+        git_url=https://github.com/xiagw/laradock.git
     fi
+    git clone -b in-china --depth 1 $git_url "$laradock_path"
     ## jdk image, uid is 1000.(see spring/Dockerfile)
     $pre_sudo chown 1000:1000 "$laradock_path/spring"
 }
@@ -298,9 +299,22 @@ _start_auto() {
     # fi
     _msg step "auto startup"
     cd "$laradock_path" && $dco up -d $args
+    ## wait startup
+    for arg in $args; do
+        for i in {1..5}; do
+            if $dco ps | grep "$arg"; then
+                break
+            else
+                sleep 2
+            fi
+        done
+    done
 }
 
 _test_nginx() {
+    if [[ "${exec_test:-0}" -ne 1 ]]; then
+        return
+    fi
     _msg time "Test nginx "
     for i in {1..15}; do
         if curl --connect-timeout 3 localhost; then
@@ -313,6 +327,9 @@ _test_nginx() {
 }
 
 _test_php() {
+    if [[ "${exec_test:-0}" -ne 1 ]]; then
+        return
+    fi
     _check_sudo
 
     _msg step "Test PHP Redis MySQL "
@@ -345,6 +362,9 @@ _test_php() {
 }
 
 _test_java() {
+    if [[ "${exec_test:-0}" -ne 1 ]]; then
+        return
+    fi
     _msg "Test spring."
 }
 
@@ -656,14 +676,16 @@ EOF
         esac
     done
 
-    if [[ "${exec_test:-0}" -eq 1 ]]; then
-        # _start_manual
-        _start_auto
-        _reload_nginx
-        _test_nginx
-        _test_php
-        _test_java
-    fi
+    # _start_manual
+    _start_auto
+
+    _reload_nginx
+
+    _test_nginx
+
+    _test_php
+
+    _test_java
 }
 
 main "$@"
