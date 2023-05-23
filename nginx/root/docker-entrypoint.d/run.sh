@@ -44,6 +44,8 @@ _issue_cert &
 
 html_dir=/var/www/html
 [ -d $html_dir/.well-known/acme-challenge ] || mkdir -p $html_dir/.well-known/acme-challenge
+[ -d $html_dir/tp ] || mkdir -p $html_dir/tp
+[ -d $html_dir/static ] || mkdir -p $html_dir/static
 [ -f $html_dir/index.html ] || date >>$html_dir/index.html
 
 ## nginx 4xx 5xx
