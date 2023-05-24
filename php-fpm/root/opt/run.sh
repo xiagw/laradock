@@ -31,6 +31,12 @@ while [ -d $html_path ]; do
     sleep 60
 done &
 
+if [ -f /usr/lib/x86_64-linux-gnu/libjemalloc.so.2 ]; then
+    export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+fi
+# 1. lsof -Pn -p $(pidof mariadbd) | grep jemalloc，配置正确的话会有jemalloc.so的输出；
+# 2. cat /proc/$(pidof mariadbd)/smaps | grep jemalloc，和上述命令有类似的输出。
+
 ## start php-fpm
 for i in /usr/sbin/php-fpm*; do
     [ -x "$i" ] && $i -F &

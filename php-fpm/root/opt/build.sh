@@ -62,6 +62,8 @@ $apt_opt \
 # php"${LARADOCK_PHP_VERSION}"-process \
 # php"${LARADOCK_PHP_VERSION}"-pecl-mcrypt  replace by  php"${LARADOCK_PHP_VERSION}"-libsodium
 
+$apt_opt libjemalloc2
+
 if [ "$INSTALL_APACHE" = true ]; then
     $apt_opt \
         apache2 libapache2-mod-fcgid \
