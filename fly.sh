@@ -437,33 +437,6 @@ Parameters:
     exit 1
 }
 
-_build_image_nginx() {
-    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA}"
-    image_tag=fly/nginx
-    file_base=Dockerfile.base
-
-    [[ -d root ]] || mkdir root
-    curl -Lo root/opt/build.sh $url_laradock_raw/nginx/root/opt/build.sh
-    # if [[ ! -f $file_base ]]; then
-        curl -fLO $url_laradock_raw/nginx/$file_base
-    # fi
-
-    $build_opt -t "$image_tag" -f $file_base .
-}
-
-_build_image_java() {
-    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA}"
-    image_tag=fly/spring
-    file_base=Dockerfile.java
-
-    [[ -d root ]] || mkdir -p root/opt
-    # if [[ ! -f $file_base ]]; then
-        curl -fLo $file_base $url_deploy_raw/conf/dockerfile/$file_base
-    # fi
-
-    $build_opt -t "$image_tag" -f $file_base .
-}
-
 _build_image_php() {
     build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base

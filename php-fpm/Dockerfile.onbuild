@@ -1,0 +1,2 @@
+ARG PHP_TAG=7.1
+FROM fly/php:${PHP_TAG}-base
