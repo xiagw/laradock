@@ -56,6 +56,7 @@ _command_exists() {
     if [[ "$*" == docker-compose ]]; then
         dco_ver=$(docker-compose -v | awk '{print $3}' | sed -e 's/\.//g' -e 's/\,//g')
         if [[ "$dco_ver" -lt 1190 ]]; then
+            _msg red "docker-compose version is too low."
             return 1
         fi
     fi
@@ -222,10 +223,6 @@ _set_nginx_php() {
 _set_nginx_java() {
     ## setup java upstream
     sed -i -e 's/127\.0\.0\.1/spring/g' "$laradock_path/nginx/sites/d.java.inc"
-}
-
-_set_nginx_dockerfile() {
-    cp -vf "$laradock_path"/nginx/Dockerfile.base "$laradock_path"/nginx/Dockerfile
 }
 
 _set_env_php_ver() {
@@ -601,10 +598,14 @@ main() {
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
     # curl -SL https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
-    if _command_exists docker-compose; then
-        dco="docker-compose"
-    else
+    if docker compose >/dev/null; then
         dco="docker compose"
+    else
+        if _command_exists docker-compose; then
+            dco="docker-compose"
+        else
+            _msg red "not found docker compose"
+        fi
     fi
 
     if [[ "${exec_build_image:-0}" -eq 1 ]]; then
@@ -662,7 +663,7 @@ main() {
         nginx)
             url_image="$url_fly_cdn/laradock-nginx.tar.gz"
             _get_image nginx
-            _set_nginx_dockerfile
+            # cp -vf "$laradock_path"/nginx/Dockerfile.base "$laradock_path"/nginx/Dockerfile
             exec_test=1
             ;;
         mysql)
