@@ -11,9 +11,9 @@ _kill() {
 }
 
 _check_jemalloc() {
-    sleep 60
+    sleep 5
     for pid in $pids; do
-        if grep -q "/proc/$pid/smaps"; then
+        if grep -q jemalloc "/proc/$pid/smaps"; then
             echo "PID $pid using jemalloc..."
         else
             echo "PID $pid not use jemalloc"
