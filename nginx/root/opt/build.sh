@@ -11,9 +11,8 @@ apk upgrade
 apk add --no-cache bash curl shadow openssl openssh-client
 touch /var/log/messages
 
-apk --no-cache add
-groupmod -g 1000 nginx
-usermod -u 1000 nginx
+# groupmod -g 1000 nginx
+# usermod -u 1000 nginx
 
 # Set upstream conf and remove the default conf
 echo "upstream php-upstream { server ${PHP_UPSTREAM_CONTAINER}:${PHP_UPSTREAM_PORT}; }" >/etc/nginx/php-upstream.conf

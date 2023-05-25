@@ -456,9 +456,9 @@ _build_image_java() {
     file_base=Dockerfile.java
 
     [[ -d root ]] || mkdir -p root/opt
-    if [[ ! -f $file_base ]]; then
-        curl -fLO $url_deploy_raw/conf/dockerfile/$file_base
-    fi
+    # if [[ ! -f $file_base ]]; then
+        curl -fLo $file_base $url_deploy_raw/conf/dockerfile/$file_base
+    # fi
 
     $build_opt -t "$image_tag" -f $file_base .
 }
@@ -467,15 +467,15 @@ _build_image_php() {
     build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base
     image_tag=fly/php:${php_ver}
-    file_base=Dockerfile.php-base
+    file_base=Dockerfile.base
 
     ## php base image ready?
     [ -d root ] || mkdir -p root/opt
     if ! docker images | grep -q "$image_tag_base"; then
         curl -Lo root/opt/build.sh $url_laradock_raw/php-fpm/root/opt/build.sh
-        if [[ ! -f $file_base ]]; then
-            curl -fLO $url_laradock_raw/php-fpm/$file_base
-        fi
+        # if [[ ! -f $file_base ]]; then
+            curl -fLo $file_base $url_laradock_raw/php-fpm/$file_base
+        # fi
         $build_opt -t "$image_tag_base" -f $file_base . || return 1
     fi
 

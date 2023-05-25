@@ -10,6 +10,17 @@ _kill() {
     done
 }
 
+_check_jemalloc() {
+    sleep 60
+    for pid in $pids; do
+        if grep -q "/proc/$pid/smaps"; then
+            _msg "PID $pid using jemalloc..."
+        else
+            _msg "PID $pid not use jemalloc"
+        fi
+    done
+}
+
 ## index for default site
 pre_path=/var/www
 html_path=$pre_path/html
@@ -53,6 +64,8 @@ elif command -v apachectl && apachectl -t; then
 else
     exec tail -f /var/www/html/index.html &
 fi
+
+_check_jemalloc &
 
 ## 识别中断信号，停止进程
 trap _kill HUP INT PIPE QUIT TERM

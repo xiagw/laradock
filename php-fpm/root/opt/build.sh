@@ -6,8 +6,8 @@ if [ "$IN_CHINA" = true ] || [ "$CHANGE_SOURCE" = true ]; then
     sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
 fi
 
-usermod -u 1000 www-data
-groupmod -g 1000 www-data
+# usermod -u 1000 www-data
+# groupmod -g 1000 www-data
 
 apt_opt="apt-get install -yqq --no-install-recommends"
 apt-get update -yqq
