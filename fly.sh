@@ -163,7 +163,11 @@ _check_laradock() {
     git clone -b in-china --depth 1 $url_laradock_git "$laradock_path"
     ## jdk image, uid is 1000.(see spring/Dockerfile)
     if [[ "$(stat -c %u "$laradock_path/spring")" != 1000 ]]; then
-        $pre_sudo chown 1000:1000 "$laradock_path/spring"
+        if $pre_sudo chown 1000:1000 "$laradock_path/spring"; then
+            _msg time "OK: chown 1000:1000 $laradock_path/spring"
+        else
+            _msg warn "FAIL: chown 1000:1000 $laradock_path/spring"
+        fi
     fi
 }
 
@@ -254,12 +258,6 @@ _set_file_mode() {
     for d in "$laradock_path"/../*/; do
         [[ "$d" == *laradock/ ]] && continue
         find "$d" | while read -r line; do
-            [ -d "$line" ] && $pre_sudo chmod 755 "$line"
-            [ -f "$line" ] && $pre_sudo chmod 644 "$line"
-            if [[ "$line" == *runtime ]]; then
-                $pre_sudo rm -rf "${line:?}"/*
-                $pre_sudo chown -R 33:33 "$line"
-            fi
             if [[ "$line" == *config/app.php ]]; then
                 grep -q 'app_debug.*true' "$line" && $pre_sudo sed -i -e '/app_debug/s/true/false/' "$line"
             fi
@@ -268,9 +266,6 @@ _set_file_mode() {
             fi
         done
     done
-    if [[ "$(stat -c %u "$laradock_path/spring")" != 1000 ]]; then
-        $pre_sudo chown 1000:1000 "$laradock_path/spring"
-    fi
 }
 
 _install_zsh() {
