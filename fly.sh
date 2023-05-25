@@ -446,7 +446,7 @@ Parameters:
 }
 
 _build_image_nginx() {
-    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA}"
+    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA}"
     image_tag=fly/nginx
     file_base=Dockerfile.base
 
@@ -459,7 +459,7 @@ _build_image_nginx() {
 }
 
 _build_image_java() {
-    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA}"
+    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA}"
     image_tag=fly/spring
     file_base=Dockerfile.java
 
@@ -472,7 +472,7 @@ _build_image_java() {
 }
 
 _build_image_php() {
-    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base
     image_tag=fly/php:${php_ver}
     file_base=Dockerfile.php-base
