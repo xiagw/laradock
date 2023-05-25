@@ -53,7 +53,13 @@ _get_yes_no() {
 }
 
 _command_exists() {
-    command -v "$@" &>/dev/null
+    if [[ "$*" == docker-compose ]]; then
+        dco_ver=$(docker-compose -v | awk '{print $3}' | sed -e 's/\.//g' -e 's/\,//g')
+        if [[ "$dco_ver" -lt 1190 ]]; then
+            return 1
+        fi
+    fi
+    command -v "$@"
 }
 
 _get_distribution() {
@@ -156,7 +162,9 @@ _check_laradock() {
 
     git clone -b in-china --depth 1 $url_laradock_git "$laradock_path"
     ## jdk image, uid is 1000.(see spring/Dockerfile)
-    $pre_sudo chown 1000:1000 "$laradock_path/spring"
+    if [[ "$(stat -c %u "$laradock_path/spring")" != 1000 ]]; then
+        $pre_sudo chown 1000:1000 "$laradock_path/spring"
+    fi
 }
 
 _set_laradock_env() {
@@ -260,7 +268,9 @@ _set_file_mode() {
             fi
         done
     done
-    $pre_sudo chown 1000:1000 "$laradock_path/spring"
+    if [[ "$(stat -c %u "$laradock_path/spring")" != 1000 ]]; then
+        $pre_sudo chown 1000:1000 "$laradock_path/spring"
+    fi
 }
 
 _install_zsh() {
