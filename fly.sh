@@ -107,7 +107,7 @@ _check_dependence() {
         sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
         aliyun_os=1
     fi
-    if [[ "${IN_CHINA:-true}" == true && "${USE_ALIYUN:-true}" == true ]]; then
+    if [[ "${USE_ALIYUN:-true}" == true ]]; then
         curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash -s - --mirror Aliyun
     else
         curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
@@ -153,12 +153,8 @@ _check_laradock() {
     ## clone laradock or git pull
     _msg step "install laradock to $laradock_path."
     mkdir -p "$laradock_path"
-    if [[ "${IN_CHINA:-true}" == true ]]; then
-        git_url=https://gitee.com/xiagw/laradock.git
-    else
-        git_url=https://github.com/xiagw/laradock.git
-    fi
-    git clone -b in-china --depth 1 $git_url "$laradock_path"
+
+    git clone -b in-china --depth 1 $url_laradock_git "$laradock_path"
     ## jdk image, uid is 1000.(see spring/Dockerfile)
     $pre_sudo chown 1000:1000 "$laradock_path/spring"
 }
@@ -410,7 +406,7 @@ _install_lsyncd() {
 
 _upgrade_java() {
     cd "$laradock_path"
-    curl -fL $url_fly/srping.tar.gz | tar vzx
+    curl -fL $url_fly_cdn/srping.tar.gz | tar vzx
     $dco stop spring
     $dco rm -f
     $dco up -d spring
@@ -418,7 +414,7 @@ _upgrade_java() {
 
 _upgrade_php() {
     cd "$laradock_path"/../html
-    curl -fL $url_fly/tp.tar.gz | tar vzx
+    curl -fL $url_fly_cdn/tp.tar.gz | tar vzx
 }
 
 _usage() {
@@ -442,12 +438,11 @@ Parameters:
 _build_nginx() {
     build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA}"
     image_tag=fly/nginx
-    file_url=https://gitee.com/xiagw/laradock/raw/in-china/nginx
     file_base=Dockerfile.base
 
     ## build nginx image
     if [[ ! -f $file_base ]]; then
-        curl -fLO $file_url/$file_base
+        curl -fLO $url_laradock_raw/nginx/$file_base
     fi
     [[ -d root ]] || mkdir root
 
@@ -458,20 +453,20 @@ _build_php() {
     build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base
     image_tag=fly/php:${php_ver}
-    file_url=https://gitee.com/xiagw/laradock/raw/in-china/php-fpm
     file_base=Dockerfile.php-base
 
     ## php base image ready?
+    [ -d root ] || mkdir -p root/opt
     if ! docker images | grep -q "$image_tag_base"; then
+        curl -Lo root/opt/build.sh $url_laradock_raw/php-fpm/root/opt/build.sh
         if [[ ! -f $file_base ]]; then
-            curl -fLO $file_url/$file_base
+            curl -fLO $url_laradock_raw/php-fpm/$file_base
         fi
         $build_opt -t "$image_tag_base" -f $file_base . || return 1
     fi
 
     ## build php image
     echo "FROM $image_tag_base" >Dockerfile
-    [[ -d root ]] || mkdir root
     $build_opt -t "$image_tag" -f Dockerfile .
 }
 
@@ -521,7 +516,7 @@ _set_args() {
         build)
             exec_build_image=1
             ;;
-        docker)
+        install_docker_without_aliyun)
             USE_ALIYUN='false'
             ;;
         force_get_image)
@@ -562,7 +557,17 @@ main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
 
-    url_fly="http://cdn.flyh6.com/docker"
+    url_fly_cdn="http://cdn.flyh6.com/docker"
+
+    if [[ "${IN_CHINA:-true}" == true ]]; then
+        url_laradock_git=https://gitee.com/xiagw/laradock.git
+        url_laradock_raw=https://gitee.com/xiagw/laradock/raw/in-china
+        url_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw
+    else
+        url_laradock_git=https://github.com/xiagw/laradock.git
+        url_laradock_raw=https://github.com/xiagw/laradock/raw
+        url_deploy_raw=https://github.com/xiagw/deploy.sh/raw
+    fi
 
     if [[ -f "$me_path"/fly.sh && -f "$me_path/.env" ]]; then
         ## 从本机已安装目录执行 fly.sh
@@ -635,7 +640,7 @@ main() {
     for i in $args; do
         case $i in
         nginx)
-            url_image="$url_fly/laradock-nginx.tar.gz"
+            url_image="$url_fly_cdn/laradock-nginx.tar.gz"
             _get_image nginx
             _set_nginx_dockerfile
             exec_test=1
@@ -645,28 +650,31 @@ main() {
 CREATE DATABASE IF NOT EXISTS `defaultdb` COLLATE 'utf8mb4_general_ci' ;
 GRANT ALL ON `defaultdb`.* TO 'defaultdb'@'%' ;
 CREATE DATABASE IF NOT EXISTS `flydev` COLLATE 'utf8mb4_general_ci' ;
-GRANT ALL ON `flydev`.* TO 'defaultdb'@'%' ;
+GRANT ALL ON `flydev`.* TO 'flydev'@'%' ;
+GRANT ALL ON `defaultdb`.* TO 'flydev'@'%' ;
 CREATE DATABASE IF NOT EXISTS `flytest` COLLATE 'utf8mb4_general_ci' ;
-GRANT ALL ON `flytest`.* TO 'defaultdb'@'%' ;
+GRANT ALL ON `flytest`.* TO 'flytest'@'%' ;
+GRANT ALL ON `defaultdb`.* TO 'flytest'@'%' ;
 CREATE DATABASE IF NOT EXISTS `flyprod` COLLATE 'utf8mb4_general_ci' ;
-GRANT ALL ON `flyprod`.* TO 'defaultdb'@'%' ;
+GRANT ALL ON `flyprod`.* TO 'flyprod'@'%' ;
+GRANT ALL ON `defaultdb`.* TO 'flyprod'@'%' ;
 EOF
-            # url_image="$url_fly/laradock-mysql.tar.gz"
+            # url_image="$url_fly_cdn/laradock-mysql.tar.gz"
             # _get_image mysql
             ;;
         redis)
             :
-            # url_image="$url_fly/laradock-redis.tar.gz"
+            # url_image="$url_fly_cdn/laradock-redis.tar.gz"
             # _get_image redis
             ;;
         spring)
-            # url_image="$url_fly/laradock-spring.tar.gz"
+            # url_image="$url_fly_cdn/laradock-spring.tar.gz"
             # _get_image spring
             _set_file_mode
             _set_nginx_java
             ;;
         php*)
-            url_image="$url_fly/laradock-php-fpm.${php_ver}.tar.gz"
+            url_image="$url_fly_cdn/laradock-php-fpm.${php_ver}.tar.gz"
             _set_env_php_ver
             _set_file_mode
             _set_nginx_php
