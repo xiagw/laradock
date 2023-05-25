@@ -435,21 +435,33 @@ Parameters:
     exit 1
 }
 
-_build_nginx() {
+_build_image_nginx() {
     build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA}"
     image_tag=fly/nginx
     file_base=Dockerfile.base
 
-    ## build nginx image
+    [[ -d root ]] || mkdir root
     if [[ ! -f $file_base ]]; then
         curl -fLO $url_laradock_raw/nginx/$file_base
     fi
-    [[ -d root ]] || mkdir root
 
     $build_opt -t "$image_tag" -f $file_base .
 }
 
-_build_php() {
+_build_image_java() {
+    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA}"
+    image_tag=fly/spring
+    file_base=Dockerfile.java
+
+    [[ -d root ]] || mkdir -p root/opt
+    if [[ ! -f $file_base ]]; then
+        curl -fLO $url_deploy_raw/conf/dockerfile/$file_base
+    fi
+
+    $build_opt -t "$image_tag" -f $file_base .
+}
+
+_build_image_php() {
     build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base
     image_tag=fly/php:${php_ver}
@@ -562,11 +574,11 @@ main() {
     if [[ "${IN_CHINA:-true}" == true ]]; then
         url_laradock_git=https://gitee.com/xiagw/laradock.git
         url_laradock_raw=https://gitee.com/xiagw/laradock/raw/in-china
-        url_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw
+        url_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw/main
     else
         url_laradock_git=https://github.com/xiagw/laradock.git
-        url_laradock_raw=https://github.com/xiagw/laradock/raw
-        url_deploy_raw=https://github.com/xiagw/deploy.sh/raw
+        url_laradock_raw=https://github.com/xiagw/laradock/raw/main
+        url_deploy_raw=https://github.com/xiagw/deploy.sh/raw/main
     fi
 
     if [[ -f "$me_path"/fly.sh && -f "$me_path/.env" ]]; then
@@ -591,11 +603,14 @@ main() {
     fi
 
     if [[ "${exec_build_image:-0}" -eq 1 ]]; then
-        if [[ "${args}" == *php* ]]; then
-            _build_php
-        fi
         if [[ "${args}" == *nginx* ]]; then
-            _build_nginx
+            _build_image_nginx
+        fi
+        if [[ "${args}" == *php* ]]; then
+            _build_image_php
+        fi
+        if [[ "${args}" == *spring* ]]; then
+            _build_image_java
         fi
         return
     fi
