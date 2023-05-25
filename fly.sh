@@ -443,9 +443,10 @@ _build_image_nginx() {
     file_base=Dockerfile.base
 
     [[ -d root ]] || mkdir root
-    if [[ ! -f $file_base ]]; then
+    curl -Lo root/opt/build.sh $url_laradock_raw/nginx/root/opt/build.sh
+    # if [[ ! -f $file_base ]]; then
         curl -fLO $url_laradock_raw/nginx/$file_base
-    fi
+    # fi
 
     $build_opt -t "$image_tag" -f $file_base .
 }
@@ -464,7 +465,7 @@ _build_image_java() {
 }
 
 _build_image_php() {
-    build_opt="docker build --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base
     image_tag=fly/php:${php_ver}
     file_base=Dockerfile.base
@@ -529,6 +530,9 @@ _set_args() {
             ;;
         build)
             exec_build_image=1
+            ;;
+        nocache)
+            exec_build_image_nocache=1
             ;;
         install_docker_without_aliyun)
             USE_ALIYUN='false'
@@ -609,6 +613,11 @@ main() {
     fi
 
     if [[ "${exec_build_image:-0}" -eq 1 ]]; then
+        if [[ "${exec_build_image_nocache:-0}" -eq 1 ]]; then
+            build_opt="docker build --no-cache"
+        else
+            build_opt="docker build"
+        fi
         if [[ "${args}" == *nginx* ]]; then
             _build_image_nginx
         fi
@@ -691,13 +700,13 @@ EOF
         spring)
             # url_image="$url_fly_cdn/laradock-spring.tar.gz"
             # _get_image spring
-            _set_file_mode
+            # _set_file_mode
             _set_nginx_java
             ;;
         php*)
             url_image="$url_fly_cdn/laradock-php-fpm.${php_ver}.tar.gz"
             _set_env_php_ver
-            _set_file_mode
+            # _set_file_mode
             _set_nginx_php
             _get_image php-fpm
             exec_test=1
