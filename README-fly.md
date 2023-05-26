@@ -7,7 +7,7 @@
 - 建议所有采购项目初期使用“按量付费”，之后再根据每日账单确定采购“固定消费”套餐
 - 防火墙/安全组/开放端口 22/80/443
 
-## 软件版本
+## 软件/系统/版本
 - (单机)操作系统： Ubuntu 22.04（推荐），CentOS 7，AliyunOS 等 Linux 系统
 - (集群)操作系统： Kubernetes (根据云厂商自动推荐)
 - 极不推荐 windows 系统
@@ -111,18 +111,20 @@ systemctl start redis
 exec run.sh start
 ```
 
-## Windows 服务器部署 PHP
+## 部署  Windows 服务器
 1. Download URL: https://cdn.flyh6.com/docker/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
 1. 文件存放一般位于 C:\xampp\htdocs\ （此目录对应站点根目录，例如 http://xxx.yyy.com/）
 1. C:\xampp\htdocs\tp\ (PHP 代码文件)（此目录对应站点目录，例如 http://xxx.yyy.com/tp/）
 1. C:\xampp\htdocs\static\ (前端静态资源文件)（此目录对应站点目录，例如 http://xxx.yyy.com/static/）
+1. C:\xampp\spring\ 安装 JDK， 部署 jar 文件
 ```bat
 curl.exe -LO https://cdn.flyh6.com/docker/xampp.zip
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.zip C:\xampp\"
 ```
 
-## 文件临时传递/在线公开方式（不加密）
+
+## 传递临时文件/在线公开方式（不加密）
 - 文件非机密内容，可以公开传送
 - 文件敏感性低的可以压缩文件并加复杂密码
 - 禁止传递敏感性高的文件

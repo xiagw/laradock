@@ -437,6 +437,13 @@ Parameters:
     exit 1
 }
 
+_build_image_nginx() {
+    build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    image_tag=fly/nginx
+
+    $build_opt -t "$image_tag" .
+}
+
 _build_image_php() {
     build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag=fly/php:${php_ver}
@@ -474,20 +481,17 @@ _set_args() {
 
     while [ "$#" -gt 0 ]; do
         case "${1}" in
-        nginx)
-            args="${args} nginx"
-            ;;
         mysql)
             args="${args} mysql"
             ;;
         redis)
             args="${args} redis"
             ;;
-        gitlab)
-            args="gitlab"
+        nginx)
+            args="${args} nginx"
             ;;
-        svn)
-            args="usvn"
+        java | spring)
+            args="${args} spring"
             ;;
         php | php-fpm | fpm)
             args="${args} php-fpm"
@@ -498,9 +502,6 @@ _set_args() {
             ;;
         5.6 | 7.1 | 7.2 | 7.4)
             php_ver=$1
-            ;;
-        java | spring)
-            args="${args} spring"
             ;;
         upgrade)
             [[ $args == *php-fpm* ]] && exec_upgrade_php=1
@@ -513,11 +514,11 @@ _set_args() {
         build)
             exec_build_image=1
             ;;
-        build_with_local)
+        build_local)
             build_with_local=true
             ;;
-        nocache)
-            exec_build_image_nocache=1
+        build_no_cache | nocache)
+            build_image_nocache=1
             ;;
         install_docker_without_aliyun)
             USE_ALIYUN='false'
@@ -525,8 +526,18 @@ _set_args() {
         force_get_image)
             force_get_image='true'
             ;;
-        zsh)
+        gitlab | git)
+            args="gitlab"
+            ;;
+        svn | usvn)
+            args="usvn"
+            ;;
+        install_zsh | zsh)
             exec_install_zsh=1
+            enable_check=0
+            ;;
+        install_lsyncd | lsync | lsyncd)
+            exec_install_lsyncd=1
             enable_check=0
             ;;
         info)
@@ -535,10 +546,6 @@ _set_args() {
             ;;
         mysqlcli)
             exec_mysql_cli=1
-            enable_check=0
-            ;;
-        lsync)
-            exec_install_lsyncd=1
             enable_check=0
             ;;
         test)
@@ -598,7 +605,7 @@ main() {
     fi
 
     if [[ "${exec_build_image:-0}" -eq 1 ]]; then
-        if [[ "${exec_build_image_nocache:-0}" -eq 1 ]]; then
+        if [[ "${build_image_nocache:-0}" -eq 1 ]]; then
             build_opt="docker build --no-cache"
         else
             build_opt="docker build"
