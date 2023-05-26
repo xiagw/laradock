@@ -69,6 +69,8 @@ $apt_opt \
 
 $apt_opt libjemalloc2
 
+$apt_opt lsyncd
+
 if [ "$INSTALL_APACHE" = true ]; then
     $apt_opt \
         apache2 libapache2-mod-fcgid \
