@@ -21,6 +21,20 @@ _check_jemalloc() {
     done
 }
 
+case "$LARADOCK_PHP_VERSION" in
+8.*)
+    echo "skip jemalloc."
+    ;;
+*)
+    echo "using jemalloc..."
+    if [ -f /usr/lib/x86_64-linux-gnu/libjemalloc.so.2 ]; then
+        export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+    fi
+    # 1. lsof -Pn -p $(pidof mariadbd) | grep jemalloc，配置正确的话会有jemalloc.so的输出；
+    # 2. cat /proc/$(pidof mariadbd)/smaps | grep jemalloc，和上述命令有类似的输出。
+    ;;
+esac
+
 ## index for default site
 pre_path=/var/www
 html_path=$pre_path/html
@@ -41,12 +55,6 @@ while [ -d $html_path ]; do
     done
     sleep 60
 done &
-
-if [ -f /usr/lib/x86_64-linux-gnu/libjemalloc.so.2 ]; then
-    export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
-fi
-# 1. lsof -Pn -p $(pidof mariadbd) | grep jemalloc，配置正确的话会有jemalloc.so的输出；
-# 2. cat /proc/$(pidof mariadbd)/smaps | grep jemalloc，和上述命令有类似的输出。
 
 ## start php-fpm
 for i in /usr/sbin/php-fpm*; do

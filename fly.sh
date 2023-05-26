@@ -194,7 +194,7 @@ _set_laradock_env() {
         -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/OS_VER=/s/=.*/=${os_ver}/" \
-        -e "/CHANGE_SOURCE=/s/false/true/" \
+        -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" \
         "$laradock_env"
