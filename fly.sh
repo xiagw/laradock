@@ -443,13 +443,14 @@ _build_image_php() {
 
     ## php base image ready?
     [ -d root ] || mkdir -p root/opt root/etc/nginx/sites-enabled
-
-    curl -fLo Dockerfile $url_laradock_raw/php-fpm/Dockerfile.base
-    curl -fLo root/etc/nginx/sites-available/php.conf $url_laradock_raw/php-fpm/root/etc/nginx/sites-available/php.conf
-    curl -fLo root/opt/build.sh $url_laradock_raw/php-fpm/root/opt/build.sh
-    curl -fLo root/opt/run.sh $url_laradock_raw/php-fpm/root/opt/run.sh
-
+    if [[ "${build_with_local:-false}" == false ]]; then
+        curl -fLo Dockerfile $url_laradock_raw/php-fpm/Dockerfile.base
+        curl -fLo root/etc/nginx/sites-available/php.conf $url_laradock_raw/php-fpm/root/etc/nginx/sites-available/php.conf
+        curl -fLo root/opt/build.sh $url_laradock_raw/php-fpm/root/opt/build.sh
+        curl -fLo root/opt/run.sh $url_laradock_raw/php-fpm/root/opt/run.sh
+    fi
     $build_opt -t "$image_tag" .
+    _msg warn "safe remove \"rm -rf root/ Dockerfile\"."
 }
 
 _build_image_java() {
@@ -457,12 +458,13 @@ _build_image_java() {
     image_tag=fly/spring
 
     [ -d root ] || mkdir -p root/opt
-
-    curl -fLo Dockerfile $url_deploy_raw/conf/dockerfile/Dockerfile.java
-    curl -fLo root/opt/build.sh $url_deploy_raw/conf/dockerfile/root/build.sh
-    curl -fLo root/opt/run.sh $url_deploy_raw/conf/dockerfile/root/run.sh
-
+    if [[ "${build_with_local:-false}" == false ]]; then
+        curl -fLo Dockerfile $url_deploy_raw/conf/dockerfile/Dockerfile.java
+        curl -fLo root/opt/build.sh $url_deploy_raw/conf/dockerfile/root/build.sh
+        curl -fLo root/opt/run.sh $url_deploy_raw/conf/dockerfile/root/run.sh
+    fi
     $build_opt -t "$image_tag" .
+    _msg warn "safe remove \"rm -rf root/ Dockerfile\"."
 }
 
 _set_args() {
@@ -510,6 +512,9 @@ _set_args() {
             ;;
         build)
             exec_build_image=1
+            ;;
+        build_with_local)
+            build_with_local=true
             ;;
         nocache)
             exec_build_image_nocache=1
