@@ -2,8 +2,13 @@
 
 # set -x
 
+
+_msg() {
+    echo "[$(date)], $*"
+}
+
 _kill() {
-    echo "[INFO] Receive SIGTERM, kill $pids"
+    _msg "receive SIGTERM, kill $pids"
     for pid in $pids; do
         kill "$pid"
         wait "$pid"
@@ -14,19 +19,19 @@ _check_jemalloc() {
     sleep 5
     for pid in $pids; do
         if grep -q jemalloc "/proc/$pid/smaps"; then
-            echo "PID $pid using jemalloc..."
+            _msg "PID $pid using jemalloc..."
         else
-            echo "PID $pid not use jemalloc"
+            _msg "PID $pid not use jemalloc"
         fi
     done
 }
 
 case "$LARADOCK_PHP_VERSION" in
 8.*)
-    echo "skip jemalloc."
+    _msg "disable jemalloc."
     ;;
 *)
-    echo "using jemalloc..."
+    _msg "enable jemalloc..."
     if [ -f /usr/lib/x86_64-linux-gnu/libjemalloc.so.2 ]; then
         export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
     fi
@@ -34,6 +39,8 @@ case "$LARADOCK_PHP_VERSION" in
     # 2. cat /proc/$(pidof mariadbd)/smaps | grep jemalloc，和上述命令有类似的输出。
     ;;
 esac
+
+php -v
 
 ## index for default site
 pre_path=/var/www
