@@ -102,4 +102,8 @@ if [ "$PHP_SESSION_REDIS" = true ]; then
         /etc/php/"${LARADOCK_PHP_VERSION}"/fpm/php.ini
 fi
 
+## setup nginx for ThinkPHP
+rm -f /etc/nginx/sites-enabled/default
+ln -sf /etc/nginx/sites-available/php.conf /etc/nginx/sites-enabled/default
+
 chmod +x /opt/run.sh
