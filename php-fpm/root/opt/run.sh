@@ -69,5 +69,5 @@ _check_jemalloc &
 
 ## 识别中断信号，停止进程
 trap _kill HUP INT PIPE QUIT TERM
-
+## 保持容器运行
 wait

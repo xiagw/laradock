@@ -439,23 +439,17 @@ Parameters:
 
 _build_image_php() {
     build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
-    image_tag_base=fly/php:${php_ver}-base
     image_tag=fly/php:${php_ver}
-    file_base=Dockerfile.base
 
     ## php base image ready?
-    [ -d root ] || mkdir -p root/opt
-    if ! docker images | grep -q "$image_tag_base"; then
-        curl -Lo root/opt/build.sh $url_laradock_raw/php-fpm/root/opt/build.sh
-        # if [[ ! -f $file_base ]]; then
-            curl -fLo $file_base $url_laradock_raw/php-fpm/$file_base
-        # fi
-        $build_opt -t "$image_tag_base" -f $file_base . || return 1
-    fi
+    [ -d root ] || mkdir -p root/opt root/etc/nginx/sites-enabled
 
-    ## build php image
-    echo "FROM $image_tag_base" >Dockerfile
-    $build_opt -t "$image_tag" -f Dockerfile .
+    curl -fLo Dockerfile $url_laradock_raw/php-fpm/Dockerfile.base
+    curl -fLo root/etc/nginx/sites-enabled/default $url_laradock_raw/php-fpm/root/etc/nginx/sites-available/default
+    curl -fLo root/opt/build.sh $url_laradock_raw/php-fpm/root/opt/build.sh
+    curl -fLo root/opt/run.sh $url_laradock_raw/php-fpm/root/opt/build.sh
+
+    $build_opt -t "$image_tag" .
 }
 
 _set_args() {
