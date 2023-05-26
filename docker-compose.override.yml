@@ -20,7 +20,7 @@ services:
         - TZ=${WORKSPACE_TIMEZONE}
       volumes:
         - ./php-fpm/php${PHP_VERSION}.ini:/etc/php/${PHP_VERSION}/fpm/php.ini
-        - ./php-fpm/lsyncd.conf.lua:/etc/lsyncd.conf.lua
+        - ./php-fpm/lsyncd:/etc/lsyncd
         - ${NGINX_SITES_PATH}:/nginx_sites
       extra_hosts:
         - "dockerhost:${DOCKER_HOST_IP}"

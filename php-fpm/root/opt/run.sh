@@ -2,7 +2,6 @@
 
 # set -x
 
-
 _msg() {
     echo "[$(date)], $*"
 }
@@ -24,6 +23,25 @@ _check_jemalloc() {
             _msg "PID $pid not use jemalloc"
         fi
     done
+}
+
+_set_lsyncd() {
+    id_file="/etc/lsyncd/id_ed25519"
+    lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
+    if [ ! -f "$id_file" ]; then
+        _msg "new ssh key."
+        ssh-keygen -t ed25519 -f "$id_file" -N ''
+    fi
+    cat >$HOME/.ssh/config <<EOF
+Host *
+    ServerAliveInterval 30
+    ServerAliveCountMax 6
+    IdentityFile $id_file
+    StrictHostKeyChecking no
+    GSSAPIAuthentication no
+    Compression yes
+EOF
+    lsyncd $lsyncd_conf
 }
 
 case "$LARADOCK_PHP_VERSION" in
@@ -79,6 +97,8 @@ elif command -v apachectl && apachectl -t; then
 else
     exec tail -f /var/www/html/index.html &
 fi
+
+_set_lsyncd &
 
 _check_jemalloc &
 

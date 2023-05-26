@@ -4,8 +4,8 @@ settings {
     maxDelays = 1,
     maxProcesses = 3,
     statusInterval = 1,
-    insist = true,
-    nodaemon = false
+    insist = false,
+    nodaemon = true
 }
 
 htmldir = "/var/www/html/"
