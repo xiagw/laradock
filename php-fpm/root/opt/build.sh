@@ -78,7 +78,7 @@ fi
 
 $apt_opt libjemalloc2
 
-# $apt_opt lsyncd
+# $apt_opt lsyncd openssh-client
 
 apt-get clean all && rm -rf /tmp/*
 

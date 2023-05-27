@@ -98,7 +98,7 @@ else
     exec tail -f /var/www/html/index.html &
 fi
 
-_set_lsyncd &
+# _set_lsyncd &
 
 _check_jemalloc &
 
