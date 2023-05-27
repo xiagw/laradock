@@ -24,20 +24,22 @@ rm -f /etc/timezone /etc/localtime
 $apt_opt tzdata
 $apt_opt locales
 
-grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen
+if ! grep -q '^en_US.UTF-8' /etc/locale.gen; then
+    echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen
+fi
 locale-gen en_US.UTF-8
 
 case "$LARADOCK_PHP_VERSION" in
 8.1)
-    echo "Use repo of OS."
+    echo "install PHP from repo of OS..."
     ;;
 8.2)
-    echo "Use ppa:ondrej/php..."
+    echo "install PHP from ppa:ondrej/php..."
     $apt_opt lsb-release gnupg2 ca-certificates apt-transport-https software-properties-common
     add-apt-repository ppa:ondrej/php
     ;;
 *)
-    echo "Use ppa:ondrej/php."
+    echo "Use ppa:ondrej/php..."
     $apt_opt software-properties-common
     add-apt-repository ppa:ondrej/php
     $apt_opt php"${LARADOCK_PHP_VERSION}"-mcrypt
@@ -81,4 +83,3 @@ $apt_opt libjemalloc2
 # $apt_opt lsyncd openssh-client
 
 apt-get clean all && rm -rf /tmp/*
-

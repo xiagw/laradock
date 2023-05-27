@@ -27,8 +27,12 @@ if [ "$PHP_SESSION_REDIS" = true ]; then
 fi
 
 ## setup nginx for ThinkPHP
-rm -f /etc/nginx/sites-enabled/default
-cp -vf /opt/nginx.conf /etc/nginx/sites-available/
-ln -sf /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/default
+if [ -d /etc/nginx/sites-enabled ]; then
+    rm -f /etc/nginx/sites-enabled/default
+    cp -vf /opt/nginx.conf /etc/nginx/sites-available/
+    ln -sf /etc/nginx/sites-available/nginx.conf /etc/nginx/sites-enabled/default
+fi
 
-chmod +x /opt/run.sh
+if [ ! -x /opt/run.sh ]; then
+    chmod +x /opt/run.sh
+fi
