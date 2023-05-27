@@ -61,8 +61,7 @@ esac
 php -v
 
 ## index for default site
-pre_path=/var/www
-html_path=$pre_path/html
+html_path=/var/www/html
 [ -d /var/lib/php/sessions ] && chmod -R 777 /var/lib/php/sessions
 [ -d /run/php ] || mkdir -p /run/php
 [ -d $html_path ] || mkdir $html_path
@@ -70,15 +69,29 @@ html_path=$pre_path/html
 
 ## create runtime for ThinkPHP
 while [ -d $html_path ]; do
-    for dir in $html_path/ $html_path/tp/ $html_path/tp/*/; do
-        [ -d $dir ] || continue
-        if [[ -f "$dir"/think && -d $dir/thinkphp && -d $dir/application ]]; then
-            run_dir="$dir/runtime"
+    for dir in $html_path/ $html_path/tp/ "$html_path"/tp/*/; do
+        [ -d "$dir" ] || continue
+        ## ThinkPHP 5.1
+        [[ -f "${dir}"think && -d ${dir}thinkphp && -d ${dir}application ]] && need_runtime=1
+        ## ThinkPHP 6.0
+        [[ -f "${dir}"think && -d ${dir}thinkphp && -d ${dir}app ]] && need_runtime=1
+        if [[ "$need_runtime" -eq 1 ]]; then
+            run_dir="${dir}runtime"
             [[ -d "$run_dir" ]] || mkdir "$run_dir"
-            [[ "$(stat -t -c %U $run_dir)" == www-data ]] || chown -R www-data:www-data "$run_dir"
+            dir_owner="$(stat -t -c %U "$run_dir")"
+            [[ "$dir_owner" == www-data ]] || chown -R www-data:www-data "$run_dir"
         fi
     done
-    sleep 60
+    sleep 600
+done &
+
+## remove runtime log files
+while [ -d $html_path ]; do
+    for dir in $html_path/ $html_path/tp/ "$html_path"/tp/*/; do
+        [ -d "$dir" ] || continue
+        find "${dir}runtime" -type f -iname '*.log' -ctime +5 -print0 | xargs -t --null rm -f
+    done
+    sleep 86400
 done &
 
 ## start php-fpm
@@ -86,6 +99,7 @@ for i in /usr/sbin/php-fpm*; do
     [ -x "$i" ] && $i -F &
     pids="${pids} $!"
 done
+
 ## start nginx
 if command -v nginx && nginx -t; then
     exec nginx -g "daemon off;" &
@@ -95,7 +109,8 @@ elif command -v apachectl && apachectl -t; then
     exec apachectl -k start -D FOREGROUND &
     pids="${pids} $!"
 else
-    exec tail -f /var/www/html/index.html &
+    exec tail -f $html_path/index.html &
+    pids="${pids} $!"
 fi
 
 # _set_lsyncd &
@@ -104,5 +119,6 @@ _check_jemalloc &
 
 ## 识别中断信号，停止进程
 trap _kill HUP INT PIPE QUIT TERM
+
 ## 保持容器运行
 wait
