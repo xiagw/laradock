@@ -439,25 +439,33 @@ Parameters:
 
 _build_image_nginx() {
     build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
-    image_tag=fly/nginx
+    image_tag=fly/nginx:base
 
-    $build_opt -t "$image_tag" .
+    $build_opt -t "$image_tag" -f Dockerfile.base .
+
+    echo "FROM $image_tag" >Dockerfile
+    $build_opt -t "$image_tag" -f Dockerfile .
+    _msg warn "safe remove: \"rm -rf root/ Dockerfile.\*\"."
 }
 
 _build_image_php() {
     build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
-    image_tag=fly/php:${php_ver}
+    image_tag=fly/php:${php_ver}-base
 
-    ## php base image ready?
-    [ -d root ] || mkdir -p root/opt root/etc/nginx/sites-enabled
-    if [[ "${build_with_local:-false}" == false ]]; then
-        curl -fLo Dockerfile $url_laradock_raw/php-fpm/Dockerfile.base
-        curl -fLo root/etc/nginx/sites-available/php.conf $url_laradock_raw/php-fpm/root/etc/nginx/sites-available/php.conf
+    [ -d root ] || mkdir -p root/opt
+    if [[ "${build_remote:-false}" == true ]]; then
+        curl -fLo Dockerfile.base $url_laradock_raw/php-fpm/Dockerfile.base
+        curl -fLo root/opt/nginx.conf $url_laradock_raw/php-fpm/root/opt/nginx.conf
         curl -fLo root/opt/build.sh $url_laradock_raw/php-fpm/root/opt/build.sh
+        curl -fLo root/opt/onbuild.sh $url_laradock_raw/php-fpm/root/opt/onbuild.sh
         curl -fLo root/opt/run.sh $url_laradock_raw/php-fpm/root/opt/run.sh
     fi
-    $build_opt -t "$image_tag" .
-    _msg warn "safe remove \"rm -rf root/ Dockerfile\"."
+
+    $build_opt -t "$image_tag" -f Dockerfile.base .
+
+    echo "FROM $image_tag" >Dockerfile
+    $build_opt -t "$image_tag" -f Dockerfile .
+    _msg warn "safe remove: \"rm -rf root/ Dockerfile.\*\"."
 }
 
 _build_image_java() {
@@ -465,7 +473,7 @@ _build_image_java() {
     image_tag=fly/spring
 
     [ -d root ] || mkdir -p root/opt
-    if [[ "${build_with_local:-false}" == false ]]; then
+    if [[ "${build_remote:-false}" == true ]]; then
         curl -fLo Dockerfile $url_deploy_raw/conf/dockerfile/Dockerfile.java
         curl -fLo root/opt/build.sh $url_deploy_raw/conf/dockerfile/root/build.sh
         curl -fLo root/opt/run.sh $url_deploy_raw/conf/dockerfile/root/run.sh
@@ -514,10 +522,10 @@ _set_args() {
         build)
             exec_build_image=1
             ;;
-        build_local)
-            build_with_local=true
+        build_remote)
+            build_remote=true
             ;;
-        build_no_cache | nocache)
+        build_nocache | nocache)
             build_image_nocache=1
             ;;
         install_docker_without_aliyun)

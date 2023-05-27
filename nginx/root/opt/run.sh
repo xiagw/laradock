@@ -29,7 +29,9 @@ _issue_cert() {
     while read -r domain; do
         [[ -z $domain || -d $LE_CONFIG_HOME/$domain ]] && continue
         c=$((c + 1))
+
         acme.sh --issue -w /var/www/html -d "$domain"
+
         if [[ $c = 1 ]]; then
             acme.sh --install-cert -d "$domain" --key-file $ssl_dir/default.key --fullchain-file $ssl_dir/default.crt
         else
@@ -38,6 +40,7 @@ _issue_cert() {
     done <$ssl_dir/domains.txt
 }
 
+## main
 ssl_dir="/etc/nginx/conf.d/ssl"
 
 _default_key

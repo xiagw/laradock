@@ -1,15 +1,19 @@
 FROM nginx:alpine
 
 # If you're in China, set IN_CHINA to true.
+ARG IN_CHINA=true
 ARG CHANGE_SOURCE=false
 ARG AUTO_UPGRADE=1
 
 ENV LE_CONFIG_HOME /acmedata
 ENV AUTO_UPGRADE $AUTO_UPGRADE
 
-COPY ./root/ /
-RUN sh /opt/build.sh
-
+EXPOSE 80 81 443
 # WORKDIR /app
 
-EXPOSE 80 81 443
+COPY ./root/opt/build.sh /opt/build.sh
+RUN sh /opt/build.sh
+
+ONBUILD COPY ./root/ /
+ONBUILD RUN sh /opt/onbuild.sh
+
