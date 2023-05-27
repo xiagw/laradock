@@ -452,6 +452,7 @@ _build_image_nginx() {
 _build_image_php() {
     build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base
+    image_tag=fly/php:${php_ver}
 
     [ -d root ] || mkdir -p root/opt
     if [[ "${build_remote:-false}" == true ]]; then
