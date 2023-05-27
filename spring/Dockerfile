@@ -5,7 +5,7 @@
 FROM openjdk:8u332
 
 ARG IN_CHINA=false
-CHANGE_SOURCE=false
+ARG CHANGE_SOURCE=false
 ## set startup profile
 ARG MVN_PROFILE=main
 ARG TZ=Asia/Shanghai
