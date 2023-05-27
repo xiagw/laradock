@@ -439,18 +439,19 @@ Parameters:
 
 _build_image_nginx() {
     build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
-    image_tag=fly/nginx:base
+    image_tag_base=fly/nginx:base
+    image_tag=fly/nginx
 
-    $build_opt -t "$image_tag" -f Dockerfile.base .
+    $build_opt -t "$image_tag_base" -f Dockerfile.base .
 
-    echo "FROM $image_tag" >Dockerfile
-    $build_opt -t "$image_tag" -f Dockerfile .
+    echo "FROM $image_tag_base" >Dockerfile
+    $build_opt -t "$image_tag" .
     _msg warn "safe remove: \"rm -rf root/ Dockerfile.\*\"."
 }
 
 _build_image_php() {
     build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
-    image_tag=fly/php:${php_ver}-base
+    image_tag_base=fly/php:${php_ver}-base
 
     [ -d root ] || mkdir -p root/opt
     if [[ "${build_remote:-false}" == true ]]; then
@@ -461,15 +462,16 @@ _build_image_php() {
         curl -fLo root/opt/run.sh $url_laradock_raw/php-fpm/root/opt/run.sh
     fi
 
-    $build_opt -t "$image_tag" -f Dockerfile.base .
+    $build_opt -t "$image_tag_base" -f Dockerfile.base .
 
-    echo "FROM $image_tag" >Dockerfile
-    $build_opt -t "$image_tag" -f Dockerfile .
+    echo "FROM $image_tag_base" >Dockerfile
+    $build_opt -t "$image_tag" .
     _msg warn "safe remove: \"rm -rf root/ Dockerfile.\*\"."
 }
 
 _build_image_java() {
     build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA}"
+    # image_tag_base=fly/spring:base
     image_tag=fly/spring
 
     [ -d root ] || mkdir -p root/opt
@@ -478,6 +480,8 @@ _build_image_java() {
         curl -fLo root/opt/build.sh $url_deploy_raw/conf/dockerfile/root/build.sh
         curl -fLo root/opt/run.sh $url_deploy_raw/conf/dockerfile/root/run.sh
     fi
+    # $build_opt -t "$image_tag_base" -f Dockerfile.base .
+
     $build_opt -t "$image_tag" .
     _msg warn "safe remove \"rm -rf root/ Dockerfile\"."
 }
