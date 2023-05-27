@@ -6,8 +6,6 @@ _default_key() {
     default_crt="$ssl_dir/default.crt"
     dhparams=$ssl_dir/dhparams.pem
 
-    [ -d "$ssl_dir" ] || mkdir -p "$ssl_dir"
-
     if [ ! -f "$default_crt" ]; then
         openssl genrsa -out "$default_key" 2048
         openssl req -new -key "$default_key" -out "$default_csr" -subj "/CN=default/O=default/C=UK"
@@ -27,10 +25,16 @@ _issue_cert() {
     # email="email=$(date | md5sum | cut -c 1-6)@deploy.sh"
     # acme.sh --register-account -m $email
     while read -r domain; do
-        [[ -z $domain || -d $LE_CONFIG_HOME/$domain ]] && continue
+        [[ -z $domain ]] && continue
         c=$((c + 1))
 
-        acme.sh --issue -w /var/www/html -d "$domain"
+        if [ -d "${LE_CONFIG_HOME}/$domain" ]; then
+            ## renew cert / 续签证书
+            acme.sh --renew -d "$domain"
+        else
+            ## create cert / 创建证书
+            acme.sh --issue -d "$domain" -w /var/www/html
+        fi
 
         if [[ $c = 1 ]]; then
             acme.sh --install-cert -d "$domain" --key-file $ssl_dir/default.key --fullchain-file $ssl_dir/default.crt
@@ -42,6 +46,7 @@ _issue_cert() {
 
 ## main
 ssl_dir="/etc/nginx/conf.d/ssl"
+[ -d "$ssl_dir" ] || mkdir -p "$ssl_dir"
 
 _default_key
 
