@@ -446,7 +446,6 @@ _build_image_nginx() {
 
     echo "FROM $image_tag_base" >Dockerfile
     $build_opt -t "$image_tag" .
-    _msg warn "safe remove: \"rm -rf root/ Dockerfile.\*\"."
 }
 
 _build_image_php() {
@@ -467,7 +466,6 @@ _build_image_php() {
 
     echo "FROM $image_tag_base" >Dockerfile
     $build_opt -t "$image_tag" .
-    _msg warn "safe remove: \"rm -rf root/ Dockerfile.\*\"."
 }
 
 _build_image_java() {
@@ -484,7 +482,7 @@ _build_image_java() {
     # $build_opt -t "$image_tag_base" -f Dockerfile.base .
 
     $build_opt -t "$image_tag" .
-    _msg warn "safe remove \"rm -rf root/ Dockerfile\"."
+
 }
 
 _set_args() {
@@ -631,6 +629,9 @@ main() {
         fi
         if [[ "${args}" == *spring* ]]; then
             _build_image_java
+        fi
+        if [[ "${build_remote:-false}" == true ]]; then
+            _msg warn "safe remove \"rm -rf root/ Dockerfile\"."
         fi
         return
     fi
