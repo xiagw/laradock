@@ -530,13 +530,13 @@ services:
         WECHATY_PUPPET: wechaty-puppet-padlocal
         WECHATY_PUPPET_PADLOCAL_TOKEN: ${WECHATY_TOKEN}
         WECHATY_LOG: verbose
-        WECHATY_PUPPET_SERVER_PORT: 8788
+        WECHATY_PUPPET_SERVER_PORT: ${WECHATY_PUPPET_SERVER_PORT}
         WECHATY_TOKEN: ${WECHATY_TOKEN}
       # volumes:
         # - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
         # - /tmp:/data/applogs
       ports:
-        - 8788:8788
+        - ${WECHATY_PUPPET_SERVER_PORT}:8788
       networks:
         - frontend
         - backend
