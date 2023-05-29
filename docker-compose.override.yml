@@ -528,7 +528,7 @@ services:
       image: wechaty/wechaty
       environment:
         WECHATY_PUPPET: wechaty-puppet-padlocal
-        WECHATY_PUPPET_PADLOCAL_TOKEN: puppet_padlocal_${WECHATY_TOKEN}
+        WECHATY_PUPPET_PADLOCAL_TOKEN: ${WECHATY_TOKEN}
         WECHATY_LOG: verbose
         WECHATY_PUPPET_SERVER_PORT: 8788
         WECHATY_TOKEN: ${WECHATY_TOKEN}
