@@ -389,7 +389,7 @@ _install_lsyncd() {
     if [ ! -d /etc/lsyncd/ ]; then
         $pre_sudo mkdir /etc/lsyncd
         $pre_sudo cp "$laradock_path"/usvn$lsyncd_conf $lsyncd_conf
-        [[ "$USER" == "root" ]] || sudo sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
+        [[ "$USER" == "root" ]] || $pre_sudo sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
     fi
 
     _msg "new key, ssh-keygen"
