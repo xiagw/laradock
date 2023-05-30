@@ -268,7 +268,7 @@ _set_file_mode() {
 _install_zsh() {
     _msg step "install oh my zsh"
     _check_sudo
-    $cmd install zsh
+    $cmd install -y zsh
     if [[ "${IN_CHINA:-true}" == true ]]; then
         [ -d "$HOME"/.oh-my-zsh ] || git clone https://gitee.com/mirrors/ohmyzsh.git $HOME/.oh-my-zsh
     else
@@ -389,7 +389,7 @@ _install_lsyncd() {
     if [ ! -d /etc/lsyncd/ ]; then
         $pre_sudo mkdir /etc/lsyncd
         $pre_sudo cp "$laradock_path"/usvn$lsyncd_conf $lsyncd_conf
-        [[ "$USER" == "root" ]] || sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
+        [[ "$USER" == "root" ]] || sudo sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
     fi
 
     _msg "new key, ssh-keygen"
