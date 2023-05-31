@@ -407,16 +407,14 @@ _install_lsyncd() {
 }
 
 _upgrade_java() {
-    cd "$laradock_path"
-    curl -fL $url_fly_cdn/srping.tar.gz | tar vzx
+    curl -fL $url_fly_cdn/spring.tar.gz | tar -C "$laradock_path"/ vzx
     $dco stop spring
     $dco rm -f
     $dco up -d spring
 }
 
 _upgrade_php() {
-    cd "$laradock_path"/../html
-    curl -fL $url_fly_cdn/tp.tar.gz | tar vzx
+    curl -fL $url_fly_cdn/tp.tar.gz | tar -C "$laradock_path"/../html/ vzx
 }
 
 _usage() {
