@@ -44,6 +44,60 @@ EOF
     lsyncd $lsyncd_conf
 }
 
+_schedule_upgrade() {
+    ## app_id=1
+    ## app_ver=hash
+    ## app_upgrade_url=http://update.xxx.com
+
+    app_path=/app
+    path_html=/var/www/html
+    file_local=upgrade_auto
+
+    if [[ -f "$app_path/$file_local" || -f "$path_html/$file_local" ]]; then
+        _msg "found upgrade_auto"
+    else
+        return 0
+    fi
+
+    file_remote=upgrade_check.txt
+    touch /tmp/$file_remote
+    curl -fsSLo "/tmp/$file_remote" "${app_upgrade_url:-http://cdn.flyh6.com/docker}/$file_remote" 2>/dev/null
+    app_id_remote=$(awk -F= '/^app_id=/ {print $2}' "/tmp/$file_remote")
+    app_ver_remote=$(awk -F= '/^app_ver=/ {print $2}' "/tmp/$file_remote")
+
+    if [ -f "$app_path/$file_local" ]; then
+        # shellcheck source=/dev/null
+        source "$app_path/$file_local"
+        if [[ "${app_id:-1}" == "$app_id_remote" && "${app_ver:-1}" != "$app_ver_remote" ]]; then
+            get_remote_file=spring.tar.gz
+            curl -fsSLo /tmp/${get_remote_file} "${app_upgrade_url%/}/$get_remote_file"
+            curl -fsSLo /tmp/${get_remote_file}.sha256 "${app_upgrade_url%/}/${get_remote_file}.sha256"
+            if cd /tmp && sha256sum -c $get_remote_file.sha256; then
+                tar -C "$app_path" -zxf /tmp/$get_remote_file
+                _kill
+                _start_java
+                sed -i "/^app_ver=/s/=.*/=$app_ver_remote/" "$app_path/$file_local"
+                rm -f /tmp/${get_remote_file}*
+            fi
+        fi
+    fi
+
+    if [ -f "$path_html/$file_local" ]; then
+        # shellcheck source=/dev/null
+        source "$path_html/$file_local"
+        if [[ "${app_id:-1}" == "$app_id_remote" && "${app_ver:-1}" != "$app_ver_remote" ]]; then
+            get_remote_file=tp.tar.gz
+            curl -fsSLo /tmp/${get_remote_file} "${app_upgrade_url%/}/$get_remote_file"
+            curl -fsSLo /tmp/${get_remote_file}.sha256 "${app_upgrade_url%/}/${get_remote_file}.sha256"
+            if cd /tmp && sha256sum -c $get_remote_file.sha256; then
+                tar -C "$path_html" -zxf /tmp/$get_remote_file
+                sed -i "/^app_ver=/s/=.*/=$app_ver_remote/" "$path_html/$file_local"
+                rm -f /tmp/${get_remote_file}*
+            fi
+        fi
+    fi
+}
+
 case "$LARADOCK_PHP_VERSION" in
 8.*)
     _msg "disable jemalloc."
@@ -92,6 +146,11 @@ while [ -d $html_path ]; do
         find "${dir}runtime" -type f -iname '*.log' -ctime +5 -print0 | xargs -t --null rm -f
     done
     sleep 86400
+done &
+
+while true; do
+    _schedule_upgrade
+    sleep 60
 done &
 
 ## start php-fpm
