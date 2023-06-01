@@ -152,13 +152,13 @@ _check_timezone() {
 }
 
 _check_laradock() {
-    if [ -d "$laradock_path" ]; then
+    if [[ -d "$laradock_path" && -f "$laradock_path/.env.example" ]]; then
         _msg time "$laradock_path exist, git pull."
         (cd "$laradock_path" && git pull)
         return 0
     fi
     ## clone laradock or git pull
-    _msg step "install laradock to $laradock_path."
+    _msg step "install laradock to $laradock_path/."
     mkdir -p "$laradock_path"
 
     git clone -b in-china --depth 1 $url_laradock_git "$laradock_path"
@@ -167,7 +167,7 @@ _check_laradock() {
         if $pre_sudo chown 1000:1000 "$laradock_path/spring"; then
             _msg time "OK: chown 1000:1000 $laradock_path/spring"
         else
-            _msg warn "FAIL: chown 1000:1000 $laradock_path/spring"
+            _msg red "FAIL: chown 1000:1000 $laradock_path/spring"
         fi
     fi
 }
@@ -187,17 +187,39 @@ _set_laradock_env() {
     _msg time "copy .env.example to .env, and set password"
     cp -vf "$laradock_env".example "$laradock_env"
     sed -i \
-        -e "/^MYSQL_PASSWORD/s/=.*/=$pass_mysql_default/" \
-        -e "/MYSQL_ROOT_PASSWORD/s/=.*/=$pass_mysql/" \
+        -e "/^MYSQL_PASSWORD=/s/=.*/=$pass_mysql_default/" \
+        -e "/MYSQL_ROOT_PASSWORD=/s/=.*/=$pass_mysql/" \
         -e "/MYSQL_VERSION=latest/s/=.*/=5.7/" \
-        -e "/REDIS_PASSWORD/s/=.*/=$pass_redis/" \
-        -e "/GITLAB_ROOT_PASSWORD/s/=.*/=$pass_gitlab/" \
+        -e "/REDIS_PASSWORD=/s/=.*/=$pass_redis/" \
+        -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$pass_gitlab/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/OS_VER=/s/=.*/=${os_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
-        -e "/GITLAB_HOST_SSH_IP/s/=.*/=$docker_host_ip/" \
+        -e "/GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
         "$laradock_env"
+
+    for p in 80 443 3306 6379; do
+        listen_port=$p
+        while ss -lntu4 | grep "LISTEN.*:$listen_port\ "; do
+            _msg red "already LISTEN port: $listen_port ."
+            listen_port=$((listen_port + 2))
+            _msg yellow "try next port: $listen_port ..."
+        done
+        if [[ "$p" -eq 80 ]]; then
+            sed -i -e "/^NGINX_HOST_HTTP_PORT=/s/=.*/=$listen_port/" "$laradock_env"
+        fi
+        if [[ "$p" -eq 443 ]]; then
+            sed -i -e "/^NGINX_HOST_HTTPS_PORT=/s/=.*/=$listen_port/" "$laradock_env"
+        fi
+        if [[ "$p" -eq 3306 ]]; then
+            sed -i -e "/^MYSQL_PORT=/s/=.*/=$listen_port/" "$laradock_env"
+        fi
+        if [[ "$p" -eq 6379 ]]; then
+            sed -i -e "/^REDIS_PORT=/s/=.*/=$listen_port/" "$laradock_env"
+        fi
+    done
+
     ## set SHELL_OH_MY_ZSH=true
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$laradock_env" || return 0
 }
@@ -209,7 +231,7 @@ _reload_nginx() {
             $dco exec -T nginx nginx -s reload
             break
         else
-            _msg "[$((i * 2))] reload nginx err."
+            _msg time "[$((i * 2))] reload nginx err."
         fi
         sleep 2
     done
@@ -282,21 +304,19 @@ _install_zsh() {
 }
 
 _start_manual() {
-    _msg step "manual startup "
+
+    _msg step "[START] manual ..."
     _msg info '#########################################'
     _msg info "\n cd $laradock_path && $dco up -d $args \n"
     _msg info '#########################################'
-    _msg red 'startup automatic after sleep 15s' && sleep 15
+    _msg "END"
 }
 
 _start_auto() {
-    # if ss -lntu4 | grep -E ':80|:443|:6379|:3306'; then
-    #     _msg red "ERR: port already start"
-    #     _msg "Please fix $laradock_env, manual start docker."
-    #     return 1
-    # fi
-    _msg step "auto startup"
-    cd "$laradock_path" && $dco up -d $args
+
+    _msg step "[START] auto ..."
+    cd "$laradock_path" || exit 1
+    $dco up -d $args
     ## wait startup
     for arg in $args; do
         for i in {1..5}; do
@@ -313,12 +333,12 @@ _test_nginx() {
     if [[ "${exec_test:-0}" -ne 1 ]]; then
         return
     fi
-    _msg time "Test nginx "
-    for i in {1..15}; do
-        if curl --connect-timeout 3 localhost; then
+    _msg time "test nginx ..."
+    for i in {1..10}; do
+        if curl --connect-timeout 3 "${1:-localhost}"; then
             break
         else
-            _msg "[$((i * 2))] test nginx err."
+            _msg time "[$((i * 2))] test nginx err."
             sleep 2
         fi
     done
@@ -348,15 +368,7 @@ _test_php() {
 
     _reload_nginx
 
-    for i in {1..15}; do
-        if curl --connect-timeout 3 -fsSL localhost/test.php; then
-            break
-        else
-            _msg "[$((i * 2))] test php err."
-            sleep 2
-        fi
-    done
-
+    _test_nginx "localhost/test.php"
 }
 
 _test_java() {
@@ -588,17 +600,18 @@ main() {
         url_deploy_raw=https://github.com/xiagw/deploy.sh/raw/main
     fi
 
-    if [[ -f "$me_path"/fly.sh && -f "$me_path/.env" ]]; then
+    laradock_path_home="$HOME"/docker/laradock
+    laradock_current="$me_path"
+    if [[ -f "$laradock_current/fly.sh" && -f "$laradock_current/.env.example" ]]; then
         ## 从本机已安装目录执行 fly.sh
-        laradock_path="$me_path"
+        laradock_path="$laradock_current"
+    elif [[ -f "$laradock_path_home/fly.sh" && -f "$laradock_path_home/.env.example" ]]; then
+        laradock_path=$laradock_path_home
     else
         ## 从远程执行 fly.sh , curl "remote_url" | bash -s args
-        if [[ -d "$HOME"/docker/laradock ]]; then
-            laradock_path="$HOME"/docker/laradock
-        else
-            laradock_path="$me_path"/docker/laradock
-        fi
+        laradock_path="$laradock_current"/docker/laradock
     fi
+
     laradock_env="$laradock_path"/.env
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
