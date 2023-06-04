@@ -553,3 +553,16 @@ services:
       networks:
         - frontend
         - backend
+
+    tank:
+      image: eyeblue/tank:3.1.6
+      environment:
+        PANDORA_PROXY: ${HTTP_PROXY}
+        PANDORA_SERVER: 0.0.0.0:8086
+      volumes:
+        - ${DATA_PATH_HOST}/tank:/data/build/matter
+      ports:
+        - ${TANK_PORT}:8086
+      networks:
+        - frontend
+        - backend

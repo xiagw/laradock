@@ -316,9 +316,9 @@ _start_auto() {
 
     _msg step "[START] auto ..."
     cd "$laradock_path" || exit 1
-    $dco up -d $args
+    $dco up -d "${args[@]}"
     ## wait startup
-    for arg in $args; do
+    for arg in "${args[@]}"; do
         for i in {1..5}; do
             if $dco ps | grep "$arg"; then
                 break
@@ -500,22 +500,23 @@ _set_args() {
     os_ver=20.04
     php_ver=7.1
 
+    declare -a args
     while [ "$#" -gt 0 ]; do
         case "${1}" in
         mysql)
-            args="${args} mysql"
+            args+=(mysql)
             ;;
         redis)
-            args="${args} redis"
+            args+=(redis)
             ;;
         nginx)
-            args="${args} nginx"
+            args+=(nginx)
             ;;
         java | spring)
-            args="${args} spring"
+            args+=(spring)
             ;;
         php | php-fpm | fpm)
-            args="${args} php-fpm"
+            args+=(php-fpm)
             ;;
         8.0 | 8.1 | 8.2)
             os_ver=22.04
@@ -525,8 +526,8 @@ _set_args() {
             php_ver=$1
             ;;
         upgrade)
-            [[ $args == *php-fpm* ]] && exec_upgrade_php=1
-            [[ $args == *spring* ]] && exec_upgrade_java=1
+            [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=1
+            [[ "${args[*]}" == *spring* ]] && exec_upgrade_java=1
             enable_check=0
             ;;
         github | not_china | not_cn | ncn)
@@ -548,10 +549,10 @@ _set_args() {
             force_get_image='true'
             ;;
         gitlab | git)
-            args="gitlab"
+            args+=(gitlab)
             ;;
         svn | usvn)
-            args="usvn"
+            args+=(usvn)
             ;;
         install_zsh | zsh)
             exec_install_zsh=1
@@ -632,13 +633,13 @@ main() {
         else
             build_opt="docker build"
         fi
-        if [[ "${args}" == *nginx* ]]; then
+        if [[ "${args[*]}" == *nginx* ]]; then
             _build_image_nginx
         fi
-        if [[ "${args}" == *php* ]]; then
+        if [[ "${args[*]}" == *php* ]]; then
             _build_image_php
         fi
-        if [[ "${args}" == *spring* ]]; then
+        if [[ "${args[*]}" == *spring* ]]; then
             _build_image_java
         fi
         if [[ "${build_remote:-false}" == true ]]; then
@@ -684,7 +685,7 @@ main() {
         return
     fi
 
-    for i in $args; do
+    for i in "${args[@]}"; do
         case $i in
         nginx)
             url_image="$url_fly_cdn/laradock-nginx.tar.gz"
