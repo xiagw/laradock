@@ -471,10 +471,22 @@ _build_image_php() {
         curl -fLo root/opt/run.sh $url_laradock_raw/php-fpm/root/opt/run.sh
     fi
 
-    $build_opt -t "$image_tag_base" -f Dockerfile.base .
-
-    echo "FROM $image_tag_base" >Dockerfile
-    $build_opt -t "$image_tag" .
+    if docker images | grep "$image_tag_base"; then
+        echo "ignore build base image."
+    else
+        if [[ "${build_remote:-false}" == true ]]; then
+            $build_opt -t "$image_tag_base" -f Dockerfile.base .
+        else
+            $build_opt -t "$image_tag_base" -f php-fpm/Dockerfile.base php-fpm/
+        fi
+    fi
+    if [[ "${build_remote:-false}" == true ]]; then
+        echo "FROM $image_tag_base" >Dockerfile
+        $build_opt -t "$image_tag" .
+    else
+        echo "FROM $image_tag_base" >php-fpm/Dockerfile
+        $build_opt -t "$image_tag" -f php-fpm/Dockerfile php-fpm/
+    fi
 }
 
 _build_image_java() {
