@@ -313,7 +313,6 @@ _start_manual() {
 }
 
 _start_auto() {
-
     _msg step "[START] auto ..."
     cd "$laradock_path" || exit 1
     $dco up -d "${args[@]}"
@@ -500,7 +499,7 @@ _set_args() {
     os_ver=20.04
     php_ver=7.1
 
-    declare -a args
+    args=()
     while [ "$#" -gt 0 ]; do
         case "${1}" in
         mysql)
