@@ -69,9 +69,11 @@ _schedule_upgrade() {
         curl -fsSLo /tmp/"${line}" "${app_upgrade_url%/}/$line"
         curl -fsSLo /tmp/"${line}".sha256 "${app_upgrade_url%/}/${line}.sha256"
         if cd /tmp && sha256sum -c "${line}".sha256; then
-            tar -C "$path_html/" -zxf /tmp/"${line}"
+            _msg "decompress $line."
+            tar -C "$path_html/" -zxf /tmp/"${line}" && rm -f /tmp/"${line}"*
         fi
     done < <(awk -F= '/^app_zip=/ {print $2}' "/tmp/$file_remote")
+    _msg "set app_ver=$app_ver_remote to $path_html/$file_local"
     sed -i "/^app_ver=/s/=.*/=$app_ver_remote/" "$path_html/$file_local"
     rm -f /tmp/${file_remote}*
 }
