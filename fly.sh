@@ -471,7 +471,7 @@ _build_image_php() {
         curl -fLo root/opt/run.sh $url_laradock_raw/php-fpm/root/opt/run.sh
     fi
 
-    if docker images | grep "$image_tag_base"; then
+    if docker images | grep "fly/php.*${php_ver}-base"; then
         echo "ignore build base image."
     else
         if [[ "${build_remote:-false}" == true ]]; then
