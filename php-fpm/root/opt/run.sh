@@ -103,6 +103,7 @@ html_path=/var/www/html
 while [ -d $html_path ]; do
     for dir in $html_path/ $html_path/tp/ "$html_path"/tp/*/; do
         [ -d "$dir" ] || continue
+        need_runtime=0
         ## ThinkPHP 5.1
         [[ -f "${dir}"think && -d ${dir}thinkphp && -d ${dir}application ]] && need_runtime=1
         ## ThinkPHP 6.0
