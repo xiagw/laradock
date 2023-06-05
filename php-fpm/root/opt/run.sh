@@ -90,7 +90,7 @@ _schedule_upgrade() {
             curl -fsSLo /tmp/${get_remote_file} "${app_upgrade_url%/}/$get_remote_file"
             curl -fsSLo /tmp/${get_remote_file}.sha256 "${app_upgrade_url%/}/${get_remote_file}.sha256"
             if cd /tmp && sha256sum -c $get_remote_file.sha256; then
-                tar -C "$path_html" -zxf /tmp/$get_remote_file
+                tar -C "$path_html/tp/" -zxf /tmp/$get_remote_file
                 sed -i "/^app_ver=/s/=.*/=$app_ver_remote/" "$path_html/$file_local"
                 rm -f /tmp/${get_remote_file}*
             fi
