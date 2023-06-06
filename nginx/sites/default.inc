@@ -1,4 +1,4 @@
-location ~* /(.*)(favicon.ico|robots.txt) {
+location ~* /(.*)(favicon\.ico|robots\.txt) {
     access_log off;
     log_not_found off;
 }

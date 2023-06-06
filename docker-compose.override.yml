@@ -567,3 +567,6 @@ services:
       networks:
         - frontend
         - backend
+
+
+docker run -d --name mayfly-go -v /usr/local/mayfly-go:/mayfly -p 8888:8888 mayflygo/mayfly-go:v1.4.2
