@@ -568,5 +568,16 @@ services:
         - frontend
         - backend
 
-
-docker run -d --name mayfly-go -v /usr/local/mayfly-go:/mayfly -p 8888:8888 mayflygo/mayfly-go:v1.4.2
+## mayfly-go
+    mayflygo:
+      image: mayflygo/mayfly-go:v1.4.2
+      environment:
+        PANDORA_PROXY: ${HTTP_PROXY}
+        PANDORA_SERVER: 0.0.0.0:8086
+      volumes:
+        - ${DATA_PATH_HOST}/mayflygo:/mayfly
+      ports:
+        - ${MAYFLYGO_PORT}:8888
+      networks:
+        - frontend
+        - backend
