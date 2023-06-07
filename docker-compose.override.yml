@@ -544,7 +544,7 @@ services:
     pandora:
       image: pengzhile/pandora
       environment:
-        PANDORA_PROXY: ${HTTP_PROXY}
+        PANDORA_PROXY: ${HTTP_PROXY:-}
         PANDORA_SERVER: 0.0.0.0:8085
       volumes:
         - ${DATA_PATH_HOST}/pandora:/data
@@ -558,7 +558,6 @@ services:
     tank:
       image: eyeblue/tank:3.1.6
       environment:
-        PANDORA_PROXY: ${HTTP_PROXY}
         PANDORA_SERVER: 0.0.0.0:8086
       volumes:
         - ${DATA_PATH_HOST}/tank:/data/build/matter
@@ -572,7 +571,6 @@ services:
     mayflygo:
       image: mayflygo/mayfly-go:v1.4.2
       environment:
-        PANDORA_PROXY: ${HTTP_PROXY}
         PANDORA_SERVER: 0.0.0.0:8086
       volumes:
         - ${DATA_PATH_HOST}/mayflygo:/mayfly
