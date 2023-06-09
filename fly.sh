@@ -109,6 +109,9 @@ _check_dependence() {
     if _command_exists docker; then
         return
     fi
+    if [[ "$set_sysctl" -eq 1 ]]; then
+        echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
+    fi
     if grep -q '^ID=.*alinux.*' /etc/os-release; then
         sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
         aliyun_os=1
@@ -526,6 +529,7 @@ _set_args() {
             ;;
         redis)
             args+=(redis)
+            set_sysctl=1
             ;;
         nginx)
             args+=(nginx)
