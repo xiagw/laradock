@@ -17,9 +17,9 @@ _msg() {
         color_on="[+] $(date +%Y%m%d-%T-%u), "
         color_off=' ... '
         ;;
-    step | timestep)
-        color_on="\033[0;33m[$((${STEP:-0} + 1))] $(date +%Y%m%d-%T-%u), \033[0m"
+    step)
         STEP=$((${STEP:-0} + 1))
+        color_on="\033[0;35m[${STEP}] $(date +%Y%m%d-%T-%u), \033[0m"
         color_off=' ... '
         ;;
     *)
@@ -28,8 +28,7 @@ _msg() {
         need_shift=0
         ;;
     esac
-    [ "${need_shift:-1}" -eq 1 ] && shift
-    need_shift=1
+    [ "${need_shift:=1}" -eq 1 ] && shift
     echo -e "${color_on}$*${color_off}"
 }
 
@@ -120,10 +119,10 @@ _check_dependence() {
         curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
     fi
     if [[ "$USER" != "root" ]]; then
-        _msg time "Add user $USER to group docker."
+        _msg time "Add user \"$USER\" to group docker."
         $pre_sudo usermod -aG docker "$USER"
-        _msg red "Please logout $USER, and login again."
-        _msg red "Then exec again."
+        _msg red "!!!! Please logout $USER, and login again. !!!!"
+        _msg red "And re-execute the above command."
         need_logout=1
     fi
     if [[ "$USER" != ubuntu ]] && id ubuntu; then
@@ -304,7 +303,6 @@ _install_zsh() {
 }
 
 _start_manual() {
-
     _msg step "[START] manual ..."
     _msg info '#########################################'
     _msg info "\n cd $laradock_path && $dco up -d $args \n"
@@ -313,7 +311,12 @@ _start_manual() {
 }
 
 _start_auto() {
-    _msg step "[START] auto ..."
+    if [ "${#args[@]}" -gt 0 ]; then
+        _msg step "[START] auto ..."
+    else
+        _msg red "no arguments for docker service"
+        return 1
+    fi
     cd "$laradock_path" || exit 1
     $dco up -d "${args[@]}"
     ## wait startup
@@ -512,6 +515,10 @@ _set_args() {
     php_ver=7.1
 
     args=()
+    if [ "$#" -eq 0 ]; then
+        _msg warn "not found arguments, with default args \"nginx php-fpm spring mysql redis\"."
+        args=(nginx php-fpm spring mysql redis)
+    fi
     while [ "$#" -gt 0 ]; do
         case "${1}" in
         mysql)
