@@ -543,6 +543,7 @@ services:
 
     pandora:
       image: pengzhile/pandora
+      restart: always
       environment:
         PANDORA_PROXY: ${HTTP_PROXY:-}
         PANDORA_SERVER: 0.0.0.0:8085
