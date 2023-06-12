@@ -97,6 +97,20 @@ services:
         context: ./redis
         args:
           - TZ=${WORKSPACE_TIMEZONE}
+### Redis PHP admin ################################################
+    redisadmin:
+      image: erikdubbelboer/phpredisadmin
+      environment:
+        - REDIS_1_HOST=${REDIS_HOST}
+        - REDIS_1_PORT=${REDIS_PORT}
+        - REDIS_1_AUTH=${REDIS_PASSWORD}
+        - ADMIN_USER=${PHPREDISADMIN_USER}
+        - ADMIN_PASS=${PHPREDISADMIN_PASS}
+      ports:
+        - "${PHPREDISADMIN_PORT}:80"
+      networks:
+        - backend
+        - frontend
 
 ### gitlab ################################################
     gitlab:

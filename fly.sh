@@ -310,8 +310,8 @@ _start_auto() {
     if [ "${#args[@]}" -gt 0 ]; then
         _msg step "[START] auto ..."
     else
-        _msg red "no arguments for docker service"
-        return 1
+        _msg warn "no arguments for docker service"
+        return
     fi
     cd "$laradock_path" || exit 1
     $dco up -d "${args[@]}"
@@ -385,8 +385,11 @@ _get_redis_mysql_info() {
 
 _mysql_cli() {
     echo "exec mysql"
-    password_default=$(awk -F= '/^MYSQL_PASSWORD/ {print $2}' "$laradock_env")
-    $dco exec mysql bash -c "LANG=C.UTF-8 mysql default -u default -p$password_default"
+    cd "$laradock_path"
+    db_default=$(awk -F= '/^MYSQL_DATABASE=/ {print $2}' "$laradock_env")
+    user_default=$(awk -F= '/^MYSQL_USER=/ {print $2}' "$laradock_env")
+    password_default=$(awk -F= '/^MYSQL_PASSWORD=/ {print $2}' "$laradock_env")
+    $dco exec -T mysql bash -c "LANG=C.UTF-8 mysql $db_default -u $user_default -p$password_default"
 }
 
 _install_lsyncd() {
@@ -639,8 +642,6 @@ main() {
         if [[ "$dco_ver" -lt 1190 ]]; then
             _msg warn "docker-compose version is too low."
         fi
-    else
-        _msg red "not found docker compose"
     fi
 
     if [[ "${exec_build_image:-0}" -eq 1 ]]; then
