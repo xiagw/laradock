@@ -175,6 +175,7 @@ _set_laradock_env() {
     pass_mysql="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
     pass_mysql_default="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
     pass_redis="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
+    pass_redisadmin="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
     pass_gitlab="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
     ## change docker host ip
     docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
@@ -186,6 +187,7 @@ _set_laradock_env() {
         -e "/MYSQL_ROOT_PASSWORD=/s/=.*/=$pass_mysql/" \
         -e "/MYSQL_VERSION=latest/s/=.*/=5.7/" \
         -e "/REDIS_PASSWORD=/s/=.*/=$pass_redis/" \
+        -e "/PHPREDISADMIN_PASS=/s/=.*/=$pass_redisadmin/" \
         -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$pass_gitlab/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/OS_VER=/s/=.*/=${os_ver}/" \
