@@ -639,14 +639,11 @@ main() {
 
     ## Overview | Docker Documentation https://docs.docker.com/compose/install/
     # curl -SL https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
-    if docker compose >/dev/null; then
-        dco="docker compose"
+    dco="docker compose"
+    if _command_exists docker-compose; then
+        dco="docker-compose"
     else
-        if _command_exists docker-compose; then
-            dco="docker-compose"
-        else
-            _msg red "not found docker compose"
-        fi
+        _msg red "not found docker compose"
     fi
 
     if [[ "${exec_build_image:-0}" -eq 1 ]]; then
