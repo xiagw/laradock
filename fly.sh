@@ -266,6 +266,8 @@ _get_image() {
     docker load <"$img_save"
     if docker --version | grep -q "version 19"; then
         docker tag "laradock-$img_name" "laradock_$img_name"
+    else
+        docker tag "laradock_$img_name" "laradock-$img_name"
     fi
 }
 
