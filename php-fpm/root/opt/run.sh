@@ -124,7 +124,7 @@ done &
 while [ -d $html_path ]; do
     for dir in $html_path/ $html_path/tp/ "$html_path"/tp/*/; do
         [ -d "$dir" ] || continue
-        find "${dir}runtime" -type f -iname '*.log' -ctime +5 -print0 | xargs -t --null rm -f
+        find "${dir}runtime" -type f -iname '*.log' -ctime +5 -print0 | xargs -t --null rm -f >/dev/null 2>&1
     done
     sleep 86400
 done &

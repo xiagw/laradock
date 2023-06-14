@@ -18,7 +18,7 @@
 - Redis >= 5.0（内存 >=1GB）
 
 
-## 部署方式一 容器/单机/多机，docker-compose 部署参考（推荐）
+## 部署方式一 容器/单机/多机，docker compose 部署参考（推荐）
 ```sh
 ## 初始化系统环境, docker / php-fpm 7.1 / jdk 1.8
 ## 以下在线脚本默认安装路径为 当前 $PWD/docker/laradock 或 $HOME/docker/laradock
