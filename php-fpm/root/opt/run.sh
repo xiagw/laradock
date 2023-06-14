@@ -103,28 +103,29 @@ html_path=/var/www/html
 
 ## create runtime for ThinkPHP
 while [ -d $html_path ]; do
-    for dir in $html_path/ $html_path/tp/ "$html_path"/tp/*/; do
+    for dir in $html_path/ "$html_path"/*/ "$html_path"/*/*/; do
         [ -d "$dir" ] || continue
         need_runtime=0
         ## ThinkPHP 5.1
         [[ -f "${dir}"think && -d ${dir}thinkphp && -d ${dir}application ]] && need_runtime=1
         ## ThinkPHP 6.0
         [[ -f "${dir}"think && -d ${dir}thinkphp && -d ${dir}app ]] && need_runtime=1
-        if [[ "$need_runtime" -eq 1 ]]; then
-            run_dir="${dir}runtime"
-            [[ -d "$run_dir" ]] || mkdir "$run_dir"
-            dir_owner="$(stat -t -c %U "$run_dir")"
-            [[ "$dir_owner" == www-data ]] || chown -R www-data:www-data "$run_dir"
+        if [[ "$need_runtime" -eq 0 ]]; then
+            continue
         fi
+        run_dir="${dir}runtime"
+        [[ -d "$run_dir" ]] || mkdir "$run_dir"
+        dir_owner="$(stat -t -c %U "$run_dir")"
+        [[ "$dir_owner" == www-data ]] || chown -R www-data:www-data "$run_dir"
     done
     sleep 600
 done &
 
 ## remove runtime log files
 while [ -d $html_path ]; do
-    for dir in $html_path/ $html_path/tp/ "$html_path"/tp/*/; do
+    for dir in $html_path/runtime "$html_path"/*/runtime "$html_path"/*/*/runtime; do
         [ -d "$dir" ] || continue
-        find "${dir}runtime" -type f -iname '*.log' -ctime +5 -print0 | xargs -t --null rm -f >/dev/null 2>&1
+        find "${dir}" -type f -iname '*.log' -ctime +7 -print0 | xargs -t --null rm -f >/dev/null 2>&1
     done
     sleep 86400
 done &
