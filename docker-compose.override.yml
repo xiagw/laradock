@@ -62,7 +62,12 @@ services:
 ### MySQL backup ################################################
     mysqlbak:
       restart: always
-      image: databack/mysql-backup
+      # image: databack/mysql-backup
+      build:
+        context: ./mysqlbak
+        args:
+          - TZ=${WORKSPACE_TIMEZONE}
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
       environment:
         - DB_DUMP_FREQ=1440
         - DB_DUMP_BEGIN=1705
