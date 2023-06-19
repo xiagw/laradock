@@ -130,8 +130,9 @@ _check_dependence() {
     if [[ "$USER" != ops ]] && id ops; then
         $pre_sudo usermod -aG docker ops
     fi
-    [[ ${aliyun_os:-0} -eq 1 ]] && $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     $pre_sudo systemctl start docker
+    $pre_sudo systemctl enable docker
+    [[ ${aliyun_os:-0} -eq 1 ]] && $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     return 0
 }
 
@@ -292,8 +293,8 @@ _install_zsh() {
     _msg step "install oh my zsh"
     _check_sudo
     $cmd install -y zsh
-    if [[ "${IN_CHINA:-true}" == true ]]; then
-        [ -d "$HOME"/.oh-my-zsh ] || git clone https://gitee.com/mirrors/ohmyzsh.git $HOME/.oh-my-zsh
+    if [[ "${IN_CHINA:-true}" == true && ! -d "$HOME"/.oh-my-zsh ]]; then
+        git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
     else
         bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     fi
@@ -733,17 +734,16 @@ CREATE DATABASE IF NOT EXISTS `flyprod` COLLATE 'utf8mb4_general_ci' ;
 GRANT ALL ON `flyprod`.* TO 'flyprod'@'%' ;
 GRANT ALL ON `defaultdb`.* TO 'flyprod'@'%' ;
 EOF
-            # url_image="$url_fly_cdn/laradock-mysql.tar.gz"
-            # _get_image mysql
+            url_image="$url_fly_cdn/laradock-mysql.tar.gz"
+            _get_image mysql
             ;;
         redis)
-            :
-            # url_image="$url_fly_cdn/laradock-redis.tar.gz"
-            # _get_image redis
+            url_image="$url_fly_cdn/laradock-redis.tar.gz"
+            _get_image redis
             ;;
         spring)
-            # url_image="$url_fly_cdn/laradock-spring.tar.gz"
-            # _get_image spring
+            url_image="$url_fly_cdn/laradock-spring.tar.gz"
+            _get_image spring
             # _set_file_mode
             _set_nginx_java
             ;;
