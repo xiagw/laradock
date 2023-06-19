@@ -130,7 +130,7 @@ _check_dependence() {
     if [[ "$USER" != ops ]] && id ops; then
         $pre_sudo usermod -aG docker ops
     fi
-    [[ ${aliyun_os:-0} -eq 1 ]] && sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
+    [[ ${aliyun_os:-0} -eq 1 ]] && $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     $pre_sudo systemctl start docker
     return 0
 }
