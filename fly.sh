@@ -106,7 +106,7 @@ _check_dependence() {
         echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
     fi
     if grep -q '^ID=.*alinux.*' /etc/os-release; then
-        sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
+        $pre_sudo sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
         aliyun_os=1
     fi
     if [[ "${USE_ALIYUN:-true}" == true ]]; then
@@ -572,6 +572,9 @@ _set_args() {
         force_get_image)
             force_get_image='true'
             ;;
+        man | manual)
+            manual_start='true'
+            ;;
         gitlab | git)
             args+=(gitlab)
             ;;
@@ -755,8 +758,12 @@ EOF
         esac
     done
 
-    # _start_manual
-    _start_auto
+    if [ "$manual_start" = true ]; then
+        _start_manual
+        return
+    else
+        _start_auto
+    fi
 
     _reload_nginx
 
