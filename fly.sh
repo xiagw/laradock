@@ -736,6 +736,8 @@ GRANT ALL ON `defaultdb`.* TO 'flyprod'@'%' ;
 EOF
             url_image="$url_fly_cdn/laradock-mysql.tar.gz"
             _get_image mysql
+            url_image="$url_fly_cdn/laradock-mysqlbak.tar.gz"
+            _get_image mysqlbak
             ;;
         redis)
             url_image="$url_fly_cdn/laradock-redis.tar.gz"
