@@ -79,9 +79,9 @@ main() {
     bin_svn=/usr/bin/svn
     bin_svnlook=/usr/bin/svnlook
 
-    # if [[ ! -d $path_svn_pre ]]; then
-    #     mkdir -p $path_svn_pre
-    # fi
+    if [[ ! -d $path_svn_pre ]]; then
+        mkdir -p $path_svn_pre
+    fi
     chown -R 33:33 /var/www/*
     ## web app usvn
     if [[ ! -d /var/www/usvn/public ]]; then
