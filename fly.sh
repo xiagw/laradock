@@ -584,7 +584,7 @@ _set_args() {
             ;;
         install_zsh | zsh)
             exec_install_zsh=1
-            enable_check=0
+            enable_check=1
             ;;
         install_lsyncd | lsync | lsyncd)
             exec_install_lsyncd=1

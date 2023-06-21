@@ -2,7 +2,7 @@ settings {
     logfile = "/tmp/lsyncd.log",
     statusFile = "/tmp/lsyncd.status",
     maxDelays = 1,
-    maxProcesses = 3,
+    maxProcesses = 5,
     statusInterval = 1,
     insist = true,
     nodaemon = false

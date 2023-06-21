@@ -33,41 +33,16 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN true
 ENV TIME_ZOME Asia/Shanghai
 
+WORKDIR /var/www
+COPY ./root/opt/build.sh /opt/
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN set -xe \
-  && sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list \
-  ## preesed tzdata, update package index, upgrade packages and install needed software
-  && truncate -s0 /tmp/preseed.cfg \
-  && echo "tzdata tzdata/Areas select Asia" >> /tmp/preseed.cfg \
-  && echo "tzdata tzdata/Zones/Asia select Shanghai" >> /tmp/preseed.cfg \
-  && debconf-set-selections /tmp/preseed.cfg \
-  && rm -f /etc/timezone /etc/localtime \
-  && apt-get update \
-  && apt-get install -y apt-utils tzdata vim libapache2-mod-svn subversion rsync lsyncd openssh-client locales inotify-tools \
-  && grep -q '^en_US.UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >>/etc/locale.gen \
-  && locale-gen en_US.UTF-8 \
-  && a2enmod dav dav_fs rewrite authz_svn dav_svn \
-  && curl -fsSLo - https://github.com/usvn/usvn/archive/1.0.10.tar.gz | tar --strip-components=1 -C /tmp/ -xz \
-  && mkdir -p /var/www/usvn_src \
-  && cp -af /tmp/src/* /var/www/usvn_src/ \
-  && chown -R www-data:www-data /var/www/ \
-  && sed -i -e "78 a ServerName svn.mydomain.com\n" /etc/apache2/apache2.conf \
-  ## Clear dev deps
-  && apt-get clean \
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/lastlog /var/log/faillog
+RUN bash /opt/build.sh
 
-WORKDIR /root
-COPY ./etc/ /etc/
-COPY ./root/ /root/
-
-RUN set -xe \
-  && chmod +x /root/run.sh \
-  && printf 'export LANG="en_US.UTF-8"\nalias ll="ls -al --color"\n' >>/root/.bashrc
+COPY ./root/ /
+CMD ["/bin/bash", "/opt/run.sh" ]
 
 ## On Host:
 ## echo 'fs.inotify.max_user_watches = 99999999' | sudo tee -a /etc/sysctl.d/99-sysctl.conf
 ## sudo sysctl -p
 ## cat /proc/sys/fs/inotify/max_user_watches
 
-CMD [ "/root/run.sh" ]

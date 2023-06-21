@@ -1,51 +1,40 @@
 #!/usr/bin/env bash
 
-# set -xe
-export LANG='en_US.UTF-8'
-# export LC_CTYPE='en_US.UTF-8'
-# export LC_ALL='en_US.UTF-8'
-me_path="$(dirname "$(readlink -f "$0")")"
-me_name="$(basename "$0")"
-me_log="${me_path}/${me_name}.log"
-me_lock=/tmp/.svn.update.lock
-
 _log() {
     echo "[$(date +%F_%T)], $*" >>"$me_log"
 }
 
+_cleanup() {
+    rm -f $me_lock
+}
+
 _generate_ssh_key() {
     ## generate ssh key
-    [ -f $HOME/.ssh/id_ed25519 ] && return
-    mkdir -m 700 $HOME/.ssh
-    ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f $HOME/.ssh/id_ed25519
+    [ -f "$HOME"/.ssh/id_ed25519 ] && return
+    mkdir -m 700 "$HOME"/.ssh
+    ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f "$HOME"/.ssh/id_ed25519
     (
         echo 'Host *'
         echo 'IdentityFile $HOME/.ssh/id_ed25519'
         echo 'StrictHostKeyChecking no'
         echo 'GSSAPIAuthentication no'
         echo 'Compression yes'
-    ) >$HOME/.ssh/config
-    chmod 600 $HOME/.ssh/config
+    ) >"$HOME"/.ssh/config
+    chmod 600 "$HOME"/.ssh/config
     # cat $HOME.ssh/id_ed25519.pub
 }
 
 _schedule_svn_update() {
-    while true; do
-        ## UTC time
-        if [[ "$(date +%H%M)" == 2005 ]]; then
-            _log "svn cleanup/update root dir" | tee -a "$me_log"
-            for d in "$path_svn_checkout"/*/; do
-                [ -d "${d%/}"/.svn ] || continue
-                svn cleanup "$d"
-                svn update "$d"
-            done
-        fi
+    ## UTC time
+    while [[ "$(date +%H%M)" == 2005 ]]; do
+        _log "svn cleanup/update root dir" | tee -a "$me_log"
+        for d in "$path_svn_checkout"/*/; do
+            [ -d "${d%/}"/.svn ] || continue
+            svn cleanup "$d"
+            svn update "$d"
+        done
         sleep 50
     done
-}
-
-_cleanup() {
-    rm -f $me_lock
 }
 
 _chown_chmod() {
@@ -76,22 +65,45 @@ _chown_chmod() {
 }
 
 main() {
+    # set -xe
+    export LANG='en_US.UTF-8'
+    # export LC_CTYPE='en_US.UTF-8'
+    # export LC_ALL='en_US.UTF-8'
+    me_name="$(basename "$0")"
+    me_path="$(dirname "$(readlink -f "$0")")"
+    me_log="${me_path}/${me_name}.log"
+    me_lock=/tmp/.svn.update.lock
+
     path_svn_pre=/var/www/usvn/files/svn
-    path_svn_checkout=${me_path}/svn_checkout
+    path_svn_checkout=/var/www/svncheckout
     bin_svn=/usr/bin/svn
     bin_svnlook=/usr/bin/svnlook
-    ## allow only one instance
-    if [ -f "$me_lock" ]; then
-        _log "$me_lock exist, exit."
-        return 1
+
+    # if [[ ! -d $path_svn_pre ]]; then
+    #     mkdir -p $path_svn_pre
+    # fi
+    chown -R 33:33 /var/www/*
+    ## web app usvn
+    if [[ ! -d /var/www/usvn/public ]]; then
+        rsync -a /var/www/usvn_src/ /var/www/usvn/
     fi
+    ## allow only one instance
+    # if [ -f "$me_lock" ]; then
+    #     _log "$me_lock exist, exit."
+    #     return 1
+    # fi
     ## schedule svn cleanup/update root dirs
     _schedule_svn_update &
     ## ssh key
     _generate_ssh_key
+    ## lsyncd /root/tool/lsyncd.conf
+    # if [ -f /etc/lsyncd/lsyncd.conf.lua ]; then
+    #     lsyncd /etc/lsyncd/lsyncd.conf.lua &
+    # fi
     # exec &> >(tee -a "$me_log")
     touch "$me_lock"
     trap _cleanup INT TERM EXIT HUP
+
     ## trap: do some work
     inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${path_svn_pre}/ |
         while read -r path action file; do
@@ -116,11 +128,11 @@ main() {
                 $bin_svn update "$path_svn_checkout/$repo_name/${dir_changed}"
                 _chown_chmod "$path_svn_checkout/$repo_name/${dir_changed}"
             done
-        done
+        done &
     ## trap: end some work
-
-    _cleanup
-    trap - INT TERM EXIT
+    trap _cleanup INT TERM EXIT HUP
+    ## start apache
+    apache2-foreground
 }
 
 main "$@"

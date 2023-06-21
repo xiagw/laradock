@@ -476,7 +476,7 @@ services:
       restart: always
       volumes:
         - ${DATA_PATH_HOST}/usvn/usvn:/var/www/usvn
-        - ${DATA_PATH_HOST}/usvn/tool:/root/tool
+        - ${DATA_PATH_HOST}/usvn/svncheckout:/var/www/svncheckout
         - ${DATA_PATH_HOST}/usvn/ssh:/root/.ssh
       networks:
         - frontend
