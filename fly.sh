@@ -44,11 +44,14 @@ _get_yes_no() {
     else
         read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     fi
-    if [[ ${read_yes_no:-n} =~ ^(y|Y|yes|YES)$ ]]; then
-        return 0
-    else
+    case ${read_yes_no:-n} in
+    [Nn] | [Nn][Oo])
         return 1
-    fi
+        ;;
+    [Yy] | [Yy][Ee][Ss])
+        return 0
+        ;;
+    esac
 }
 
 _command_exists() {
@@ -292,6 +295,10 @@ _set_file_mode() {
 _install_zsh() {
     _msg step "install oh my zsh"
     _check_sudo
+    _command_exists git || {
+        $cmd install -y git zsh
+    }
+
     $cmd install -y zsh
     if [[ "${IN_CHINA:-true}" == true && ! -d "$HOME"/.oh-my-zsh ]]; then
         git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh

@@ -5,7 +5,7 @@ _log() {
 }
 
 _cleanup() {
-    rm -f $me_lock
+    rm -f "$me_lock"
 }
 
 _generate_ssh_key() {
@@ -15,7 +15,7 @@ _generate_ssh_key() {
     ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f "$HOME"/.ssh/id_ed25519
     (
         echo 'Host *'
-        echo 'IdentityFile $HOME/.ssh/id_ed25519'
+        echo "IdentityFile \$HOME/.ssh/id_ed25519"
         echo 'StrictHostKeyChecking no'
         echo 'GSSAPIAuthentication no'
         echo 'Compression yes'
@@ -33,7 +33,7 @@ _schedule_svn_update() {
             svn cleanup "$d"
             svn update "$d"
         done
-        sleep 50
+        sleep 59
     done
 }
 
@@ -64,6 +64,15 @@ _chown_chmod() {
     fi
 }
 
+_lock_me() {
+    if [ -e "$me_lock" ] && kill -0 "$(cat "$me_lock")"; then
+        _msg "Already running, exit"
+        exit
+    fi
+    trap 'rm -f ${me_lock}' INT TERM EXIT
+    echo $$ >"${me_lock}"
+}
+
 main() {
     # set -xe
     export LANG='en_US.UTF-8'
@@ -72,7 +81,9 @@ main() {
     me_name="$(basename "$0")"
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
-    me_lock=/tmp/.svn.update.lock
+    me_lock=/tmp/${me_name}.lock
+
+    _lock_me
 
     path_svn_pre=/var/www/usvn/files/svn
     path_svn_checkout=/var/www/svncheckout
@@ -82,26 +93,23 @@ main() {
     if [[ ! -d $path_svn_pre ]]; then
         mkdir -p $path_svn_pre
     fi
-    chown -R 33:33 /var/www/*
+    chown 33:33 /var/www/*
     ## web app usvn
     if [[ ! -d /var/www/usvn/public ]]; then
         rsync -a /var/www/usvn_src/ /var/www/usvn/
     fi
-    ## allow only one instance
-    # if [ -f "$me_lock" ]; then
-    #     _log "$me_lock exist, exit."
-    #     return 1
-    # fi
+
     ## schedule svn cleanup/update root dirs
     _schedule_svn_update &
     ## ssh key
     _generate_ssh_key
+
     ## lsyncd /root/tool/lsyncd.conf
     # if [ -f /etc/lsyncd/lsyncd.conf.lua ]; then
     #     lsyncd /etc/lsyncd/lsyncd.conf.lua &
     # fi
+
     # exec &> >(tee -a "$me_log")
-    touch "$me_lock"
     trap _cleanup INT TERM EXIT HUP
 
     ## trap: do some work
