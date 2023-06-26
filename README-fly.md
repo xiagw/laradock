@@ -21,18 +21,18 @@
 ## 部署方式一 容器/单机/多机，docker compose 部署参考（推荐）
 ```sh
 ## 初始化系统环境, docker / php-fpm 7.1 / jdk 1.8
-## 以下在线脚本默认安装路径为 当前 $PWD/docker/laradock 或 $HOME/docker/laradock
+## fly.sh 默认安装路径为 当前 $PWD/docker/laradock 或 $HOME/docker/laradock
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php redis mysql
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
 
-## !!! 必须进入此目录 !!!
+## !!! 必须进入此目录 !!! 操作容器
 cd $HOME/docker/laradock ## 或 cd $PWD/docker/laradock
 ## 启动服务 php-fpm
 docker compose up -d nginx redis mysql php-fpm
 ## 启动服务 java (spring)
 docker compose up -d nginx redis mysql spring
 
-## docker 目录 和目录说明
+## docker 目录说明
 
 ## 站点根目录
 ## (https://www.xxx.com/)
@@ -59,6 +59,10 @@ https://gitee.com/xiagw/laradock/tree/in-china/nginx/sites
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime
 sudo chown -R 1000:1000 $HOME/docker/laradock/spring
+
+## 如果有负载均衡，单台/多台服务器
+1. 设置服务器组（单台/多台）
+1. 设置负载均衡监听端口 80/443，指向服务器组
 
 ```
 

@@ -16,7 +16,7 @@ sed -i \
     -e "/post_max_size/s/8M/1024M/" \
     -e "/upload_max_filesize/s/2M/1024M/" \
     -e "/max_file_uploads/s/20/1024/" \
-    -e '/disable_functions/s/$/phpinfo,/' \
+    -e '/disable_functions/s/$/phpinfo,eval,exec,shell_exec,/' \
     -e '/max_execution_time/s/30/60/' \
     /etc/php/"${LARADOCK_PHP_VERSION}"/fpm/php.ini
 
