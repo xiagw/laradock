@@ -55,6 +55,9 @@ cd $HOME/docker/laradock/nginx/sites/
 ## nginx 配置文件在线链接
 https://gitee.com/xiagw/laradock/tree/in-china/nginx/sites
 
+## nginx 访问日志/错误日志
+cd $HOME/docker/laradock/logs/nginx/
+
 ##  恢复文件权限
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime
