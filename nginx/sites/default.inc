@@ -3,7 +3,7 @@ location ~* /(.*)(favicon\.ico|robots\.txt) {
     log_not_found off;
 }
 
-location ~* /(.*)\.(htaccess|htpasswd|env) {
+location ~* /(.*)\.(htaccess|htpasswd|env|svn|git|subversion) {
     deny all;
 }
 
