@@ -478,13 +478,14 @@ _build_image_php() {
     image_tag_base=fly/php:${php_ver}-base
     image_tag=fly/php:${php_ver}
 
-    [ -d root ] || mkdir -p root/opt
+    root_opt=root/opt
+    [ -d root ] || mkdir -p $root_opt
     if [[ "${build_remote:-false}" == true ]]; then
         curl -fLo Dockerfile.base $url_laradock_raw/php-fpm/Dockerfile.base
-        curl -fLo root/opt/nginx.conf $url_laradock_raw/php-fpm/root/opt/nginx.conf
-        curl -fLo root/opt/build.sh $url_laradock_raw/php-fpm/root/opt/build.sh
-        curl -fLo root/opt/onbuild.sh $url_laradock_raw/php-fpm/root/opt/onbuild.sh
-        curl -fLo root/opt/run.sh $url_laradock_raw/php-fpm/root/opt/run.sh
+        curl -fLo $root_opt/nginx.conf $url_laradock_raw/php-fpm/$root_opt/nginx.conf
+        curl -fLo $root_opt/build.sh $url_laradock_raw/php-fpm/$root_opt/build.sh
+        curl -fLo $root_opt/onbuild.sh $url_laradock_raw/php-fpm/$root_opt/onbuild.sh
+        curl -fLo $root_opt/run.sh $url_laradock_raw/php-fpm/$root_opt/run.sh
     fi
 
     if docker images | grep "fly/php.*${php_ver}-base"; then
