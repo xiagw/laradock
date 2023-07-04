@@ -607,3 +607,15 @@ services:
         - ${DATA_PATH_HOST}/bwdata:/data
       networks:
         - backend
+
+## mouday/domain-admin
+    domainadmin:
+      image: mouday/domain-admin
+      volumes:
+        - ${DATA_PATH_HOST}/domainadmin/database:/app/database
+        - ${DATA_PATH_HOST}/domainadmin/logs:/app/logs
+      ports:
+        - ${DOMAINADMIN_PORT}:8000
+      networks:
+        - frontend
+        - backend
