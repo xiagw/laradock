@@ -55,7 +55,9 @@ _get_yes_no() {
 }
 
 _command_exists() {
-    command -v "$@"
+    for c in "$@"; do
+        command -v "$c"
+    done
 }
 
 _get_distribution() {
@@ -70,7 +72,7 @@ _get_distribution() {
 _check_sudo() {
     [[ "$check_sudo_flag" -eq 1 ]] && return 0
     if [ "$USER" != "root" ]; then
-        if sudo -l -U "$USER" | grep -q "ALL"; then
+        if sudo -l -U "$USER"; then
             pre_sudo="sudo"
         else
             echo "User $USER has no permission to execute this script!"
@@ -100,7 +102,9 @@ _check_dependence() {
     _command_exists git || {
         $cmd install -y git zsh
     }
-    _command_exists strings || $cmd install -y binutils
+    _command_exists strings || {
+        $cmd install -y binutils
+    }
     ## install docker/compose
     if _command_exists docker; then
         return
@@ -108,6 +112,7 @@ _check_dependence() {
     if [[ "$set_sysctl" -eq 1 ]]; then
         echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
     fi
+    ## aliyun linux fake centos
     if grep -q '^ID=.*alinux.*' /etc/os-release; then
         $pre_sudo sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
         aliyun_os=1
@@ -133,9 +138,12 @@ _check_dependence() {
     if [[ "$USER" != ops ]] && id ops; then
         $pre_sudo usermod -aG docker ops
     fi
-    $pre_sudo systemctl start docker
     $pre_sudo systemctl enable docker
-    [[ ${aliyun_os:-0} -eq 1 ]] && $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
+    $pre_sudo systemctl start docker
+    ## revert aliyun linux
+    if [[ ${aliyun_os:-0} -eq 1 ]]; then
+        $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
+    fi
     return 0
 }
 
@@ -151,12 +159,12 @@ _check_timezone() {
 }
 
 _check_laradock() {
-    if [[ -d "$laradock_path" && -f "$laradock_path/.env.example" ]]; then
+    if [[ -d "$laradock_path" && -d "$laradock_path/.git" ]]; then
         _msg time "$laradock_path exist, git pull."
         (cd "$laradock_path" && git pull)
         return 0
     fi
-    ## clone laradock or git pull
+    ## clone laradock
     _msg step "install laradock to $laradock_path/."
     mkdir -p "$laradock_path"
 
@@ -296,10 +304,12 @@ _install_zsh() {
     _msg step "install oh my zsh"
     _check_sudo
     _command_exists git || {
-        $cmd install -y git zsh
+        $cmd install -y git
+    }
+    _command_exists zsh || {
+        $cmd install -y zsh
     }
 
-    $cmd install -y zsh
     if [[ "${IN_CHINA:-true}" == true && ! -d "$HOME"/.oh-my-zsh ]]; then
         git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
     else
@@ -627,7 +637,7 @@ main() {
 
     url_fly_cdn="http://cdn.flyh6.com/docker"
 
-    if [[ "${IN_CHINA:-true}" == true ]]; then
+    if [[ "${IN_CHINA}" == true ]]; then
         url_laradock_git=https://gitee.com/xiagw/laradock.git
         url_laradock_raw=https://gitee.com/xiagw/laradock/raw/in-china
         url_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw/main
@@ -651,14 +661,16 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
-    ## Overview | Docker Documentation https://docs.docker.com/compose/install/
-    # curl -SL https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
     dco="docker compose"
-    if _command_exists docker-compose; then
-        dco="docker-compose"
-        dco_ver=$(docker-compose -v | awk '{print $3}' | sed -e 's/\.//g' -e 's/\,//g')
-        if [[ "$dco_ver" -lt 1190 ]]; then
-            _msg warn "docker-compose version is too low."
+    if $dco version; then
+        _msg info "$dco ready."
+    else
+        if _command_exists docker-compose; then
+            dco="docker-compose"
+            dco_ver=$(docker-compose -v | awk '{print $3}' | sed -e 's/\.//g' -e 's/\,//g')
+            if [[ "$dco_ver" -lt 1190 ]]; then
+                _msg warn "docker-compose version is too low."
+            fi
         fi
     fi
 
@@ -725,7 +737,6 @@ main() {
         nginx)
             url_image="$url_fly_cdn/laradock-nginx.tar.gz"
             _get_image nginx
-            # cp -vf "$laradock_path"/nginx/Dockerfile.base "$laradock_path"/nginx/Dockerfile
             exec_test=1
             ;;
         mysql)
