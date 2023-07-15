@@ -10,6 +10,7 @@ fi
 # groupmod -g 1000 www-data
 
 apt_opt="apt-get install -yqq --no-install-recommends"
+apt_opt2="apt-get install -yqq"
 
 apt-get update -yqq
 $apt_opt apt-utils
@@ -40,7 +41,7 @@ case "$LARADOCK_PHP_VERSION" in
     ;;
 *)
     echo "Use ppa:ondrej/php..."
-    $apt_opt software-properties-common
+    $apt_opt2 software-properties-common
     add-apt-repository ppa:ondrej/php
     $apt_opt php"${LARADOCK_PHP_VERSION}"-mcrypt
     ;;

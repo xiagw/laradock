@@ -202,7 +202,6 @@ _set_laradock_env() {
         -e "/PHPREDISADMIN_PASS=/s/=.*/=$pass_redisadmin/" \
         -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$pass_gitlab/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/OS_VER=/s/=.*/=${os_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
@@ -259,7 +258,6 @@ _set_nginx_java() {
 _set_env_php_ver() {
     sed -i \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/OS_VER=/s/=.*/=${os_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/true/" \
         "$laradock_env"
 }
@@ -473,7 +471,7 @@ Parameters:
 }
 
 _build_image_nginx() {
-    build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/nginx:base
     image_tag=fly/nginx
 
@@ -484,7 +482,7 @@ _build_image_nginx() {
 }
 
 _build_image_php() {
-    build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg OS_VER=$os_ver --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base
     image_tag=fly/php:${php_ver}
 
@@ -535,7 +533,6 @@ _build_image_java() {
 
 _set_args() {
     IN_CHINA=true
-    os_ver=20.04
     php_ver=7.1
 
     args=()
@@ -560,13 +557,8 @@ _set_args() {
             ;;
         php | php-fpm | fpm)
             args+=(php-fpm)
-            ;;
-        8.0 | 8.1 | 8.2)
-            os_ver=22.04
-            php_ver=$1
-            ;;
-        5.6 | 7.1 | 7.2 | 7.4)
-            php_ver=$1
+            php_ver=$2
+            shift
             ;;
         upgrade)
             [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=1
