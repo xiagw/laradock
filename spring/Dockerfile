@@ -1,8 +1,5 @@
-#############################
-# FROM openjdk:11-jdk
-# FROM bitnami/tomcat:8.5 as p0
-# FROM bitnami/java:1.8-prod as p0
-FROM openjdk:8u332
+ARG JDK_VERSION=${JDK_VERSION}
+FROM openjdk:${JDK_VERSION}
 
 ARG IN_CHINA=${CHANGE_SOURCE}
 ARG CHANGE_SOURCE=${CHANGE_SOURCE}
