@@ -3,7 +3,7 @@
 _default_key() {
     default_key="$ssl_dir/default.key"
     default_csr="$ssl_dir/default.csr"
-    default_crt="$ssl_dir/default.crt"
+    default_crt="$ssl_dir/default.pem"
     dhparams=$ssl_dir/dhparams.pem
 
     if [ ! -f "$default_crt" ]; then
@@ -37,50 +37,53 @@ _issue_cert() {
         fi
 
         if [[ $c = 1 ]]; then
-            acme.sh --install-cert -d "$domain" --key-file $ssl_dir/default.key --fullchain-file $ssl_dir/default.crt
+            acme.sh --install-cert -d "$domain" --key-file $ssl_dir/default.key --fullchain-file $ssl_dir/default.pem
         else
-            acme.sh --install-cert -d "$domain" --key-file $ssl_dir/"$domain".key --fullchain-file $ssl_dir/"$domain".crt
+            acme.sh --install-cert -d "$domain" --key-file $ssl_dir/"$domain".key --fullchain-file $ssl_dir/"$domain".pem
         fi
     done <$ssl_dir/domains.txt
 }
 
-## main
-ssl_dir="/etc/nginx/conf.d/ssl"
-[ -d "$ssl_dir" ] || mkdir -p "$ssl_dir"
+main() {
+    ssl_dir="/etc/nginx/conf.d/ssl"
+    [ -d "$ssl_dir" ] || mkdir -p "$ssl_dir"
 
-_default_key
+    _default_key
 
-_issue_cert
+    _issue_cert
 
-html_dir=/var/www/html
-log_dir=/app/log/nginx
-[ -d $html_dir/.well-known/acme-challenge ] || mkdir -p $html_dir/.well-known/acme-challenge
-[ -d $html_dir/tp ] || mkdir -p $html_dir/tp
-[ -d $html_dir/static ] || mkdir -p $html_dir/static
-[ -f $html_dir/index.html ] || date >>$html_dir/index.html
+    html_dir=/var/www/html
+    log_dir=/app/log/nginx
+    [ -d $html_dir/.well-known/acme-challenge ] || mkdir -p $html_dir/.well-known/acme-challenge
+    [ -d $html_dir/tp ] || mkdir -p $html_dir/tp
+    [ -d $html_dir/static ] || mkdir -p $html_dir/static
+    [ -f $html_dir/index.html ] || date >>$html_dir/index.html
 
-[ -d $log_dir ] || mkdir -p $log_dir
-chown nginx:nginx $log_dir
+    [ -d $log_dir ] || mkdir -p $log_dir
+    chown nginx:nginx $log_dir
 
-[ -d $html_dir ] || mkdir -p $html_dir
-[ -f $html_dir/index.html ] || date >$html_dir/index.html
+    [ -d $html_dir ] || mkdir -p $html_dir
+    [ -f $html_dir/index.html ] || date >$html_dir/index.html
 
-## nginx 4xx 5xx
-printf 'error page 5xx' >/usr/share/nginx/html/50x.html
-if [ ! -f $html_dir/4xx.html ]; then
-    printf 'Error page: 4xx' >$html_dir/4xx.html
-fi
-if [ ! -f $html_dir/5xx.html ]; then
-    printf 'Error page: 5xx' >$html_dir/5xx.html
-fi
+    ## nginx 4xx 5xx
+    printf 'error page 5xx' >/usr/share/nginx/html/50x.html
+    if [ ! -f $html_dir/4xx.html ]; then
+        printf 'Error page: 4xx' >$html_dir/4xx.html
+    fi
+    if [ ! -f $html_dir/5xx.html ]; then
+        printf 'Error page: 5xx' >$html_dir/5xx.html
+    fi
 
-## remove log files
-while [ -d $log_dir ]; do
-    find $log_dir -type f -iname '*.log' -ctime +5 -print0 | xargs -t -0 rm -f
-    sleep 86400
-done &
+    ## remove log files
+    while [ -d $log_dir ]; do
+        find $log_dir -type f -iname '*.log' -ctime +5 -print0 | xargs -t -0 rm -f
+        sleep 86400
+    done &
 
-# Start crond in background
-if command -v crond; then
-    crond -l 2 -b
-fi
+    # Start crond in background
+    if command -v crond; then
+        crond -l 2 -b
+    fi
+}
+
+main "$@"

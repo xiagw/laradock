@@ -15,5 +15,5 @@ COPY ./root/opt/build.sh /opt/build.sh
 RUN sh /opt/build.sh
 
 ONBUILD COPY ./root/ /
-ONBUILD RUN sh /opt/onbuild.sh
+ONBUILD RUN sh /opt/build.sh --onbuild
 
