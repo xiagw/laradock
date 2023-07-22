@@ -738,6 +738,7 @@ ARG INSTALL_NPM_GULP=false
 ARG INSTALL_NPM_BOWER=false
 ARG INSTALL_NPM_VUE_CLI=false
 ARG INSTALL_NPM_ANGULAR_CLI=false
+ARG INSTALL_NPM_CHECK_UPDATES_CLI=false
 ARG NPM_REGISTRY
 ENV NPM_REGISTRY ${NPM_REGISTRY}
 ARG NPM_FETCH_RETRIES
@@ -779,6 +780,9 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
         ;fi \
         && if [ ${INSTALL_NPM_ANGULAR_CLI} = true ]; then \
         npm install -g @angular/cli \
+        ;fi \
+        && if [ ${INSTALL_NPM_CHECK_UPDATES_CLI} = true ]; then \
+        npm install -g npm-check-updates \
         ;fi \
 ;fi
 
@@ -1475,6 +1479,17 @@ RUN if [ ${INSTALL_AUDIOWAVEFORM} = true ]; then \
   && cmake .. \
   && make \
   && make install \
+;fi
+
+#####################################
+# poppler-utils:
+#####################################
+USER root
+
+ARG INSTALL_POPPLER_UTILS=false
+
+RUN if [ ${INSTALL_POPPLER_UTILS} = true ]; then \
+  apt-get -y install poppler-utils \
 ;fi
 
 #####################################
