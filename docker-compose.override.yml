@@ -15,7 +15,6 @@ services:
         args:
           - TZ=${WORKSPACE_TIMEZONE}
           - LARADOCK_PHP_VERSION=${PHP_VERSION}
-          - OS_VER=${OS_VER}
       environment:
         - TZ=${WORKSPACE_TIMEZONE}
       volumes:
@@ -109,8 +108,8 @@ services:
         - REDIS_1_HOST=${REDIS_HOST}
         - REDIS_1_PORT=${REDIS_PORT}
         - REDIS_1_AUTH=${REDIS_PASSWORD}
-        - ADMIN_USER=${PHPREDISADMIN_USER}
-        - ADMIN_PASS=${PHPREDISADMIN_PASS}
+        - ADMIN_USER=${PHPREDISADMIN_USER:-admin}
+        - ADMIN_PASS=${PHPREDISADMIN_PASS:-admin}
       ports:
         - "${PHPREDISADMIN_PORT}:80"
       networks:
