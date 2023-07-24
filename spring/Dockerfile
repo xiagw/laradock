@@ -19,7 +19,12 @@ EXPOSE 8080 8081 8082
 CMD ["/opt/run.sh"]
 
 # COPY --from=builder /jars/ .
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN curl -fL https://gitee.com/xiagw/deploy.sh/raw/main/conf/dockerfile/root/build.sh | bash
+RUN set -xe; \
+    if [ -f /opt/build.sh ]; then \
+    echo "found /opt/build.sh"; \
+    else \
+    curl -fLo /opt/build.sh https://gitee.com/xiagw/deploy.sh/raw/main/conf/dockerfile/root/opt/build.sh; \
+    fi; \
+    bash /opt/build.sh
 
 USER 1000
