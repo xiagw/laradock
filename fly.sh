@@ -117,8 +117,9 @@ _check_dependence() {
         $pre_sudo sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
         aliyun_os=1
     fi
+    get_docker=https://cdn.flyh6.com/docker/get-docker.sh
     if [[ "${USE_ALIYUN:-true}" == true ]]; then
-        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash -s - --mirror Aliyun
+        curl -fsSL --connect-timeout 10 $get_docker | $pre_sudo bash -s - --mirror Aliyun
     else
         curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
     fi
@@ -557,7 +558,7 @@ _set_args() {
             ;;
         php | php-fpm | fpm)
             args+=(php-fpm)
-            php_ver=$2
+            php_ver=${2:-7.1}
             shift
             ;;
         upgrade)
