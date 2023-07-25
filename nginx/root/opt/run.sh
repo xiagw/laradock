@@ -24,6 +24,12 @@ _issue_cert() {
     c=0
     # email="email=$(date | md5sum | cut -c 1-6)@deploy.sh"
     # acme.sh --register-account -m $email
+    if test -f $ssl_dir/domains.txt; then
+        echo "Found $ssl_dir/domains.txt"
+    else
+        echo "Not found $ssl_dir/domains.txt"
+        return
+    fi
     while read -r domain; do
         [[ -z $domain ]] && continue
         c=$((c + 1))
