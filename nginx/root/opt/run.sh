@@ -25,9 +25,9 @@ _issue_cert() {
     # email="email=$(date | md5sum | cut -c 1-6)@deploy.sh"
     # acme.sh --register-account -m $email
     if test -f $ssl_dir/domains.txt; then
-        echo "Found $ssl_dir/domains.txt"
+        echo "Found $ssl_dir/domains.txt, run acme.sh"
     else
-        echo "Not found $ssl_dir/domains.txt"
+        echo "Not found $ssl_dir/domains.txt, skip acme.sh"
         return
     fi
     while read -r domain; do
@@ -41,10 +41,11 @@ _issue_cert() {
             ## create cert / 创建证书
             acme.sh --issue -d "$domain" -w /var/www/html
         fi
-
         if [[ $c = 1 ]]; then
+            ## The First domain to be defalut.key / 第一个（或只有一个）域名作为默认域名
             acme.sh --install-cert -d "$domain" --key-file $ssl_dir/default.key --fullchain-file $ssl_dir/default.pem
         else
+            ## The others / 其他域名使用域名的名称作为文件名
             acme.sh --install-cert -d "$domain" --key-file $ssl_dir/"$domain".key --fullchain-file $ssl_dir/"$domain".pem
         fi
     done <$ssl_dir/domains.txt
@@ -66,6 +67,7 @@ main() {
     [ -f $html_dir/index.html ] || date >>$html_dir/index.html
 
     [ -d $log_dir ] || mkdir -p $log_dir
+    ## log dir 权限设置
     chown nginx:nginx $log_dir
 
     [ -d $html_dir ] || mkdir -p $html_dir
@@ -80,13 +82,13 @@ main() {
         printf 'Error page: 5xx' >$html_dir/5xx.html
     fi
 
-    ## remove log files
+    ## remove log files / 自动清理超过7天的旧日志文件
     while [ -d $log_dir ]; do
-        find $log_dir -type f -iname '*.log' -ctime +5 -print0 | xargs -t -0 rm -f
+        find $log_dir -type f -iname '*.log' -ctime +7 -print0 | xargs -t -0 rm -f
         sleep 86400
     done &
 
-    # Start crond in background
+    # Start crond in background / 开启定时任务 crond
     if command -v crond; then
         crond -l 2 -b
     fi
