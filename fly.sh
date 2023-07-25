@@ -559,6 +559,10 @@ _set_args() {
         php | php-fpm | fpm)
             args+=(php-fpm)
             php_ver=${2:-7.1}
+            if [[ $php_ver == [5-8].[0-9] ]]; then
+                echo "php version number err: $php_ver"
+                exit 1
+            fi
             shift
             ;;
         upgrade)
