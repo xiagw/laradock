@@ -115,36 +115,9 @@ main() {
     ## 识别中断信号，停止 java 进程
     trap _kill HUP INT PIPE QUIT TERM
     pids=()
-    ## trap: do some work
-    inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${path_svn_pre}/ |
-        while read -r path action file; do
-            echo "${path}${action}${file}" | grep -P '/db/revprops/\d+/CREATE\d+' || continue
-            ## get $repo_name
-            repo_name=${path#"${path_svn_pre}"/}
-            repo_name=${repo_name%%/*}
-            if [[ ! -d "$path_svn_pre/${repo_name:-none}" ]]; then
-                _log "not found repo: ${repo_name:-none}"
-                continue
-            fi
-            ## svnlook dirs-change
-            sleep 2 ## because "inotifywait" is too fast, so need to wait until "svn" write to disk
-            for dir_changed in $($bin_svnlook dirs-changed -r "${file}" "$path_svn_pre/${repo_name}"); do
-                _log "svnlook dirs-changed: $dir_changed"
-                ## not found svn repo in $path_svn_checkout, then svn checkout
-                if [ ! -d "$path_svn_checkout/$repo_name/.svn" ]; then
-                    $bin_svn checkout "file://$path_svn_pre/$repo_name" "$path_svn_checkout/$repo_name"
-                fi
-                ## svn update
-                echo "${dir_changed}" | grep runtime >>"$me_path"/runtime.log
-                $bin_svn update "$path_svn_checkout/$repo_name/${dir_changed}"
-                _chown_chmod "$path_svn_checkout/$repo_name/${dir_changed}"
-            done
-        done &
-    pids+=("$!")
     ## 识别中断信号，停止 java 进程
     trap _kill HUP INT PIPE QUIT TERM
-    svnserve -r $path_svn_pre &
-    pids+=("$!")
+    svnserve -d -r $path_svn_pre
     ## start apache
     apache2-foreground &
     pids+=("$!")
