@@ -39,7 +39,7 @@ _log() {
 _get_yes_no() {
     if [[ "$1" == timeout ]]; then
         shift
-        echo "Automatic answer 'N' within 20 seconds"
+        _msg time "Automatic answer 'N' within 20 seconds"
         read -t 20 -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     else
         read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
@@ -75,8 +75,8 @@ _check_sudo() {
         if sudo -l -U "$USER"; then
             pre_sudo="sudo"
         else
-            echo "User $USER has no permission to execute this script!"
-            echo "Please run visudo with root, and set sudo to $USER"
+            _msg time "User $USER has no permission to execute this script!"
+            _msg time "Please run visudo with root, and set sudo to $USER"
             return 1
         fi
     fi
@@ -209,7 +209,7 @@ _set_laradock_env() {
         "$laradock_env"
 
     for p in 80 443 3306 6379; do
-        listen_port=$p
+        local listen_port=$p
         while ss -lntu4 | grep "LISTEN.*:$listen_port\ "; do
             _msg red "already LISTEN port: $listen_port ."
             listen_port=$((listen_port + 2))
@@ -354,9 +354,10 @@ _test_nginx() {
     if [[ "${exec_test:-0}" -ne 1 ]]; then
         return
     fi
-    _msg time "test nginx ..."
+    nginx_port=$(awk -F= '/NGINX_HOST_HTTP_PORT/ {print $2}' $laradock_env)
+    _msg time "test nginx $1 ..."
     for i in {1..10}; do
-        if curl --connect-timeout 3 "${1:-localhost}"; then
+        if curl --connect-timeout 3 "http://localhost:$nginx_port/${1}"; then
             break
         else
             _msg time "[$((i * 2))] test nginx err."
@@ -389,7 +390,7 @@ _test_php() {
 
     _reload_nginx
 
-    _test_nginx "localhost/test.php"
+    _test_nginx "test.php"
 }
 
 _test_java() {
@@ -407,7 +408,7 @@ _get_redis_mysql_info() {
 }
 
 _mysql_cli() {
-    echo "exec mysql"
+    _msg time "exec mysql"
     cd "$laradock_path"
     db_default=$(awk -F= '/^MYSQL_DATABASE=/ {print $2}' "$laradock_env")
     user_default=$(awk -F= '/^MYSQL_USER=/ {print $2}' "$laradock_env")
@@ -498,7 +499,7 @@ _build_image_php() {
     fi
 
     if docker images | grep "fly/php.*${php_ver}-base"; then
-        echo "ignore build base image."
+        _msg time "ignore build base image."
     else
         if [[ "${build_remote:-false}" == true ]]; then
             $build_opt -t "$image_tag_base" -f Dockerfile.base .
@@ -558,12 +559,9 @@ _set_args() {
             ;;
         php | php-fpm | fpm)
             args+=(php-fpm)
-            php_ver=${2:-7.1}
-            if [[ $php_ver == [5-8].[0-9] ]]; then
-                echo "php version number err: $php_ver"
-                exit 1
-            fi
-            shift
+            ;;
+        [5-8].[0-9])
+            php_ver=${1:-7.1}
             ;;
         upgrade)
             [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=1

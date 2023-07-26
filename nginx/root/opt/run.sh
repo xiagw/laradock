@@ -3,13 +3,16 @@
 _default_key() {
     default_key="$ssl_dir/default.key"
     default_csr="$ssl_dir/default.csr"
-    default_crt="$ssl_dir/default.pem"
+    default_pem="$ssl_dir/default.pem"
     dhparams=$ssl_dir/dhparams.pem
 
-    if [ ! -f "$default_crt" ]; then
+    if [ -f "$default_pem" ] && [ -f $default_pem ]; then
+        echo "Found $default_key and $default_pem, skip create."
+    else
+        echo "Not found $default_key and $default_pem, create..."
         openssl genrsa -out "$default_key" 2048
         openssl req -new -key "$default_key" -out "$default_csr" -subj "/CN=default/O=default/C=CN"
-        openssl x509 -req -days 365 -in "$default_csr" -signkey "$default_key" -out "$default_crt"
+        openssl x509 -req -days 365 -in "$default_csr" -signkey "$default_key" -out "$default_pem"
     fi
 
     if [[ ! -f $dhparams || $(stat -c %s $dhparams) -lt 1500 ]]; then
