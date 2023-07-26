@@ -399,6 +399,8 @@ _test_java() {
     _msg time "Test spring..."
     if $dco ps | grep "spring.*Up"; then
         _msg time "container spring is up"
+    else
+        _msg time "container spring is down"
     fi
 }
 
