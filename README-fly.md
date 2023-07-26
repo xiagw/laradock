@@ -3,7 +3,7 @@
 - MEM 内存       >= 8 GB
 - Disk 系统硬盘   >= 60 GB
 - Net 网络带宽    >= 100M(按量付费) ， 或 网络带宽 >= 10M(固定带宽付费)
-- 如不是云服务器，带宽请自行根据实际业务情况配置网络带宽
+- 非云服务器，带宽请自行根据实际业务情况配置网络带宽
 - 建议所有采购项目初期使用“按量付费”，之后再根据每日账单确定采购“固定消费”套餐
 - 防火墙/安全组/开放端口 22/80/443
 
@@ -20,8 +20,7 @@
 
 ## 部署方式一 容器/单机/多机，docker compose 部署参考（推荐）
 ```sh
-## 初始化系统环境, docker / php-fpm 7.1 / jdk 1.8
-## fly.sh 默认安装路径为 当前 $PWD/docker/laradock 或 $HOME/docker/laradock
+## 安装环境, docker/php-7.1/jdk-1.8 默认安装路径为当前 $PWD/docker/laradock 或 $HOME/docker/laradock
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php redis mysql
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
 
@@ -41,8 +40,10 @@ cd $HOME/docker/html/
 ## 前端： VUE/TS 前端静态文件 （若开启 CDN 则只需针对此目录）
 ## (https://www.xxx.com/static/)
 cd $HOME/docker/html/static/
+## 或者 (https://www.xxx.com/s/)
+# cd $HOME/docker/html/s/
 
-## 后端： PHP 文件存放目录，假如多个 PHP 项目，例如： $HOME/docker/html/tp/app1, $HOME/docker/html/tp/app2 等。
+## 后端： PHP 文件存放目录，假如多个 PHP 项目，可以按此规范，例如： $HOME/docker/html/tp/app1, $HOME/docker/html/tp/app2 等。
 ## (https://www.xxx.com/tp/)
 cd $HOME/docker/html/tp/
 
@@ -51,7 +52,8 @@ cd $HOME/docker/laradock/spring/
 
 ## nginx 配置文件存放目录， 修改配置文件 d.php.inc, d.java.inc, app*.conf
 cd $HOME/docker/laradock/nginx/sites/
-## 若需要修改目录，例如 $HOME/docker/laradock/spring2 等等，则修改相应 nginx 配置并创建相应目录，然后再修改调整 $HOME/docker/laradock/docker-compose-override.yml
+## 若需要修改目录，例如 $HOME/docker/laradock/spring2 等等，则修改相应 nginx 配置并创建相应目录，然后再修改调整 $HOME/docker/laradock/docker-compose.override.yml
+
 ## nginx 配置文件在线链接
 https://gitee.com/xiagw/laradock/tree/in-china/nginx/sites
 

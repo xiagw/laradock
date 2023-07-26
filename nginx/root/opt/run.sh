@@ -66,6 +66,7 @@ main() {
     log_dir=/app/log/nginx
     [ -d $html_dir/.well-known/acme-challenge ] || mkdir -p $html_dir/.well-known/acme-challenge
     [ -d $html_dir/tp ] || mkdir -p $html_dir/tp
+    [ -d $html_dir/s ] || mkdir -p $html_dir/s
     [ -d $html_dir/static ] || mkdir -p $html_dir/static
     [ -f $html_dir/index.html ] || date >>$html_dir/index.html
 

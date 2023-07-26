@@ -27,7 +27,7 @@
 # RUN chmod +x /run.sh
 # CMD [ "/run.sh" ]
 
-FROM php:7.3-apache
+FROM php:7.4-apache
 ## for apt to be noninteractive
 ENV DEBIAN_FRONTEND noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN true
@@ -35,7 +35,6 @@ ENV TIME_ZOME Asia/Shanghai
 
 WORKDIR /var/www
 COPY ./root/opt/build.sh /opt/
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN bash /opt/build.sh
 
 COPY ./root/ /
