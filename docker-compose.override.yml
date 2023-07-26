@@ -457,6 +457,7 @@ services:
       build: ./usvn
       ports:
         - "8081:80"
+        - "3690:3690"
       restart: always
       volumes:
         - ${DATA_PATH_HOST}/usvn/usvn:/var/www/usvn
