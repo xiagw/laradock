@@ -161,7 +161,7 @@ _check_timezone() {
 }
 
 _check_laradock() {
-    _msg step "check laradock..."
+    _msg step "check laradock"
     if [[ -d "$laradock_path" && -d "$laradock_path/.git" ]]; then
         _msg time "$laradock_path exist, git pull."
         (cd "$laradock_path" && git pull)
@@ -620,6 +620,10 @@ _set_args() {
             exec_test=1
             enable_check=0
             ;;
+        reset | clean | clear)
+            exec_reset=1
+            enable_check=0
+            ;;
         *)
             _usage
             ;;
@@ -674,6 +678,17 @@ main() {
         fi
     fi
 
+    if [[ "${exec_reset:-0}" -eq 1 ]]; then
+        _msg step "reset docker"
+        (
+            cd "$laradock_path"
+            $dco stop
+            $dco rm -f
+        )
+        _check_sudo
+        $pre_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
+        return
+    fi
     if [[ "${exec_build_image:-0}" -eq 1 ]]; then
         if [[ "${build_image_nocache:-0}" -eq 1 ]]; then
             build_opt="docker build --no-cache"
@@ -787,7 +802,7 @@ EOF
         _start_auto
     fi
 
-    _msg step "check service..."
+    _msg step "check service"
 
     _test_nginx
 
