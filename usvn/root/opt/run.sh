@@ -143,7 +143,7 @@ main() {
     pids+=("$!")
     ## 识别中断信号，停止 java 进程
     trap _kill HUP INT PIPE QUIT TERM
-    svnserv -r $path_svn_pre &
+    svnserve -r $path_svn_pre &
     pids+=("$!")
     ## start apache
     apache2-foreground &
