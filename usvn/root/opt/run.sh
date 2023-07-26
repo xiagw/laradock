@@ -61,7 +61,7 @@ _chown_chmod() {
 }
 
 _kill() {
-    _msg "receive SIGTERM, kill ${pids[*]}"
+    echo "receive SIGTERM, kill ${pids[*]}"
     rm -f "$me_lock"
     for pid in "${pids[@]}"; do
         kill "$pid"
@@ -80,7 +80,7 @@ main() {
     me_lock=/tmp/${me_name}.lock
 
     if [ -e "$me_lock" ] && kill -0 "$(cat "$me_lock")"; then
-        _msg "Already running, exit"
+        echo "Already running, exit"
         exit 1
     fi
     echo $$ >"${me_lock}"
@@ -95,7 +95,7 @@ main() {
     if [[ ! -d $path_svn_pre ]]; then
         mkdir -p $path_svn_pre
     fi
-    chown 33:33 $path_www/*
+    chown -R 33:33 $path_usvn/{config,files}
     ## web app usvn
     if [[ ! -d $path_usvn/public ]]; then
         rsync -a ${path_usvn}_src/ $path_usvn/
