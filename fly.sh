@@ -150,16 +150,18 @@ _check_dependence() {
 
 _check_timezone() {
     ## change UTC to CST
-    _msg step "check timezone "
-    if timedatectl | grep -q 'Asia/Shanghai'; then
-        _msg time "Timezone is already set to Asia/Shanghai."
+    time_zone='Asia/Shanghai'
+    _msg step "check timezone $time_zone"
+    if timedatectl | grep -q "$time_zone"; then
+        _msg time "Timezone is already set to $time_zone."
     else
-        _msg time "Set timezone to Asia/Shanghai."
-        $pre_sudo timedatectl set-timezone Asia/Shanghai
+        _msg time "Set timezone to $time_zone."
+        $pre_sudo timedatectl set-timezone $time_zone
     fi
 }
 
 _check_laradock() {
+    _msg step "check laradock..."
     if [[ -d "$laradock_path" && -d "$laradock_path/.git" ]]; then
         _msg time "$laradock_path exist, git pull."
         (cd "$laradock_path" && git pull)
@@ -322,7 +324,7 @@ _install_zsh() {
 }
 
 _start_manual() {
-    _msg step "[START] manual ..."
+    _msg step "Start docker service manually..."
     _msg info '#########################################'
     _msg info "\n cd $laradock_path && $dco up -d $args \n"
     _msg info '#########################################'
@@ -331,7 +333,7 @@ _start_manual() {
 
 _start_auto() {
     if [ "${#args[@]}" -gt 0 ]; then
-        _msg step "[START] auto ..."
+        _msg step "Start docker service automatically..."
     else
         _msg warn "no arguments for docker service"
         return
@@ -354,6 +356,7 @@ _test_nginx() {
     if [[ "${exec_test:-0}" -ne 1 ]]; then
         return
     fi
+    _reload_nginx
     nginx_port=$(awk -F= '/NGINX_HOST_HTTP_PORT/ {print $2}' "$laradock_env")
     _msg time "test nginx $1 ..."
     for i in {1..10}; do
@@ -386,8 +389,6 @@ _test_php() {
     fi
 
     _set_nginx_php
-
-    _reload_nginx
 
     _test_nginx "test.php"
 }
@@ -731,6 +732,7 @@ main() {
         return
     fi
 
+    _msg step "check docker image..."
     for i in "${args[@]}"; do
         case $i in
         nginx)
@@ -785,7 +787,7 @@ EOF
         _start_auto
     fi
 
-    _reload_nginx
+    _msg step "check service..."
 
     _test_nginx
 
