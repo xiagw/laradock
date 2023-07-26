@@ -354,7 +354,7 @@ _test_nginx() {
     if [[ "${exec_test:-0}" -ne 1 ]]; then
         return
     fi
-    nginx_port=$(awk -F= '/NGINX_HOST_HTTP_PORT/ {print $2}' $laradock_env)
+    nginx_port=$(awk -F= '/NGINX_HOST_HTTP_PORT/ {print $2}' "$laradock_env")
     _msg time "test nginx $1 ..."
     for i in {1..10}; do
         if curl --connect-timeout 3 "http://localhost:$nginx_port/${1}"; then
@@ -372,11 +372,10 @@ _test_php() {
     fi
     _check_sudo
 
-    _msg step "Test PHP Redis MySQL "
     path_nginx_root="$laradock_path/../html"
     $pre_sudo chown "$USER:$USER" "$path_nginx_root"
     if [[ ! -f "$path_nginx_root/test.php" ]]; then
-        _msg "Create test.php"
+        _msg time "Create test.php"
         $pre_sudo cp -avf "$laradock_path/php-fpm/root/opt/test.php" "$path_nginx_root/test.php"
         source "$laradock_env" 2>/dev/null
         sed -i \
@@ -397,7 +396,10 @@ _test_java() {
     if [[ "${exec_test:-0}" -ne 1 ]]; then
         return
     fi
-    _msg "Test spring."
+    _msg time "Test spring..."
+    if $dco ps | grep "spring.*Up"; then
+        _msg time "container spring is up"
+    fi
 }
 
 _get_redis_mysql_info() {
@@ -417,11 +419,11 @@ _mysql_cli() {
 }
 
 _install_lsyncd() {
-    _msg "install lsyncd"
+    _msg time "install lsyncd"
     _check_sudo
     _command_exists lsyncd || $cmd install -y lsyncd
 
-    _msg "new lsyncd.conf.lua"
+    _msg time "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
     if [ ! -d /etc/lsyncd/ ]; then
         $pre_sudo mkdir /etc/lsyncd
@@ -429,14 +431,14 @@ _install_lsyncd() {
         [[ "$USER" == "root" ]] || $pre_sudo sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
     fi
 
-    _msg "new key, ssh-keygen"
+    _msg time "new key, ssh-keygen"
     id_file="$HOME/.ssh/id_ed25519"
     [ -f "$id_file" ] || ssh-keygen -t ed25519 -f "$id_file" -N ''
     while read -rp "Enter ssh host IP [${count:=1}] (enter q break): " ssh_host_ip; do
         [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
-        _msg "ssh-copy-id -i $id_file root@$ssh_host_ip"
+        _msg time "ssh-copy-id -i $id_file root@$ssh_host_ip"
         ssh-copy-id -i "$id_file" "root@$ssh_host_ip"
-        _msg "update $lsyncd_conf"
+        _msg time "update $lsyncd_conf"
         line_num=$(grep -n '^targets' $lsyncd_conf | awk -F: '{print $1}')
         $pre_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
         count=$((count + 1))
