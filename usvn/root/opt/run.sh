@@ -4,10 +4,6 @@ _log() {
     echo "[$(date +%F_%T)], $*" >>"$me_log"
 }
 
-_cleanup() {
-    rm -f "$me_lock"
-}
-
 _generate_ssh_key() {
     ## generate ssh key
     [ -f "$HOME"/.ssh/id_ed25519 ] && return
@@ -64,13 +60,13 @@ _chown_chmod() {
     fi
 }
 
-_lock_me() {
-    if [ -e "$me_lock" ] && kill -0 "$(cat "$me_lock")"; then
-        _msg "Already running, exit"
-        exit
-    fi
-    trap 'rm -f ${me_lock}' INT TERM EXIT
-    echo $$ >"${me_lock}"
+_kill() {
+    _msg "receive SIGTERM, kill ${pids[*]}"
+    rm -f "$me_lock"
+    for pid in "${pids[@]}"; do
+        kill "$pid"
+        wait "$pid"
+    done
 }
 
 main() {
@@ -83,20 +79,26 @@ main() {
     me_log="${me_path}/${me_name}.log"
     me_lock=/tmp/${me_name}.lock
 
-    _lock_me
+    if [ -e "$me_lock" ] && kill -0 "$(cat "$me_lock")"; then
+        _msg "Already running, exit"
+        exit 1
+    fi
+    echo $$ >"${me_lock}"
 
-    path_svn_pre=/var/www/usvn/files/svn
-    path_svn_checkout=/var/www/svncheckout
+    path_www=/var/www
+    path_usvn=$path_www/usvn
+    path_svn_pre=$path_usvn/files/svn
+    path_svn_checkout=$path_www/svncheckout
     bin_svn=/usr/bin/svn
     bin_svnlook=/usr/bin/svnlook
 
     if [[ ! -d $path_svn_pre ]]; then
         mkdir -p $path_svn_pre
     fi
-    chown 33:33 /var/www/*
+    chown 33:33 $path_www/*
     ## web app usvn
-    if [[ ! -d /var/www/usvn/public ]]; then
-        rsync -a /var/www/usvn_src/ /var/www/usvn/
+    if [[ ! -d $path_usvn/public ]]; then
+        rsync -a ${path_usvn}_src/ $path_usvn/
     fi
 
     ## schedule svn cleanup/update root dirs
@@ -110,8 +112,9 @@ main() {
     # fi
 
     # exec &> >(tee -a "$me_log")
-    trap _cleanup INT TERM EXIT HUP
-
+    ## 识别中断信号，停止 java 进程
+    trap _kill HUP INT PIPE QUIT TERM
+    pids=()
     ## trap: do some work
     inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${path_svn_pre}/ |
         while read -r path action file; do
@@ -137,10 +140,13 @@ main() {
                 _chown_chmod "$path_svn_checkout/$repo_name/${dir_changed}"
             done
         done &
-    ## trap: end some work
-    trap _cleanup INT TERM EXIT HUP
+    pids+=("$!")
+    ## 识别中断信号，停止 java 进程
+    trap _kill HUP INT PIPE QUIT TERM
     ## start apache
-    apache2-foreground
+    apache2-foreground &
+    pids+=("$!")
+    wait
 }
 
 main "$@"

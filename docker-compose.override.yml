@@ -191,21 +191,6 @@ services:
       networks:
         - backend
         - frontend
-### shop ####################################################
-    shop:
-      build:
-        context: ./shop
-      # ports:
-      #   - "${TOMCAT_HOST_HTTP_PORT}:8080"
-      networks:
-        - frontend
-        - backend
-      volumes:
-        - ${DATA_PATH_HOST}/shop/webapps:/usr/local/tomcat/webapps
-        - ${DATA_PATH_HOST}/shop/logs:/usr/local/tomcat/logs
-        # dce -u 0 shop chown -R 1000:1000 /usr/local/tomcat/
-        # dce shop cp /usr/local/tomcat/ROOT.war /usr/local/tomcat/webapps/
-      restart: always
 
 ### geth-rinkeby ################################################
     geth-rinkeby:
