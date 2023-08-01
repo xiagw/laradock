@@ -575,9 +575,14 @@ services:
 
 ## mayfly-go
     mayflygo:
-      image: mayflygo/mayfly-go:v1.4.2
+      image: mayflygo/mayfly-go:v1.5.0
       environment:
-        PANDORA_SERVER: 0.0.0.0:8086
+        MAYFLY_DB_HOST: ${DB_HOST}
+        MAYFLY_DB_NAME: ${MYSQL_DATABASE}
+        MAYFLY_DB_USER: ${MYSQL_USER}
+        MAYFLY_DB_PASS: ${MYSQL_PASSWORD}
+        MAYFLY_AES_KEY: ${MAYFLY_AES_KEY}
+        MAYFLY_JWT_KEY: ${MAYFLY_JWT_KEY}
       volumes:
         - ${DATA_PATH_HOST}/mayflygo:/mayfly
       ports:
