@@ -353,7 +353,7 @@ _start_auto() {
 }
 
 _test_nginx() {
-    if [[ "${exec_test:-0}" -ne 1 ]]; then
+    if [[ "${exec_test_nginx:-0}" -ne 1 ]]; then
         return
     fi
     _reload_nginx
@@ -370,7 +370,7 @@ _test_nginx() {
 }
 
 _test_php() {
-    if [[ "${exec_test:-0}" -ne 1 ]]; then
+    if [[ "${exec_test_php:-0}" -ne 1 ]]; then
         return
     fi
     _check_sudo
@@ -380,6 +380,7 @@ _test_php() {
     if [[ ! -f "$path_nginx_root/test.php" ]]; then
         _msg time "Create test.php"
         $pre_sudo cp -avf "$laradock_path/php-fpm/root/opt/test.php" "$path_nginx_root/test.php"
+        # shellcheck disable=1090
         source "$laradock_env" 2>/dev/null
         sed -i \
             -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
@@ -394,7 +395,7 @@ _test_php() {
 }
 
 _test_java() {
-    if [[ "${exec_test:-0}" -ne 1 ]]; then
+    if [[ "${exec_test_java:-0}" -ne 1 ]]; then
         return
     fi
     _msg time "Test spring..."
@@ -617,7 +618,8 @@ _set_args() {
             enable_check=0
             ;;
         test)
-            exec_test=1
+            exec_test_nginx=1
+            exec_test_php=1
             enable_check=0
             ;;
         reset | clean | clear)
@@ -753,7 +755,7 @@ main() {
         nginx)
             url_image="$url_fly_cdn/laradock-nginx.tar.gz"
             _get_image nginx
-            exec_test=1
+            exec_test_nginx=1
             ;;
         mysql)
             cat >"$laradock_path"/mysql/docker-entrypoint-initdb.d/create.defautldb.sql <<'EOF'
@@ -790,7 +792,7 @@ EOF
             # _set_file_mode
             _set_nginx_php
             _get_image php-fpm
-            exec_test=1
+            exec_test_php=1
             ;;
         esac
     done
