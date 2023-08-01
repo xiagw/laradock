@@ -25,10 +25,10 @@ _msg() {
     *)
         color_on=''
         color_off=''
-        need_shift=0
         ;;
     esac
-    [ "${need_shift:=1}" -eq 1 ] && shift
+    [ "$#" -gt 1 ] && shift
+
     echo -e "${color_on}$*${color_off}"
 }
 
@@ -95,20 +95,14 @@ _check_sudo() {
 
 _check_dependence() {
     _msg step "check command: curl/git/docker"
-    _command_exists curl || {
-        $cmd update
-        $cmd install -y curl
-    }
-    _command_exists git || {
-        $cmd install -y git zsh
-    }
-    _command_exists strings || {
-        $cmd install -y binutils
-    }
+    pkgs=()
+    _command_exists curl || pkgs+=(curl)
+    _command_exists git || pkgs+=(git zsh)
+    _command_exists strings || pkgs+=(binutils)
+    [[ "${#pkgs[@]}" -gt 0 ]] && $cmd install -y "${pkgs[@]}"
     ## install docker/compose
-    if _command_exists docker; then
-        return
-    fi
+    _command_exists docker && return
+
     if [[ "$set_sysctl" -eq 1 ]]; then
         echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
     fi
@@ -126,8 +120,10 @@ _check_dependence() {
     if [[ "$USER" != "root" ]]; then
         _msg time "Add user \"$USER\" to group docker."
         $pre_sudo usermod -aG docker "$USER"
+        echo '############################################'
         _msg red "!!!! Please logout $USER, and login again. !!!!"
         _msg red "And re-execute the above command."
+        echo '############################################'
         need_logout=1
     fi
     if [[ "$USER" != ubuntu ]] && id ubuntu; then
@@ -353,9 +349,6 @@ _start_auto() {
 }
 
 _test_nginx() {
-    if [[ "${exec_test_nginx:-0}" -ne 1 ]]; then
-        return
-    fi
     _reload_nginx
     nginx_port=$(awk -F= '/NGINX_HOST_HTTP_PORT/ {print $2}' "$laradock_env")
     _msg time "test nginx $1 ..."
@@ -370,9 +363,6 @@ _test_nginx() {
 }
 
 _test_php() {
-    if [[ "${exec_test_php:-0}" -ne 1 ]]; then
-        return
-    fi
     _check_sudo
 
     path_nginx_root="$laradock_path/../html"
@@ -395,9 +385,6 @@ _test_php() {
 }
 
 _test_java() {
-    if [[ "${exec_test_java:-0}" -ne 1 ]]; then
-        return
-    fi
     _msg time "Test spring..."
     if $dco ps | grep "spring.*Up"; then
         _msg time "container spring is up"
@@ -536,7 +523,6 @@ _build_image_java() {
     # $build_opt -t "$image_tag_base" -f Dockerfile.base .
 
     $build_opt -t "$image_tag" .
-
 }
 
 _set_args() {
@@ -785,6 +771,7 @@ EOF
             _get_image spring
             # _set_file_mode
             _set_nginx_java
+            exec_test_java=1
             ;;
         php*)
             url_image="$url_fly_cdn/laradock-php-fpm.${php_ver}.tar.gz"
@@ -797,7 +784,7 @@ EOF
         esac
     done
 
-    if [ "$manual_start" = true ]; then
+    if [[ "$manual_start" == true ]]; then
         _start_manual
         return
     else
@@ -806,11 +793,17 @@ EOF
 
     _msg step "check service"
 
-    _test_nginx
+    if [[ "${exec_test_nginx:-0}" -eq 1 ]]; then
+        _test_nginx
+    fi
 
-    _test_php
+    if [[ "${exec_test_php:-0}" -eq 1 ]]; then
+        _test_php
+    fi
 
-    _test_java
+    if [[ "${exec_test_java:-0}" -eq 1 ]]; then
+        _test_java
+    fi
 }
 
 main "$@"
