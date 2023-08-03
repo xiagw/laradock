@@ -4,27 +4,19 @@ _log() {
     echo "[$(date +%F_%T)], $*" >>"$me_log"
 }
 
-_generate_ssh_key() {
-    ## generate ssh key
-    [ -f "$HOME"/.ssh/id_ed25519 ] && return
-    mkdir -m 700 "$HOME"/.ssh
-    ssh-keygen -t ed25519 -C "root@usvn.docker" -N '' -f "$HOME"/.ssh/id_ed25519
-    (
-        echo 'Host *'
-        echo "IdentityFile \$HOME/.ssh/id_ed25519"
-        echo 'StrictHostKeyChecking no'
-        echo 'GSSAPIAuthentication no'
-        echo 'Compression yes'
-    ) >"$HOME"/.ssh/config
-    chmod 600 "$HOME"/.ssh/config
-    # cat $HOME.ssh/id_ed25519.pub
+_kill() {
+    echo "receive SIGTERM, kill ${pids[*]}"
+    for pid in "${pids[@]}"; do
+        kill "$pid"
+        wait "$pid"
+    done
 }
 
 _schedule_svn_update() {
     ## UTC time
-    while [[ "$(date +%H%M)" == 2005 ]]; do
+    while [[ "$(date +%H%M)" == 2005 || "$(date +%H%M)" == 0405 ]]; do
         _log "svn cleanup/update root dir" | tee -a "$me_log"
-        for d in "$path_svn_checkout"/*/; do
+        for d in "$svn_checkout_path"/*/; do
             [ -d "${d%/}"/.svn ] || continue
             svn cleanup "$d"
             svn update "$d"
@@ -33,40 +25,30 @@ _schedule_svn_update() {
     done
 }
 
-_chown_chmod() {
-    args="$1"
-    ## ThinkPHP, crate folder runtime / 创建文件夹 runtime
-    if [[ "$args" =~ (application) ]]; then
-        path_app="${args%/application/*}"
-        if [[ -f "$path_app"/.env && -d "$path_app"/vendor && ! -d "$path_app"/runtime ]]; then
-            mkdir "$path_app"/runtime
-            chown 33:33 "$path_app"/runtime
-            chmod 755 "$path_app"/runtime
+_watch_new() {
+    while read -r path action rev; do
+        echo "${path}${action}${rev}" | grep -P '/db/revprops/\d+/CREATE\d+' || continue
+        ## get $repo_name
+        repo_name=${path#"${svn_repo_path}"/}
+        repo_name=${repo_name%%/*}
+        if [[ ! -d "$svn_repo_path/${repo_name:-none}" ]]; then
+            _log "not found $svn_repo_path/${repo_name:-none}"
+            continue
         fi
-    fi
-    ## chmod
-    if [[ -d "$args" ]]; then
-        chmod 755 "$args"
-    elif [[ -f "$args" ]]; then
-        chmod 644 "$args"
-    fi
-    ## chown
-    if [[ "$args" =~ (runtime) ]]; then
-        chown 33:33 "${args%/runtime/*}"/runtime
-    elif [[ "$args" =~ (Runtime) ]]; then
-        chown 33:33 "${args%/Runtime/*}"/Runtime
-    else
-        chown 0:0 "$args"
-    fi
-}
+        ## because "inotifywait" is too fast, so need to wait until "svn" write to disk
+        sleep 2
 
-_kill() {
-    echo "receive SIGTERM, kill ${pids[*]}"
-    rm -f "$me_lock"
-    for pid in "${pids[@]}"; do
-        kill "$pid"
-        wait "$pid"
-    done
+        ## svnlook dirs-change
+        for dir_changed in $($cmd_svnlook dirs-changed -r "${rev}" "$svn_repo_path/${repo_name}"); do
+            _log "svnlook dirs-changed: $dir_changed"
+            ## checkout svn repo if not exists
+            if [ ! -d "$svn_checkout_path/$repo_name/.svn" ]; then
+                $cmd_svn checkout "file://$svn_repo_path/$repo_name" "$svn_checkout_path/$repo_name"
+            fi
+            ## svn update
+            $cmd_svn update "$svn_checkout_path/$repo_name/${dir_changed}"
+        done
+    done < <(inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${svn_repo_path}/)
 }
 
 main() {
@@ -77,47 +59,40 @@ main() {
     me_name="$(basename "$0")"
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
-    me_lock=/tmp/${me_name}.lock
 
-    if [ -e "$me_lock" ] && kill -0 "$(cat "$me_lock")"; then
-        echo "Already running, exit"
-        exit 1
+    www_path=/var/www
+    usvn_path=$www_path/usvn
+    svn_repo_path=$usvn_path/files/svn
+    svn_checkout_path=$www_path/svncheckout
+    cmd_svn=/usr/bin/svn
+    cmd_svnlook=/usr/bin/svnlook
+
+    if [[ -d $usvn_path/public ]]; then
+        echo "Found $usvn_path/public, skip copy."
+    else
+        echo "Not found $usvn_path/public, copy..."
+        rsync -a ${usvn_path}_src/ $usvn_path/
     fi
-    echo $$ >"${me_lock}"
-
-    path_www=/var/www
-    path_usvn=$path_www/usvn
-    path_svn_pre=$path_usvn/files/svn
-    path_svn_checkout=$path_www/svncheckout
-    bin_svn=/usr/bin/svn
-    bin_svnlook=/usr/bin/svnlook
-
-    if [[ ! -d $path_svn_pre ]]; then
-        mkdir -p $path_svn_pre
+    if [[ -d $svn_repo_path ]]; then
+        echo "Found $svn_repo_path"
+    else
+        echo "Not found $svn_repo_path, create..."
+        mkdir -p $svn_repo_path
     fi
-    chown -R 33:33 $path_usvn/{config,files}
-    ## web app usvn
-    if [[ ! -d $path_usvn/public ]]; then
-        rsync -a ${path_usvn}_src/ $path_usvn/
-    fi
+    chown -R 33:33 $usvn_path/{config,files}
 
-    ## schedule svn cleanup/update root dirs
-    _schedule_svn_update &
-    ## ssh key
-    _generate_ssh_key
-
-    ## lsyncd /root/tool/lsyncd.conf
-    # if [ -f /etc/lsyncd/lsyncd.conf.lua ]; then
-    #     lsyncd /etc/lsyncd/lsyncd.conf.lua &
-    # fi
-
-    # exec &> >(tee -a "$me_log")
-    ## 识别中断信号，停止 java 进程
-    trap _kill HUP INT PIPE QUIT TERM
     pids=()
+    _schedule_svn_update &
+    pids+=("$!")
+
     ## 识别中断信号，停止 java 进程
     trap _kill HUP INT PIPE QUIT TERM
-    svnserve -d -r $path_svn_pre
+
+    _watch_new &
+    pids+=("$!")
+
+    # svnserve -d -r $svn_repo_path
+
     ## start apache
     apache2-foreground &
     pids+=("$!")
