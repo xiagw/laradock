@@ -43,12 +43,13 @@ _watch_new() {
             _log "svnlook dirs-changed: $dir_changed"
             ## checkout svn repo if not exists
             if [ ! -d "$svn_checkout_path/$repo_name/.svn" ]; then
+                echo "Not found $svn_checkout_path/$repo_name/.svn, create..."
                 $cmd_svn checkout "file://$svn_repo_path/$repo_name" "$svn_checkout_path/$repo_name"
             fi
             ## svn update
-            $cmd_svn update "$svn_checkout_path/$repo_name/${dir_changed}"
+            $cmd_svn update "$svn_checkout_path/$repo_name/${dir_changed%/}"
         done
-    done < <(inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${svn_repo_path}/)
+    done < <(inotifywait -mqr -e create --exclude '/db/transactions/|/db/txn-protorevs/' ${svn_repo_path})
 }
 
 main() {
@@ -67,6 +68,9 @@ main() {
     cmd_svn=/usr/bin/svn
     cmd_svnlook=/usr/bin/svnlook
 
+    if [ -f $usvn_path/debug.on ]; then
+        set -xe
+    fi
     if [[ -d $usvn_path/public ]]; then
         echo "Found $usvn_path/public, skip copy."
     else
