@@ -25,8 +25,7 @@ a2enmod dav dav_fs rewrite authz_svn dav_svn
 
 mkdir -p /var/www/usvn_src
 # curl -fsSLo - https://github.com/usvn/usvn/archive/1.0.10.tar.gz |
-curl -fsSLo - http://cdn.flyh6.com/docker/usvn.tar.gz |
-    tar --strip-components=1 -C /tmp/ -xz
+curl -fsSLo - http://cdn.flyh6.com/docker/usvn.tar.gz | tar --strip-components=1 -C /tmp/ -xz
 cp -af /tmp/src/* /var/www/usvn_src/
 chown -R www-data:www-data /var/www/
 sed -i -e "78 a ServerName svn.mydomain.com\n" /etc/apache2/apache2.conf
