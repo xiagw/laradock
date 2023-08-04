@@ -20,9 +20,13 @@
 
 ## 部署方式一 容器/单机/多机，docker compose 部署参考（推荐）
 ```sh
+## 假如需要代理
+# export http_proxy=http://x.x.x.x:1080
+# export https_proxy=http://x.x.x.x:1080
 ## 安装环境, docker/php-7.1/jdk-1.8 默认安装路径为当前 $PWD/docker/laradock 或 $HOME/docker/laradock
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php redis mysql
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
+
 
 ## !!! 必须进入此目录 !!! 操作容器
 cd $HOME/docker/laradock ## 或 cd $PWD/docker/laradock
