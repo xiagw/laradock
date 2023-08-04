@@ -89,9 +89,6 @@ main() {
     _schedule_svn_update &
     pids+=("$!")
 
-    ## 识别中断信号，停止 java 进程
-    trap _kill HUP INT PIPE QUIT TERM
-
     _watch_new &
     pids+=("$!")
 
@@ -100,6 +97,10 @@ main() {
     ## start apache
     apache2-foreground &
     pids+=("$!")
+
+    ## 识别中断信号，停止 java 进程
+    trap _kill HUP INT PIPE QUIT TERM
+
     wait
 }
 
