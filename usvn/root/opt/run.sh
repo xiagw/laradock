@@ -99,7 +99,7 @@ main() {
     pids+=("$!")
 
     ## 识别中断信号，停止 java 进程
-    trap _kill HUP INT PIPE QUIT TERM
+    trap _kill HUP INT PIPE QUIT TERM SIGWINCH
 
     wait
 }
