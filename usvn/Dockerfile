@@ -8,6 +8,7 @@ COPY ./root/opt/build.sh /opt/
 RUN bash /opt/build.sh
 
 COPY ./root/ /
+RUN [ -f /opt/run.sh ] && chmod +x /opt/run.sh
 CMD ["/opt/run.sh"]
 
 ## On Host:
