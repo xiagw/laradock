@@ -454,6 +454,7 @@ Usage: $0 [parameters ...]
 Parameters:
     -h, --help          Show this help message.
     -v, --version       Show version info.
+    proxy               use proxy, ex: http://x.x.x.x:1080
     info                get mysql redis info
     php                 install php-fpm 7.1
     build               build php image
@@ -536,6 +537,10 @@ _set_args() {
     fi
     while [ "$#" -gt 0 ]; do
         case "${1}" in
+        proxy)
+            export http_proxy=$2
+            export https_proxy=$2
+            ;;
         mysql)
             args+=(mysql)
             ;;
