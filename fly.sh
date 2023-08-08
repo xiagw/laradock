@@ -308,7 +308,7 @@ _install_zsh() {
     }
 
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
-        _msg "Found $HOME/.oh-my-zsh, skip."
+        _msg warn "Found $HOME/.oh-my-zsh, skip."
     else
         if [[ "${IN_CHINA:-true}" == true ]]; then
             git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
@@ -417,7 +417,11 @@ _mysql_cli() {
 _install_lsyncd() {
     _msg time "install lsyncd"
     _check_sudo
-    _command_exists lsyncd || $cmd install -y lsyncd
+    if _command_exists lsyncd; then
+        _msg warn "Found command lsyncd, skip."
+    else
+        $cmd install -y lsyncd
+    fi
 
     _msg time "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
