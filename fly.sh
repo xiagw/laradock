@@ -307,16 +307,20 @@ _install_zsh() {
         $cmd install -y zsh
     }
 
-    if [[ "${IN_CHINA:-true}" == true && ! -d "$HOME"/.oh-my-zsh ]]; then
-        git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
+    if [[ -d "$HOME"/.oh-my-zsh ]]; then
+        _msg "Found $HOME/.oh-my-zsh, skip."
     else
-        bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    fi
-    cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
-    sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
-    sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
+        if [[ "${IN_CHINA:-true}" == true ]]; then
+            git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
+        else
+            bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+        fi
+        cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
+        sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
+        sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
     # sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
     # sed -i -e 's/robbyrussell/ys/' ~/.zshrc
+    fi
 }
 
 _start_manual() {
@@ -394,6 +398,7 @@ _test_java() {
 }
 
 _get_redis_mysql_info() {
+    echo
     grep ^REDIS_ "$laradock_env" | head -n 3
     echo
     grep ^DB_HOST "$laradock_env"
