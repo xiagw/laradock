@@ -658,6 +658,23 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
+    if [[ "${exec_install_zsh:-0}" -eq 1 ]]; then
+        _install_zsh
+        return
+    fi
+    if [[ "${exec_install_lsyncd:-0}" -eq 1 ]]; then
+        _install_lsyncd
+        return
+    fi
+    if [[ $exec_upgrade_java -eq 1 ]]; then
+        _upgrade_java
+        return
+    fi
+    if [[ $exec_upgrade_php -eq 1 ]]; then
+        _upgrade_php
+        return
+    fi
+
     dco="docker compose"
     if $dco version; then
         _msg info "$dco ready."
@@ -700,22 +717,6 @@ main() {
         if [[ "${build_remote:-false}" == true ]]; then
             _msg warn "safe remove \"rm -rf root/ Dockerfile\"."
         fi
-        return
-    fi
-    if [[ "${exec_install_zsh:-0}" -eq 1 ]]; then
-        _install_zsh
-        return
-    fi
-    if [[ "${exec_install_lsyncd:-0}" -eq 1 ]]; then
-        _install_lsyncd
-        return
-    fi
-    if [[ $exec_upgrade_java -eq 1 ]]; then
-        _upgrade_java
-        return
-    fi
-    if [[ $exec_upgrade_php -eq 1 ]]; then
-        _upgrade_php
         return
     fi
     if [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]]; then
