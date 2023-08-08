@@ -419,6 +419,7 @@ _install_lsyncd() {
     _check_sudo
     if _command_exists lsyncd; then
         _msg warn "Found command lsyncd, skip."
+        return
     else
         $cmd install -y lsyncd
     fi
