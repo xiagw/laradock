@@ -108,6 +108,12 @@ services:
         - REDIS_1_HOST=${REDIS_HOST}
         - REDIS_1_PORT=${REDIS_PORT}
         - REDIS_1_AUTH=${REDIS_PASSWORD}
+        - REDIS_2_HOST=${REDIS_HOST_2}
+        - REDIS_2_PORT=${REDIS_PORT_2}
+        - REDIS_2_AUTH=${REDIS_PASSWORD_2}
+        - REDIS_3_HOST=${REDIS_HOST_3}
+        - REDIS_3_PORT=${REDIS_PORT_3}
+        - REDIS_3_AUTH=${REDIS_PASSWORD_3}
         - ADMIN_USER=${PHPREDISADMIN_USER:-admin}
         - ADMIN_PASS=${PHPREDISADMIN_PASS:-admin}
       ports:
