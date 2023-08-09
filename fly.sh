@@ -301,10 +301,12 @@ _install_zsh() {
     _msg step "install oh my zsh"
     _check_sudo
     _command_exists git || {
-        $cmd install -y git
+        $cmd update -yqq
+        $cmd install -yqq git
     }
     _command_exists zsh || {
-        $cmd install -y zsh
+        $cmd update -yqq
+        $cmd install -yqq zsh
     }
 
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
