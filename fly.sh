@@ -466,7 +466,6 @@ Usage: $0 [parameters ...]
 Parameters:
     -h, --help          Show this help message.
     -v, --version       Show version info.
-    proxy               use proxy, ex: http://x.x.x.x:1080
     info                get mysql redis info
     php                 install php-fpm 7.1
     build               build php image
@@ -549,10 +548,6 @@ _set_args() {
     fi
     while [ "$#" -gt 0 ]; do
         case "${1}" in
-        proxy)
-            export http_proxy=$2
-            export https_proxy=$2
-            ;;
         mysql)
             args+=(mysql)
             ;;
@@ -686,6 +681,10 @@ main() {
         _upgrade_php
         return
     fi
+    if [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]]; then
+        _get_redis_mysql_info
+        return
+    fi
 
     dco="docker compose"
     if $dco version; then
@@ -731,10 +730,7 @@ main() {
         fi
         return
     fi
-    if [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]]; then
-        _get_redis_mysql_info
-        return
-    fi
+
     if [[ "${exec_mysql_cli:-0}" -eq 1 ]]; then
         _mysql_cli
         return
