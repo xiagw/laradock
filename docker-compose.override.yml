@@ -509,6 +509,7 @@ services:
         context: ./spring
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
+          - JDK_IMAGE=${JDK_IMAGE}
           - JDK_VERSION=${JDK_VERSION}
       restart: always
       volumes:
