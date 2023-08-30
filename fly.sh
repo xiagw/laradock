@@ -1,39 +1,44 @@
 #!/usr/bin/env bash
 
 _msg() {
-    color_off='\033[0m' # Text Reset
+    local color_on
+    local color_off='\033[0m' # Text Reset
     case "${1:-none}" in
-    red | error | err) color_on='\033[0;31m' ;;        # Red
+    red | error | erro) color_on='\033[0;31m' ;;       # Red
     green | info) color_on='\033[0;32m' ;;             # Green
     yellow | warning | warn) color_on='\033[0;33m' ;;  # Yellow
     blue) color_on='\033[0;34m' ;;                     # Blue
     purple | question | ques) color_on='\033[0;35m' ;; # Purple
     cyan) color_on='\033[0;36m' ;;                     # Cyan
+    orange) color_on='\033[1;33m' ;;
     time)
-        color_on="[+] $(date +%Y%m%d-%T-%u), "
-        color_off=''
+        if [ -z "$STEP" ]; then
+            color_on="[+] $(date +%Y%m%d-%u-%T.%3N), "
+        else
+            color_on="[$(for ((i = 1; i <= ${#STEP}; i++)); do echo -n '+'; done)] $(date +%Y%m%d-%u-%T.%3N), "
+        fi
+        color_off=
         ;;
-    stepend)
-        color_on="[+] $(date +%Y%m%d-%T-%u), "
-        color_off=' ... '
-        ;;
-    step)
+    step | timestep)
         STEP=$((${STEP:-0} + 1))
-        color_on="\033[0;35m[${STEP}] $(date +%Y%m%d-%T-%u), \033[0m"
-        color_off=' ... '
+        color_on="\033[0;36m[${STEP}] $(date +%Y%m%d-%u-%T.%3N), \033[0m"
+        ;;
+    stepend | end)
+        color_on="[$(for ((i = 1; i <= ${#STEP}; i++)); do echo -n '+'; done)] $(date +%Y%m%d-%u-%T.%3N), "
+        color_off=' ... end'
+        ;;
+    log)
+        shift
+        echo "$(date +%Y%m%d-%u-%T.%3N), $*" >>"$me_log"
+        return
         ;;
     *)
-        color_on=''
-        color_off=''
+        color_on=
+        color_off=
         ;;
     esac
     [ "$#" -gt 1 ] && shift
-
     echo -e "${color_on}$*${color_off}"
-}
-
-_log() {
-    _msg time "$*" | tee -a "$me_log"
 }
 
 _get_yes_no() {
