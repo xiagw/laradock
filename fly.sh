@@ -587,7 +587,7 @@ _set_args() {
             build_remote=true
             ;;
         build_nocache | nocache)
-            build_image_nocache=1
+            build_opt="docker build --no-cache"
             ;;
         install_docker_without_aliyun)
             USE_ALIYUN='false'
@@ -716,11 +716,7 @@ main() {
         return
     fi
     if [[ "${exec_build_image:-0}" -eq 1 ]]; then
-        if [[ "${build_image_nocache:-0}" -eq 1 ]]; then
-            build_opt="docker build --no-cache"
-        else
-            build_opt="docker build"
-        fi
+        build_opt="${build_opt:-docker build}"
         if [[ "${args[*]}" == *nginx* ]]; then
             _build_image_nginx
         fi
