@@ -45,7 +45,7 @@ services:
       build:
         context: ./mysql
         args:
-          - MYSQL_VERSION=${MYSQL_VERSION_57}
+          - MYSQL_VERSION=${MYSQL_VERSION_57:-5.7}
           - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       security_opt:
         - seccomp:unconfined
@@ -60,7 +60,7 @@ services:
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
         - ${DATA_PATH_HOST}/mysql_backup:/backup
       ports:
-        - "${MYSQL_PORT_57}:3306"
+        - "${MYSQL_PORT_57:-3307}:3306"
       networks:
         - backend
         - frontend
