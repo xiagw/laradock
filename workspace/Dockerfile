@@ -482,13 +482,18 @@ ARG INSTALL_AMQP=false
 
 RUN if [ ${INSTALL_AMQP} = true ]; then \
     apt-get install -yqq librabbitmq-dev && \
-    if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
-      printf "\n" | pecl install amqp-1.11.0beta; \
+    if [ ${LARADOCK_PHP_VERSION} = "7.3" ] \
+      || [ ${LARADOCK_PHP_VERSION} = "7.2" ] \
+      || [ ${LARADOCK_PHP_VERSION} = "7.1" ] \
+      || [ ${LARADOCK_PHP_VERSION} = "7.0" ] \
+      || [ ${LARADOCK_PHP_VERSION} = "5.6" ]; then \
+      printf "\n" | pecl install amqp-1.11.0; \
     else \
       printf "\n" | pecl install amqp; \
     fi && \
     echo "extension=amqp.so" >> /etc/php/${LARADOCK_PHP_VERSION}/mods-available/amqp.ini && \
-    ln -s /etc/php/${LARADOCK_PHP_VERSION}/mods-available/amqp.ini /etc/php/${LARADOCK_PHP_VERSION}/cli/conf.d/30-amqp.ini \
+    ln -s /etc/php/${LARADOCK_PHP_VERSION}/mods-available/amqp.ini /etc/php/${LARADOCK_PHP_VERSION}/cli/conf.d/30-amqp.ini && \
+    php -m | grep -oiE '^amqp$' \
 ;fi
 
 ###########################################################################
@@ -1514,8 +1519,8 @@ RUN if [ ${INSTALL_WKHTMLTOPDF} = true ]; then \
    xfonts-base \
    xfonts-75dpi \
    wget \
-   && wget "https://github.com/wkhtmltopdf/packaging/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_0.12.6-1.bionic_${ARCH}.deb" \
-   && dpkg -i "wkhtmltox_${WKHTMLTOPDF_VERSION}.bionic_${ARCH}.deb" \
+   && wget "https://github.com/wkhtmltopdf/packaging/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}.focal_${ARCH}.deb" \
+   && dpkg -i "wkhtmltox_${WKHTMLTOPDF_VERSION}.focal_${ARCH}.deb" \
    && apt -f install \
 ;fi
 
