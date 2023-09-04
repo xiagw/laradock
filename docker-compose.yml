@@ -739,7 +739,7 @@ services:
       networks:
         - backend
 
-  ### ClickHouse #############################################
+### ClickHouse #############################################
     clickhouse:
       build:
         context: ./clickhouse
@@ -767,18 +767,22 @@ services:
           soft: 262144
           hard: 262144
       networks:
-#        - frontend
+        # - frontend
         - backend
 
-  ### Redis ################################################
+### Redis ################################################
     redis:
-      build: ./redis
+      build:
+        context: ./redis
+        args:
+          - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
       volumes:
         - ${DATA_PATH_HOST}/redis:/data
-      command: --databases ${REDIS_DATABASES:-256} --requirepass ${REDIS_PASSWORD}
+      command: --databases ${REDIS_DATABASES:-256} --requirepass ${REDIS_PASSWORD:-secret}
       ports:
         - "${REDIS_PORT}:6379"
       networks:
+        # - frontend
         - backend
 
 ### Redis Cluster ##########################################

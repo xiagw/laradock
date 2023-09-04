@@ -123,28 +123,17 @@ services:
         - frontend
 
 ### Redis nopass ################################################
-    redisnopass:
-      restart: always
+    redis2:
       build:
         context: ./redis
-        args:
-          - TZ=${WORKSPACE_TIMEZONE}
-      command: --databases ${REDIS_DATABASES:-256} --protected-mode no
       volumes:
-        - ${DATA_PATH_HOST}/redisnopass:/data
+        - ${DATA_PATH_HOST}/redis2:/data
+      command: --databases ${REDIS_DATABASES:-256}
       ports:
-        - "${REDIS_PORT_NOPASS}:6379"
+        - "${REDIS_PORT2}:6379"
       networks:
+        # - frontend
         - backend
-        - frontend
-
-### Redis ################################################
-    redis:
-      restart: always
-      build:
-        context: ./redis
-        args:
-          - TZ=${WORKSPACE_TIMEZONE}
 
 ### Redis PHP admin ################################################
     redisadmin:
