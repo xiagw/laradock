@@ -626,6 +626,10 @@ _set_args() {
             exec_mysql_cli=1
             enable_check=0
             ;;
+        rediscli)
+            exec_redis_cli=1
+            enable_check=0
+            ;;
         test)
             exec_test_nginx=1
             exec_test_php=1
@@ -740,6 +744,11 @@ main() {
 
     if [[ "${exec_mysql_cli:-0}" -eq 1 ]]; then
         _mysql_cli
+        return
+    fi
+
+    if [[ "${exec_redis_cli:-0}" -eq 1 ]]; then
+        _redis_cli
         return
     fi
 
