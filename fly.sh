@@ -406,10 +406,9 @@ _test_java() {
 
 _get_redis_mysql_info() {
     echo
-    grep ^REDIS_ "$laradock_env" | head -n 3
+    grep '^REDIS_' "$laradock_env" | sed -n '1,12 p'
     echo
-    grep ^DB_HOST "$laradock_env"
-    grep ^MYSQL_ "$laradock_env" | sed -n '2,5 p'
+    grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -v MYSQL_ROOT_PASSWORD | sed -n '1,6 p'
 }
 
 _mysql_cli() {
@@ -419,6 +418,13 @@ _mysql_cli() {
     user_default=$(awk -F= '/^MYSQL_USER=/ {print $2}' "$laradock_env")
     password_default=$(awk -F= '/^MYSQL_PASSWORD=/ {print $2}' "$laradock_env")
     $dco exec -T mysql bash -c "LANG=C.UTF-8 mysql $db_default -u $user_default -p$password_default"
+}
+
+_redis_cli() {
+    _msg time "exec redis"
+    cd "$laradock_path"
+    password_default=$(awk -F= '/^REDIS_PASSWORD=/ {print $2}' "$laradock_env")
+    $dco exec redis bash -c "redis-cli --no-auth-warning -a $password_default"
 }
 
 _install_lsyncd() {
