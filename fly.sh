@@ -267,22 +267,26 @@ _set_env_php_ver() {
 }
 
 _get_image() {
-    img_name=$1
-    if docker images | grep -E "laradock-$img_name|laradock_$img_name"; then
+    if [[ ${exec_download_image:-0} -ne 1 ]]; then
+        return
+    fi
+    image_name=$1
+    if docker images | grep -E "laradock-$image_name|laradock_$image_name"; then
         if [[ "${force_get_image:-false}" == false ]]; then
             return
         fi
     fi
 
-    _msg step "download docker image laradock-$img_name"
-    img_save=/tmp/laradock-${img_name}.tar.gz
-    curl -Lo "$img_save" "${url_image}"
-    docker load <"$img_save"
+    _msg step "download docker image laradock-$image_name"
+    image_save=/tmp/laradock-${image_name}.tar.gz
+    curl -Lo "$image_save" "${url_image}"
+    echo "docker load image..."
+    docker load <"$image_save"
     if docker --version | grep -q "version 19"; then
-        docker tag "laradock-$img_name" "laradock_$img_name"
+        docker tag "laradock-$image_name" "laradock_$image_name"
     else
-        if docker images | grep "laradock_$img_name"; then
-            docker tag "laradock_$img_name" "laradock-$img_name"
+        if docker images | grep "laradock_$image_name"; then
+            docker tag "laradock_$image_name" "laradock-$image_name"
         fi
     fi
 }
@@ -575,7 +579,7 @@ _set_args() {
         php | php-fpm | fpm)
             args+=(php-fpm)
             ;;
-        [5-8].[0-9])
+        [5-10].[0-9])
             php_ver=${1:-7.1}
             ;;
         upgrade)
@@ -594,6 +598,9 @@ _set_args() {
             ;;
         build_nocache | nocache)
             build_opt="docker build --no-cache"
+            ;;
+        download_image)
+            exec_download_image=1
             ;;
         install_docker_without_aliyun)
             USE_ALIYUN='false'
@@ -808,6 +815,7 @@ EOF
             _set_env_php_ver
             # _set_file_mode
             _set_nginx_php
+            exec_download_image=1
             _get_image php-fpm
             exec_test_php=1
             ;;
