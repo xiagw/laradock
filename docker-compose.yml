@@ -447,6 +447,7 @@ services:
         - "${VARNISH_BACKEND_PORT}:81"
       extra_hosts:
         - "dockerhost:${DOCKER_HOST_IP}"
+        - "host.docker.internal:host-gateway"
       # depends_on:
       #   - php-fpm
       networks:
@@ -1057,6 +1058,8 @@ services:
         - ${DATA_PATH_HOST}/meilisearch:/data.ms
       ports:
         - "${MEILISEARCH_HOST_PORT}:7700"
+      environment:
+        - MEILI_MASTER_KEY=${MEILISEARCH_KEY}
       networks:
         - frontend
         - backend
