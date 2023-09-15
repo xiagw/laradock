@@ -1,3 +1,5 @@
+[TOC]
+
 ## 服务器/网络/配置推荐
 - CPU 处理器     >= 2 core(核)
 - MEM 内存       >= 8 GB
@@ -8,14 +10,15 @@
 - 防火墙/安全组/开放端口 22/80/443
 
 ## 软件/系统/版本
-- (单机)操作系统： Ubuntu 22.04（推荐），CentOS 7，AliyunOS 等 Linux 系统
-- (集群)操作系统： Kubernetes (根据云厂商自动推荐)
+- (单机)操作系统： Ubuntu 22.04(推荐), CentOS, Anolis OS, RedHat, Debian, Rocky 等 Linux 系统
+- (集群)操作系统： Kubernetes (根据云厂商自动推荐lifseaOS/或自行安排)
 - 极不推荐 windows 系统
-- Nginx >= 1.16
+- Nginx >= 1.18
 - PHP   >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)
 - JDK   >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB)
+- JDK 推荐 openjdk 或 amazoncorretto
 - MySQL >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB)
-- Redis >= 5.0（内存 >=1GB）
+- Redis >= 5.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)
 
 
 ## 部署方式一 容器/单机/多机，docker compose 部署参考（推荐）
@@ -24,10 +27,13 @@
 # export http_proxy=http://x.x.x.x:1080
 # export https_proxy=http://x.x.x.x:1080
 ## 安装环境, docker/php-7.1/jdk-1.8 默认安装路径为当前 $PWD/docker/laradock 或 $HOME/docker/laradock
+## 默认：1. 下载并导入php-fpm镜像 ；2. 其他镜像使用 docker build 创建 3. 如遇docker hub问题需下载所有镜像 后面加跟参数 download_image
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php redis mysql
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
+```
 
-
+### 操作容器简要方式
+```sh
 ## !!! 必须进入此目录 !!! 操作容器
 cd $HOME/docker/laradock ## 或 cd $PWD/docker/laradock
 ## 启动服务 php-fpm
@@ -58,9 +64,6 @@ cd $HOME/docker/laradock/spring/
 cd $HOME/docker/laradock/nginx/sites/
 ## 若需要修改目录，例如 $HOME/docker/laradock/spring2 等等，则修改相应 nginx 配置并创建相应目录，然后再修改调整 $HOME/docker/laradock/docker-compose.override.yml
 
-## nginx 配置文件在线链接
-https://gitee.com/xiagw/laradock/tree/in-china/nginx/sites
-
 ## nginx 访问日志/错误日志
 cd $HOME/docker/laradock/logs/nginx/
 
@@ -89,6 +92,9 @@ helm upgrade spring  /path/to/helm/project_app/  --install  --history-max 1 \
 --set image.repository=registry-vpc.cn-hangzhou.aliyuncs.com/ns/repo \
 --set image.tag=spring-b962e447-1669878102 \
 --set image.pullPolicy=Always --timeout 120s
+## 5. 使用 helm/kubectl 或 k9s 查看/操作 pods/services
+helm -n dev list
+kubectl -n dev get all
 ```
 
 ## 部署方式三 单机/多机，传统方式部署参考（不推荐）
