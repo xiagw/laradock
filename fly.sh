@@ -579,7 +579,7 @@ _set_args() {
         php | php-fpm | fpm)
             args+=(php-fpm)
             ;;
-        [5-10].[0-9])
+        [0-9].[0-9])
             php_ver=${1:-7.1}
             ;;
         upgrade)
