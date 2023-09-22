@@ -12,14 +12,14 @@ _default_key() {
         echo "Not found $default_key and $default_pem, create..."
         openssl genrsa -out "$default_key" 2048
         openssl req -new -key "$default_key" -out "$default_csr" -subj "/CN=default/O=default/C=CN"
-        openssl x509 -req -days 365 -in "$default_csr" -signkey "$default_key" -out "$default_pem"
+        openssl x509 -req -days 3650 -in "$default_csr" -signkey "$default_key" -out "$default_pem"
     fi
 
     if [[ ! -f $dhparams || $(stat -c %s $dhparams) -lt 1500 ]]; then
         openssl dhparam -dsaparam -out $dhparams 4096
     fi
 
-    chown nginx:nginx $ssl_dir/*.key /var/log/nginx
+    chown nginx $ssl_dir/*.key
     chmod 600 $ssl_dir/*.key
 }
 
@@ -42,7 +42,7 @@ _issue_cert() {
             acme.sh --renew -d "$domain"
         else
             ## create cert / 创建证书
-            acme.sh --issue -d "$domain" -w /var/www/html
+            acme.sh --issue -d "$domain" -w "$html_dir"
         fi
         if [[ $c = 1 ]]; then
             ## The First domain to be defalut.key / 第一个（或只有一个）域名作为默认域名
@@ -63,7 +63,7 @@ main() {
     _issue_cert
 
     html_dir=/var/www/html
-    log_dir=/app/log/nginx
+    log_dir=/var/log/nginx
     [ -d $html_dir/.well-known/acme-challenge ] || mkdir -p $html_dir/.well-known/acme-challenge
     [ -d $html_dir/tp ] || mkdir -p $html_dir/tp
     [ -d $html_dir/s ] || mkdir -p $html_dir/s
@@ -78,7 +78,7 @@ main() {
     [ -f $html_dir/index.html ] || date >$html_dir/index.html
 
     ## nginx 4xx 5xx
-    printf 'error page 5xx' >/usr/share/nginx/html/50x.html
+    # printf 'error page 5xx' >/usr/share/nginx/html/50x.html
     if [ ! -f $html_dir/4xx.html ]; then
         printf 'Error page: 4xx' >$html_dir/4xx.html
     fi
@@ -88,8 +88,8 @@ main() {
 
     ## remove log files / 自动清理超过7天的旧日志文件
     while [ -d $log_dir ]; do
-        find $log_dir -type f -iname '*.log' -ctime +7 -print0 | xargs -t -0 rm -f
-        sleep 86400
+        find $log_dir -type f -iname '*.log' -ctime +7 -print0 | xargs -0 rm -f
+        sleep 1d
     done &
 
     # Start crond in background / 开启定时任务 crond
