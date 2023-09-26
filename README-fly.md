@@ -8,21 +8,21 @@
 | Disk 系统硬盘 |  >= 60 GB  |
 | Net 网络带宽 |  >= 100M(按量付费) ， 或 网络带宽 >= 10M(固定带宽付费) |
 | 私有云服务器 | 带宽请自行根据实际业务情况配置网络带宽 |
-| 共有云服务器 | （初期）建议所有采购项目初期使用“按量付费” |
-| 共有云服务器 | （初期后）再根据每日账单确定采购“固定消费”套餐 |
-| 防火墙/安全组/开放端口 |  22/80/443 |
+| 公有云服务器 | 初期： 建议所有采购项目初期使用“按量付费”(一周/一月) |
+| 公有云服务器 | 初期后： 根据每日账单确定采购“固定消费”套餐 |
+| 防火墙/安全组 |  开放TCP端口 22/80/443 |
 
 ## 软件/系统/版本
 |  软件  | 配置推荐 |
 | :------------ | :------------ |
 | Nginx | >= 1.18 |
 | PHP | >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB) |
-| JDK | >= 1.8 (openjdk/amazoncorretto) (CPU >=2核，内存 >=2GB，存储 >=20GB) |
+| JDK | >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB) (openjdk/amazoncorretto) |
 | MySQL | >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB) |
 | Redis | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB) |
-| `单机`操作系统 | Ubuntu 22.04 (推荐), CentOS, Anolis OS, RedHat, Debian, Rocky 等 Linux |
-| `集群`操作系统 | Kubernetes (根据云厂商自动推荐的 lifseaOS 或自行安排) |
-| `不推荐`系统 | windows 系统 |
+| 单机 | Ubuntu 22.04 (推荐), CentOS, Anolis OS, RedHat, Debian, Rocky 等 Linux |
+| 集群 | Kubernetes (根据云厂商自动推荐的 lifseaOS 或自行安排) |
+| 不推荐 | windows 系统 |
 
 
 ## 部署方式一-容器/单机/多机docker-compose部署参考-推荐
@@ -31,8 +31,8 @@
 # export http_proxy=http://x.x.x.x:1080
 # export https_proxy=http://x.x.x.x:1080
 
-## 1. 默认安装环境, docker/php-7.1/jdk-1.8
-## 2. 默认安装路径为当前 $PWD/docker/laradock 或 $HOME/docker/laradock
+## 1. 默认安装环境, docker/nginx/redis/mysql/php-7.1/jdk-1.8
+## 2. 默认安装路径为 $PWD/docker/laradock 或 $HOME/docker/laradock
 ## 3. 安装程序默认下载并导入php-fpm镜像
 ## 4. 其他镜像使用 docker build 创建
 ## 5. 如遇访问不到 hub.docker.com 问题需下载所有镜像 后面加跟参数 download_image
@@ -57,9 +57,9 @@ curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx 
 | https://www.xxx.com/spring-uri/ | $HOME/docker/laradock/spring/ |
 
 
-|  配置类型  | 配置文件对应服务器文件系统目录 |
+| nginx 配置  | 对应服务器文件系统目录 |
 | :------------ | :------------ |
-| nginx | $HOME/docker/laradock/nginx/sites/ |
+| nginx 配置 | $HOME/docker/laradock/nginx/sites/ |
 | nginx 日志 | $HOME/docker/laradock/logs/nginx/ |
 
 
@@ -139,7 +139,7 @@ systemctl start redis
 exec run.sh start
 ```
 
-## Windows服务器部署
+## 部署Windows服务器-不推荐
 1. Download URL: https://cdn.flyh6.com/docker/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
 1. 文件存放一般位于 C:\xampp\htdocs\ （此目录对应站点根目录，例如 http://xxx.yyy.com/）
@@ -152,7 +152,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.z
 ```
 
 
-## 传递临时文件/在线公开方式-非加密传输
+## 公网传送临时文件-非加密传输
 - 文件非机密内容，可以公开传送
 - 文件敏感性低的可以压缩文件并加复杂密码
 - 禁止传递敏感性高的文件
