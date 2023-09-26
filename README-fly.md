@@ -43,18 +43,18 @@ docker compose up -d nginx redis mysql spring
 
 ## docker 目录说明
 
-## 站点根目录
-## (https://www.xxx.com/)
+## 站点根目录 /
+## (例如 https://www.xxx.com/ 对应服务器文件系统以下目录 )
 cd $HOME/docker/html/
 
 ## 前端： VUE/TS 前端静态文件 （若开启 CDN 则只需针对此目录）
-## (https://www.xxx.com/static/)
+## (例如 https://www.xxx.com/static/ 对应服务器文件系统以下目录)
 cd $HOME/docker/html/static/
-## 或者 (https://www.xxx.com/s/)
+## 或者 (例如 https://www.xxx.com/s/ 对应服务器文件系统以下目录)
 # cd $HOME/docker/html/s/
 
 ## 后端： PHP 文件存放目录，假如多个 PHP 项目，可以按此规范，例如： $HOME/docker/html/tp/app1, $HOME/docker/html/tp/app2 等。
-## (https://www.xxx.com/tp/)
+## (例如 https://www.xxx.com/tp/ 对应服务器文件系统以下目录)
 cd $HOME/docker/html/tp/
 
 ## 后端： Jar 程序文件存放目录
