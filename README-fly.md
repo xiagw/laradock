@@ -1,39 +1,48 @@
 [TOC]
 
-## 服务器/网络/配置推荐
-- CPU 处理器     >= 2 core(核)
-- MEM 内存       >= 8 GB
-- Disk 系统硬盘   >= 60 GB
-- Net 网络带宽    >= 100M(按量付费) ， 或 网络带宽 >= 10M(固定带宽付费)
-- 非云服务器，带宽请自行根据实际业务情况配置网络带宽
-- 建议所有采购项目初期使用“按量付费”，之后再根据每日账单确定采购“固定消费”套餐
-- 防火墙/安全组/开放端口 22/80/443
+## 硬件/服务器/网络/配置推荐
+|  服务器  | 配置推荐 |
+| :------------ | :------------ |
+| CPU 处理器 | >= 2 core(核) |
+| MEM 内存 | >= 8 GB  |
+| Disk 系统硬盘 |  >= 60 GB  |
+| Net 网络带宽 |  >= 100M(按量付费) ， 或 网络带宽 >= 10M(固定带宽付费) |
+| 私有云服务器 | 带宽请自行根据实际业务情况配置网络带宽 |
+| 共有云服务器 | （初期）建议所有采购项目初期使用“按量付费” |
+| 共有云服务器 | （初期后）再根据每日账单确定采购“固定消费”套餐 |
+| 防火墙/安全组/开放端口 |  22/80/443 |
 
 ## 软件/系统/版本
-- (单机)操作系统： Ubuntu 22.04(推荐), CentOS, Anolis OS, RedHat, Debian, Rocky 等 Linux 系统
-- (集群)操作系统： Kubernetes (根据云厂商自动推荐lifseaOS/或自行安排)
-- 极不推荐 windows 系统
-- Nginx >= 1.18
-- PHP   >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)
-- JDK   >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB)
-- JDK 推荐 openjdk 或 amazoncorretto
-- MySQL >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB)
-- Redis >= 5.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)
+|  软件  | 配置推荐 |
+| :------------ | :------------ |
+| Nginx | >= 1.18 |
+| PHP | >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB) |
+| JDK | >= 1.8 (openjdk/amazoncorretto) (CPU >=2核，内存 >=2GB，存储 >=20GB) |
+| MySQL | >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB) |
+| Redis | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB) |
+| `单机`操作系统 | Ubuntu 22.04 (推荐), CentOS, Anolis OS, RedHat, Debian, Rocky 等 Linux |
+| `集群`操作系统 | Kubernetes (根据云厂商自动推荐的 lifseaOS 或自行安排) |
+| `不推荐`系统 | windows 系统 |
 
 
 ## 部署方式一-容器/单机/多机docker-compose部署参考-推荐
 ```sh
-## 假如需要代理
+## 假如需要代理出公网，设置环境变量
 # export http_proxy=http://x.x.x.x:1080
 # export https_proxy=http://x.x.x.x:1080
-## 安装环境, docker/php-7.1/jdk-1.8 默认安装路径为当前 $PWD/docker/laradock 或 $HOME/docker/laradock
-## 默认：1. 下载并导入php-fpm镜像 ；2. 其他镜像使用 docker build 创建 3. 如遇docker hub问题需下载所有镜像 后面加跟参数 download_image
+
+## 1. 默认安装环境, docker/php-7.1/jdk-1.8
+## 2. 默认安装路径为当前 $PWD/docker/laradock 或 $HOME/docker/laradock
+## 3. 安装程序默认下载并导入php-fpm镜像
+## 4. 其他镜像使用 docker build 创建
+## 5. 如遇访问不到 hub.docker.com 问题需下载所有镜像 后面加跟参数 download_image
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php redis mysql
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
+## curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql download_image
 ```
 
 
-## 站点与服务器目录说明
+### docker部署方式站点URL对应服务器目录说明
 |  站点 URL 目录  | 对应服务器文件系统目录 |
 | :------------ | :------------ |
 | https://www.xxx.com/ | $HOME/docker/html/ |
@@ -59,6 +68,7 @@ curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx 
 ## !!! 必须进入此目录 !!! 操作容器
 cd $HOME/docker/laradock
 ## 或 cd $PWD/docker/laradock
+
 ## 启动服务 php-fpm
 docker compose up -d nginx redis mysql php-fpm
 ## 启动服务 java (spring)
@@ -90,6 +100,7 @@ helm upgrade spring  /path/to/helm/project_app/  --install  --history-max 1 \
 --set image.repository=registry-vpc.cn-hangzhou.aliyuncs.com/ns/repo \
 --set image.tag=spring-b962e447-1669878102 \
 --set image.pullPolicy=Always --timeout 120s
+
 ## 5. 使用 helm/kubectl 或 k9s 查看/操作 pods/services
 helm -n dev list
 kubectl -n dev get all
