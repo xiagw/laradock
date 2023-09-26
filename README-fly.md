@@ -21,7 +21,7 @@
 - Redis >= 5.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)
 
 
-## 部署方式一 容器/单机/多机，docker compose 部署参考（推荐）
+## 部署方式一-容器/单机/多机docker-compose部署参考-推荐
 ```sh
 ## 假如需要代理
 # export http_proxy=http://x.x.x.x:1080
@@ -32,40 +32,37 @@ curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx 
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
 ```
 
-### 操作容器简要方式
+
+## 站点与服务器目录说明
+|  站点 URL 目录  | 对应服务器文件系统目录 |
+| :------------ | :------------ |
+| https://www.xxx.com/ | $HOME/docker/html/ |
+| 前端： VUE/TS 前端静态文件  | 若开启静态内容的 CDN 则只需针对此目录开启 |
+| https://www.xxx.com/static/ | $HOME/docker/html/static/ |
+| https://www.xxx.com/s/ |  $HOME/docker/html/s/ |
+| 后端： PHP 文件存放目录 | （可多个项目） |
+| https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01 |
+| https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02 |
+| https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03 |
+| 后端： Jar 程序文件存放目录 | （可多个jar文件） |
+| https://www.xxx.com/spring-uri/ | $HOME/docker/laradock/spring/ |
+
+
+|  配置类型  | 配置文件对应服务器文件系统目录 |
+| :------------ | :------------ |
+| nginx | $HOME/docker/laradock/nginx/sites/ |
+| nginx 日志 | $HOME/docker/laradock/logs/nginx/ |
+
+
+### 服务器操作容器简要方式
 ```sh
 ## !!! 必须进入此目录 !!! 操作容器
-cd $HOME/docker/laradock ## 或 cd $PWD/docker/laradock
+cd $HOME/docker/laradock
+## 或 cd $PWD/docker/laradock
 ## 启动服务 php-fpm
 docker compose up -d nginx redis mysql php-fpm
 ## 启动服务 java (spring)
 docker compose up -d nginx redis mysql spring
-
-## docker 目录说明
-
-## 站点根目录 /
-## (例如 https://www.xxx.com/ 对应服务器文件系统以下目录 )
-cd $HOME/docker/html/
-
-## 前端： VUE/TS 前端静态文件 （若开启 CDN 则只需针对此目录）
-## (例如 https://www.xxx.com/static/ 对应服务器文件系统以下目录)
-cd $HOME/docker/html/static/
-## 或者 (例如 https://www.xxx.com/s/ 对应服务器文件系统以下目录)
-# cd $HOME/docker/html/s/
-
-## 后端： PHP 文件存放目录，假如多个 PHP 项目，可以按此规范，例如： $HOME/docker/html/tp/app1, $HOME/docker/html/tp/app2 等。
-## (例如 https://www.xxx.com/tp/ 对应服务器文件系统以下目录)
-cd $HOME/docker/html/tp/
-
-## 后端： Jar 程序文件存放目录
-cd $HOME/docker/laradock/spring/
-
-## nginx 配置文件存放目录， 修改配置文件 d.php.inc, d.java.inc, app*.conf
-cd $HOME/docker/laradock/nginx/sites/
-## 若需要修改目录，例如 $HOME/docker/laradock/spring2 等等，则修改相应 nginx 配置并创建相应目录，然后再修改调整 $HOME/docker/laradock/docker-compose.override.yml
-
-## nginx 访问日志/错误日志
-cd $HOME/docker/laradock/logs/nginx/
 
 ##  恢复文件权限
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp
@@ -75,10 +72,11 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/spring
 ## 如果有负载均衡，单台/多台服务器
 1. 设置服务器组（单台/多台）
 1. 设置负载均衡监听端口 80/443，指向服务器组
+1. 若有安全组则需设置安全组
 
 ```
 
-## 部署方式二 容器/ K8S 集群， helm 部署参考（推荐）
+## 部署方式二-容器/K8S集群-helm-部署参考-推荐
 ```sh
 ## 1. 前提条件，确保命令 kubectl / helm 工作正常
 ## 2. 使用命令 helm create <project_name> 生成 helm 文件， 例如:
@@ -97,7 +95,7 @@ helm -n dev list
 kubectl -n dev get all
 ```
 
-## 部署方式三 单机/多机，传统方式部署参考（不推荐）
+## 部署方式三-单机/多机传统方式部署参考-不推荐
 ```sh
 ### 安装 jdk (参考)
 # yum install -y java-1.8.0-openjdk
@@ -130,7 +128,7 @@ systemctl start redis
 exec run.sh start
 ```
 
-## 部署  Windows 服务器
+## Windows服务器部署
 1. Download URL: https://cdn.flyh6.com/docker/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
 1. 文件存放一般位于 C:\xampp\htdocs\ （此目录对应站点根目录，例如 http://xxx.yyy.com/）
@@ -143,7 +141,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.z
 ```
 
 
-## 传递临时文件/在线公开方式（不加密）
+## 传递临时文件/在线公开方式-非加密传输
 - 文件非机密内容，可以公开传送
 - 文件敏感性低的可以压缩文件并加复杂密码
 - 禁止传递敏感性高的文件
@@ -156,4 +154,3 @@ https://wormhole.app/1PZKN#ti-XEHaU2ZpXi6MHctjVxg
 
 文叔叔 - 传文件，找文叔叔（大文件、永不限速）
 https://www.wenshushu.cn/
-
