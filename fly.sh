@@ -74,9 +74,19 @@ _get_distribution() {
     fi
 }
 
+_is_root() {
+    if [ "$(id -u)" -eq 0 ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 _check_sudo() {
-    [[ "$check_sudo_flag" -eq 1 ]] && return 0
-    if [ "$USER" != "root" ]; then
+    ${already_check_sudo:-false} && return 0
+    if _is_root; then
+        unset pre_sudo
+    else
         if sudo -l -U "$USER"; then
             pre_sudo="sudo"
         else
@@ -95,7 +105,7 @@ _check_sudo() {
         _msg time "not found apt/yum/dnf, exit 1"
         return 1
     fi
-    check_sudo_flag=1
+    already_check_sudo=true
 }
 
 _check_dependence() {
@@ -108,21 +118,24 @@ _check_dependence() {
     ## install docker/compose
     _command_exists docker && return
 
-    if [[ "$set_sysctl" -eq 1 ]]; then
-        echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
+    if ${set_sysctl:-false}; then
+        grep '^vm.overcommit_memory' /etc/sysctl.conf ||
+            echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
     fi
     ## aliyun linux fake centos
     if grep -q '^ID=.*alinux.*' /etc/os-release; then
         $pre_sudo sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
-        aliyun_os=1
+        aliyun_os=true
     fi
     get_docker=https://cdn.flyh6.com/docker/get-docker.sh
-    if [[ "${USE_ALIYUN:-true}" == true ]]; then
+    if ${aliyun_mirror:-true}; then
         curl -fsSL --connect-timeout 10 $get_docker | $pre_sudo bash -s - --mirror Aliyun
     else
         curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
     fi
-    if [[ "$USER" != "root" ]]; then
+    if _is_root; then
+        :
+    else
         _msg time "Add user \"$USER\" to group docker."
         $pre_sudo usermod -aG docker "$USER"
         echo '############################################'
@@ -143,7 +156,7 @@ _check_dependence() {
     $pre_sudo systemctl enable docker
     $pre_sudo systemctl start docker
     ## revert aliyun linux
-    if [[ ${aliyun_os:-0} -eq 1 ]]; then
+    if ${aliyun_os:-false}; then
         $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     fi
     return 0
@@ -267,7 +280,9 @@ _set_env_php_ver() {
 }
 
 _get_image() {
-    if [[ ${exec_download_image:-0} -ne 1 ]]; then
+    if ${exec_download_image:-false}; then
+        :
+    else
         return
     fi
     image_name=$1
@@ -321,7 +336,7 @@ _install_zsh() {
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
         _msg warn "Found $HOME/.oh-my-zsh, skip."
     else
-        if [[ "${IN_CHINA:-true}" == true ]]; then
+        if ${IN_CHINA:-true}; then
             git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
         else
             bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
@@ -329,9 +344,8 @@ _install_zsh() {
         cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
         sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
         sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
-    # sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
-    # sed -i -e 's/robbyrussell/ys/' ~/.zshrc
     fi
+    $cmd install -yqq fzf && sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
 }
 
 _start_manual() {
@@ -510,7 +524,7 @@ _build_image_php() {
 
     root_opt=root/opt
     [ -d root ] || mkdir -p $root_opt
-    if [[ "${build_remote:-false}" == true ]]; then
+    if ${build_remote:-false}; then
         curl -fLo Dockerfile.base $url_laradock_raw/php-fpm/Dockerfile.base
         curl -fLo $root_opt/nginx.conf $url_laradock_raw/php-fpm/$root_opt/nginx.conf
         curl -fLo $root_opt/build.sh $url_laradock_raw/php-fpm/$root_opt/build.sh
@@ -521,13 +535,13 @@ _build_image_php() {
     if docker images | grep "fly/php.*${php_ver}-base"; then
         _msg time "ignore build base image."
     else
-        if [[ "${build_remote:-false}" == true ]]; then
+        if ${build_remote:-false}; then
             $build_opt -t "$image_tag_base" -f Dockerfile.base .
         else
             $build_opt -t "$image_tag_base" -f php-fpm/Dockerfile.base php-fpm/
         fi
     fi
-    if [[ "${build_remote:-false}" == true ]]; then
+    if ${build_remote:-false}; then
         echo "FROM $image_tag_base" >Dockerfile
         $build_opt -t "$image_tag" .
     else
@@ -542,7 +556,7 @@ _build_image_java() {
     image_tag=fly/spring
 
     [ -d root ] || mkdir -p root/opt
-    if [[ "${build_remote:-false}" == true ]]; then
+    if ${build_remote:-false}; then
         curl -fLo Dockerfile $url_deploy_raw/conf/dockerfile/Dockerfile.java
         curl -fLo root/opt/build.sh $url_deploy_raw/conf/dockerfile/root/build.sh
         curl -fLo root/opt/run.sh $url_deploy_raw/conf/dockerfile/root/run.sh
@@ -568,7 +582,7 @@ _set_args() {
             ;;
         redis)
             args+=(redis)
-            set_sysctl=1
+            set_sysctl=true
             ;;
         nginx)
             args+=(nginx)
@@ -583,15 +597,16 @@ _set_args() {
             php_ver=${1:-7.1}
             ;;
         upgrade)
-            [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=1
-            [[ "${args[*]}" == *spring* ]] && exec_upgrade_java=1
-            enable_check=0
+            [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=true
+            [[ "${args[*]}" == *spring* ]] && exec_upgrade_java=true
+            enable_check=false
             ;;
         github | not_china | not_cn | ncn)
-            IN_CHINA='false'
+            IN_CHINA=false
+            aliyun_mirror=false
             ;;
         build)
-            exec_build_image=1
+            exec_build_image=true
             ;;
         build_remote)
             build_remote=true
@@ -600,10 +615,10 @@ _set_args() {
             build_opt="docker build --no-cache"
             ;;
         download_image)
-            exec_download_image=1
+            exec_download_image=true
             ;;
         install_docker_without_aliyun)
-            USE_ALIYUN='false'
+            aliyun_mirror='false'
             ;;
         force_get_image)
             force_get_image='true'
@@ -618,33 +633,33 @@ _set_args() {
             args+=(usvn)
             ;;
         install_zsh | zsh)
-            exec_install_zsh=1
-            enable_check=1
+            exec_install_zsh=true
+            enable_check=true
             ;;
         install_lsyncd | lsync | lsyncd)
-            exec_install_lsyncd=1
-            enable_check=0
+            exec_install_lsyncd=true
+            enable_check=false
             ;;
         info)
-            exec_get_redis_mysql_info=1
-            enable_check=0
+            exec_get_redis_mysql_info=true
+            enable_check=false
             ;;
         mysqlcli)
-            exec_mysql_cli=1
-            enable_check=0
+            exec_mysql_cli=true
+            enable_check=false
             ;;
         rediscli)
-            exec_redis_cli=1
-            enable_check=0
+            exec_redis_cli=true
+            enable_check=false
             ;;
         test)
-            exec_test_nginx=1
-            exec_test_php=1
-            enable_check=0
+            exec_test_nginx=true
+            exec_test_php=true
+            enable_check=false
             ;;
         reset | clean | clear)
-            exec_reset=1
-            enable_check=0
+            exec_reset=true
+            enable_check=false
             ;;
         *)
             _usage
@@ -663,7 +678,7 @@ main() {
 
     url_fly_cdn="http://cdn.flyh6.com/docker"
 
-    if [[ "${IN_CHINA}" == true ]]; then
+    if ${IN_CHINA:-true}; then
         url_laradock_git=https://gitee.com/xiagw/laradock.git
         url_laradock_raw=https://gitee.com/xiagw/laradock/raw/in-china
         url_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw/main
@@ -687,23 +702,23 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
-    if [[ "${exec_install_zsh:-0}" -eq 1 ]]; then
+    if ${exec_install_zsh:-false}; then
         _install_zsh
         return
     fi
-    if [[ "${exec_install_lsyncd:-0}" -eq 1 ]]; then
+    if ${exec_install_lsyncd:-false}; then
         _install_lsyncd
         return
     fi
-    if [[ $exec_upgrade_java -eq 1 ]]; then
+    if ${exec_upgrade_java:-false}; then
         _upgrade_java
         return
     fi
-    if [[ $exec_upgrade_php -eq 1 ]]; then
+    if ${exec_upgrade_php:-false}; then
         _upgrade_php
         return
     fi
-    if [[ "${exec_get_redis_mysql_info:-0}" -eq 1 ]]; then
+    if ${exec_get_redis_mysql_info:-false}; then
         _get_redis_mysql_info
         return
     fi
@@ -721,7 +736,7 @@ main() {
         fi
     fi
 
-    if [[ "${exec_reset:-0}" -eq 1 ]]; then
+    if ${exec_reset:-false}; then
         _msg step "reset docker"
         (
             cd "$laradock_path"
@@ -732,7 +747,7 @@ main() {
         $pre_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
         return
     fi
-    if [[ "${exec_build_image:-0}" -eq 1 ]]; then
+    if ${exec_build_image:-false}; then
         build_opt="${build_opt:-docker build}"
         if [[ "${args[*]}" == *nginx* ]]; then
             _build_image_nginx
@@ -743,23 +758,23 @@ main() {
         if [[ "${args[*]}" == *spring* ]]; then
             _build_image_java
         fi
-        if [[ "${build_remote:-false}" == true ]]; then
+        if ${build_remote:-false}; then
             _msg warn "safe remove \"rm -rf root/ Dockerfile\"."
         fi
         return
     fi
 
-    if [[ "${exec_mysql_cli:-0}" -eq 1 ]]; then
+    if ${exec_mysql_cli:-false}; then
         _mysql_cli
         return
     fi
 
-    if [[ "${exec_redis_cli:-0}" -eq 1 ]]; then
+    if ${exec_redis_cli:-false}; then
         _redis_cli
         return
     fi
 
-    if [[ "${enable_check:-1}" -eq 1 ]]; then
+    if ${enable_check:-true}; then
         _check_sudo
         _check_timezone
         _check_dependence
@@ -768,7 +783,7 @@ main() {
     fi
 
     ## if install docker and add normal user (not root) to group "docker"
-    if [[ "$need_logout" -eq 1 ]]; then
+    if ${need_logout:-false}; then
         return
     fi
 
@@ -778,7 +793,7 @@ main() {
         nginx)
             url_image="$url_fly_cdn/laradock-nginx.tar.gz"
             _get_image nginx
-            exec_test_nginx=1
+            exec_test_nginx=true
             ;;
         mysql)
             cat >"$laradock_path"/mysql/docker-entrypoint-initdb.d/create.defautldb.sql <<'EOF'
@@ -815,14 +830,14 @@ EOF
             _set_env_php_ver
             # _set_file_mode
             _set_nginx_php
-            exec_download_image=1
+            exec_download_image=true
             _get_image php-fpm
-            exec_test_php=1
+            exec_test_php=true
             ;;
         esac
     done
 
-    if [[ "$manual_start" == true ]]; then
+    if ${manual_start:-false}; then
         _start_manual
         return
     else
@@ -831,15 +846,15 @@ EOF
 
     _msg step "check service"
 
-    if [[ "${exec_test_nginx:-0}" -eq 1 ]]; then
+    if ${exec_test_nginx:-false}; then
         _test_nginx
     fi
 
-    if [[ "${exec_test_php:-0}" -eq 1 ]]; then
+    if ${exec_test_php:-falst}; then
         _test_php
     fi
 
-    if [[ "${exec_test_java:-0}" -eq 1 ]]; then
+    if ${exec_test_java:-false}; then
         _test_java
     fi
 }
