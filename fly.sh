@@ -3,6 +3,8 @@
 _msg() {
     local color_on
     local color_off='\033[0m' # Text Reset
+    duration=$SECONDS
+
     case "${1:-none}" in
     red | error | erro) color_on='\033[0;31m' ;;       # Red
     green | info) color_on='\033[0;32m' ;;             # Green
@@ -11,30 +13,22 @@ _msg() {
     purple | question | ques) color_on='\033[0;35m' ;; # Purple
     cyan) color_on='\033[0;36m' ;;                     # Cyan
     orange) color_on='\033[1;33m' ;;
+    step)
+        ((++STEP))
+        color_on="\033[0;36m[${STEP}] $(date +%Y%m%d-%u-%T.%3N) \033[0m"
+        color_off=" $((duration / 3600))h$(((duration / 60) % 60))m$((duration % 60))s"
+        ;;
     time)
-        if [ -z "$STEP" ]; then
-            color_on="[+] $(date +%Y%m%d-%u-%T.%3N), "
-        else
-            color_on="[$(for ((i = 1; i <= ${#STEP}; i++)); do echo -n '+'; done)] $(date +%Y%m%d-%u-%T.%3N), "
-        fi
-        color_off=
-        ;;
-    step | timestep)
-        STEP=$((${STEP:-0} + 1))
-        color_on="\033[0;36m[${STEP}] $(date +%Y%m%d-%u-%T.%3N), \033[0m"
-        ;;
-    stepend | end)
-        color_on="[$(for ((i = 1; i <= ${#STEP}; i++)); do echo -n '+'; done)] $(date +%Y%m%d-%u-%T.%3N), "
-        color_off=' ... end'
+        color_on="[$(for ((i = 1; i <= ${#STEP}; i++)); do echo -n '+'; done)] $(date +%Y%m%d-%u-%T.%3N) "
+        color_off=" $((duration / 3600))h$(((duration / 60) % 60))m$((duration % 60))s"
         ;;
     log)
         shift
-        echo "$(date +%Y%m%d-%u-%T.%3N), $*" >>"$me_log"
+        echo "$(date +%Y%m%d-%u-%T.%3N) $*" >>"$me_log"
         return
         ;;
     *)
-        color_on=
-        color_off=
+        unset color_on color_off
         ;;
     esac
     [ "$#" -gt 1 ] && shift
@@ -672,6 +666,7 @@ _set_args() {
 main() {
     _set_args "$@"
     set -e
+    SECONDS=0
     me_name="$(basename "$0")"
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
@@ -688,13 +683,13 @@ main() {
         url_deploy_raw=https://github.com/xiagw/deploy.sh/raw/main
     fi
 
-    laradock_path_home="$HOME"/docker/laradock
+    laradock_home="$HOME"/docker/laradock
     laradock_current="$me_path"
     if [[ -f "$laradock_current/fly.sh" && -f "$laradock_current/.env.example" ]]; then
         ## 从本机已安装目录执行 fly.sh
         laradock_path="$laradock_current"
-    elif [[ -f "$laradock_path_home/fly.sh" && -f "$laradock_path_home/.env.example" ]]; then
-        laradock_path=$laradock_path_home
+    elif [[ -f "$laradock_home/fly.sh" && -f "$laradock_home/.env.example" ]]; then
+        laradock_path=$laradock_home
     else
         ## 从远程执行 fly.sh , curl "remote_url" | bash -s args
         laradock_path="$laradock_current"/docker/laradock
@@ -809,6 +804,10 @@ CREATE DATABASE IF NOT EXISTS `flyprod` COLLATE 'utf8mb4_general_ci' ;
 GRANT ALL ON `flyprod`.* TO 'flyprod'@'%' ;
 GRANT ALL ON `defaultdb`.* TO 'flyprod'@'%' ;
 EOF
+            if [ ! -d "$laradock_path"/../../laradock-data/mysqlbak ]; then
+                $pre_sudo mkdir -p "$laradock_path"/../../laradock-data/mysqlbak
+                $pre_sudo chown 1005 "$laradock_path"/../../laradock-data/mysqlbak
+            fi
             url_image="$url_fly_cdn/laradock-mysql.tar.gz"
             _get_image mysql
             url_image="$url_fly_cdn/laradock-mysqlbak.tar.gz"

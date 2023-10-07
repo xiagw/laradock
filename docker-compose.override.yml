@@ -58,7 +58,7 @@ services:
       volumes:
         - ${DATA_PATH_HOST}/mysql57:/var/lib/mysql
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
-        - ${DATA_PATH_HOST}/mysql_backup:/backup
+        - ${DATA_PATH_HOST}/mysqlbak:/backup
       ports:
         - "${MYSQL_PORT_57:-3307}:3306"
       networks:
@@ -77,7 +77,7 @@ services:
       environment:
         - TZ=${WORKSPACE_TIMEZONE}
       volumes:
-        - ${DATA_PATH_HOST}/mysql_backup:/backup
+        - ${DATA_PATH_HOST}/mysqlbak:/backup
         # - ./mysql/my.${MYSQL_VERSION}.cnf:/etc/mysql/conf.d/my.cnf
       networks:
         - backend
@@ -105,7 +105,7 @@ services:
         - DB_DUMP_BY_SCHEMA=true
         # - DB_DUMP_DEBUG=true
       volumes:
-        - ${DATA_PATH_HOST}/mysql_backup:/backup
+        - ${DATA_PATH_HOST}/mysqlbak:/backup
       networks:
         - backend
         - frontend
