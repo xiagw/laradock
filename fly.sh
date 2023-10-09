@@ -701,14 +701,8 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
-    _check_dependence
-
-    if ${exec_install_zsh:-false}; then
-        _install_zsh
-        return
-    fi
-    if ${exec_install_lsyncd:-false}; then
-        _install_lsyncd
+    if ${exec_get_redis_mysql_info:-false}; then
+        _get_redis_mysql_info
         return
     fi
     if ${exec_upgrade_java:-false}; then
@@ -719,8 +713,15 @@ main() {
         _upgrade_php
         return
     fi
-    if ${exec_get_redis_mysql_info:-false}; then
-        _get_redis_mysql_info
+
+    _check_dependence
+
+    if ${exec_install_zsh:-false}; then
+        _install_zsh
+        return
+    fi
+    if ${exec_install_lsyncd:-false}; then
+        _install_lsyncd
         return
     fi
 
