@@ -405,7 +405,7 @@ _test_php() {
             "$path_nginx_root/test.php"
     fi
 
-    _set_nginx_php
+    # _set_nginx_php
 
     _test_nginx "test.php"
 }
@@ -831,7 +831,7 @@ EOF
             url_image="$url_fly_cdn/laradock-php-fpm.${php_ver}.tar.gz"
             _set_env_php_ver
             # _set_file_mode
-            _set_nginx_php
+            # _set_nginx_php
             exec_download_image=true
             _get_image php-fpm
             exec_test_php=true
