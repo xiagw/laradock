@@ -291,11 +291,12 @@ _get_image() {
                 return 0
             fi
         fi
-    fi
-    if ${get_image_cdn:-false}; then
-        echo "get image from cdn ..."
     else
-        return 0
+        if ${get_image_cdn:-false}; then
+            echo "get image from cdn ..."
+        else
+            return 0
+        fi
     fi
 
     _msg step "get image laradock-$image_name"
