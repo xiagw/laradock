@@ -424,7 +424,7 @@ _test_java() {
 
 _get_redis_mysql_info() {
     echo
-    grep '^REDIS_' "$laradock_env" | sed -n '1,12 p'
+    grep '^REDIS_' "$laradock_env" | sed -n '1,12 p' | grep -v 'REDIS_.*2='
     echo
     grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -v MYSQL_ROOT_PASSWORD | sed -n '1,6 p'
 }
@@ -858,7 +858,7 @@ EOF
         _test_nginx
     fi
 
-    if ${exec_test_php:-falst}; then
+    if ${exec_test_php:-false}; then
         _test_php
     fi
 
