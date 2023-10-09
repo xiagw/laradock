@@ -163,6 +163,7 @@ _check_docker() {
     if ${aliyun_os:-false}; then
         $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     fi
+    return 0
 }
 
 _check_timezone() {
