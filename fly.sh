@@ -107,19 +107,27 @@ _check_dependence() {
     _msg step "check command: curl/git/docker"
     pkgs=()
     _command_exists curl || pkgs+=(curl)
-    _command_exists git || pkgs+=(git zsh)
+    _command_exists git || pkgs+=(git)
+    _command_exists zsh || pkgs+=(zsh)
     _command_exists strings || pkgs+=(binutils)
     if [[ "${#pkgs[@]}" -gt 0 ]]; then
-        [[ $apt_update -eq 1 ]] && $cmd update
+        [[ $apt_update -eq 1 ]] && $cmd update -yqq
         $cmd install -yq "${pkgs[@]}"
     fi
-    ## install docker/compose
-    _command_exists docker && return
-
     if ${set_sysctl:-false}; then
         grep '^vm.overcommit_memory' /etc/sysctl.conf ||
             echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
     fi
+    return 0
+}
+
+_check_docker() {
+    _msg step "check docker"
+    if _command_exists docker; then
+        _msg time "docker is already installed."
+        return
+    fi
+
     ## aliyun linux fake centos
     if grep -q '^ID=.*alinux.*' /etc/os-release; then
         $pre_sudo sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
@@ -131,9 +139,7 @@ _check_dependence() {
     else
         curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
     fi
-    if _is_root; then
-        :
-    else
+    if ! _is_root; then
         _msg time "Add user \"$USER\" to group docker."
         $pre_sudo usermod -aG docker "$USER"
         echo '############################################'
@@ -157,7 +163,6 @@ _check_dependence() {
     if ${aliyun_os:-false}; then
         $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     fi
-    return 0
 }
 
 _check_timezone() {
@@ -322,14 +327,6 @@ _set_file_mode() {
 _install_zsh() {
     _msg step "install oh my zsh"
     _check_sudo
-    _command_exists git || {
-        $cmd update -yqq
-        $cmd install -yqq git
-    }
-    _command_exists zsh || {
-        $cmd update -yqq
-        $cmd install -yqq zsh
-    }
 
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
         _msg warn "Found $HOME/.oh-my-zsh, skip."
@@ -343,7 +340,9 @@ _install_zsh() {
         sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
         sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
     fi
-    $cmd install -yqq fzf && sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
+    if $cmd install -yqq fzf; then
+        sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
+    fi
 }
 
 _start_manual() {
@@ -701,6 +700,8 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
+    _check_dependence
+
     if ${exec_install_zsh:-false}; then
         _install_zsh
         return
@@ -776,7 +777,7 @@ main() {
     if ${enable_check:-true}; then
         _check_sudo
         _check_timezone
-        _check_dependence
+        _check_docker
         _check_laradock
         _set_laradock_env
     fi
