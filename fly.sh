@@ -200,7 +200,7 @@ _check_laradock() {
     fi
 }
 
-_set_laradock_env() {
+_check_laradock_env() {
     if [[ -f "$laradock_env" && "${force_update_env:-0}" -eq 0 ]]; then
         return 0
     fi
@@ -284,19 +284,21 @@ _set_env_php_ver() {
 }
 
 _get_image() {
-    if ${exec_download_image:-false}; then
-        :
+    image_name=$1
+    if ${is_php:-false}; then
+        if docker images | grep -E "laradock-$image_name|laradock_$image_name"; then
+            if [[ ${overwrite_php_image:-false} == 'false' ]]; then
+                return 0
+            fi
+        fi
+    fi
+    if ${get_image_cdn:-false}; then
+        echo "get image from cdn ..."
     else
         return 0
     fi
-    image_name=$1
-    if docker images | grep -E "laradock-$image_name|laradock_$image_name"; then
-        if [[ "${force_get_image:-false}" == false ]]; then
-            return
-        fi
-    fi
 
-    _msg step "download docker image laradock-$image_name"
+    _msg step "get image laradock-$image_name"
     image_save=/tmp/laradock-${image_name}.tar.gz
     curl -Lo "$image_save" "${url_image}"
     echo "docker load image..."
@@ -599,27 +601,27 @@ _set_args() {
             [[ "${args[*]}" == *spring* ]] && exec_upgrade_java=true
             enable_check=false
             ;;
-        github | not_china | not_cn | ncn)
+        github | not-china | not-cn | ncn)
             IN_CHINA=false
             aliyun_mirror=false
             ;;
         build)
             exec_build_image=true
             ;;
-        build_remote)
+        build-remote)
             build_remote=true
             ;;
-        build_nocache | nocache)
+        build-nocache | nocache)
             build_opt="docker build --no-cache"
             ;;
-        download_image)
-            exec_download_image=true
-            ;;
-        install_docker_without_aliyun)
+        install-docker-without-aliyun)
             aliyun_mirror='false'
             ;;
-        force_get_image)
-            force_get_image='true'
+        get-image-cdn)
+            get_image_cdn='true'
+            ;;
+        overwrite-php-image)
+            overwrite_php_image='true'
             ;;
         man | manual)
             manual_start='true'
@@ -630,11 +632,11 @@ _set_args() {
         svn | usvn)
             args+=(usvn)
             ;;
-        install_zsh | zsh)
+        install-zsh | zsh)
             exec_install_zsh=true
             enable_check=true
             ;;
-        install_lsyncd | lsync | lsyncd)
+        install-lsyncd | lsync | lsyncd)
             exec_install_lsyncd=true
             enable_check=false
             ;;
@@ -642,11 +644,11 @@ _set_args() {
             exec_get_redis_mysql_info=true
             enable_check=false
             ;;
-        mysqlcli)
+        mysql-cli)
             exec_mysql_cli=true
             enable_check=false
             ;;
-        rediscli)
+        redis-cli)
             exec_redis_cli=true
             enable_check=false
             ;;
@@ -781,7 +783,7 @@ main() {
         _check_timezone
         _check_docker
         _check_laradock
-        _set_laradock_env
+        _check_laradock_env
     fi
 
     ## if install docker and add normal user (not root) to group "docker"
@@ -835,9 +837,9 @@ EOF
             url_image="$url_fly_cdn/laradock-php-fpm.${php_ver}.tar.gz"
             _set_env_php_ver
             # _set_file_mode
-            # _set_nginx_php
-            exec_download_image=true
+            is_php=true
             _get_image php-fpm
+            unset is_php
             exec_test_php=true
             ;;
         esac
