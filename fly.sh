@@ -104,14 +104,14 @@ _check_sudo() {
 }
 
 _check_dependence() {
-    _msg step "check command: curl/git/docker"
+    _msg step "check command: curl/git/zsh/binutils"
     pkgs=()
     _command_exists curl || pkgs+=(curl)
     _command_exists git || pkgs+=(git)
     _command_exists zsh || pkgs+=(zsh)
     _command_exists strings || pkgs+=(binutils)
     if [[ "${#pkgs[@]}" -gt 0 ]]; then
-        [[ $apt_update -eq 1 ]] && $cmd update -yqq
+        [[ "${apt_update:-0}" -eq 1 ]] && $cmd update -yqq
         $cmd install -yq "${pkgs[@]}"
     fi
     if ${set_sysctl:-false}; then
@@ -341,7 +341,7 @@ _install_zsh() {
         sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
         sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
     fi
-    if $cmd install -yqq fzf; then
+    if [[ "${apt_update:-0}" -eq 1 ]] && $cmd install -yqq fzf; then
         sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
     fi
 }
