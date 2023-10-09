@@ -91,6 +91,7 @@ _check_sudo() {
     fi
     if _command_exists apt; then
         cmd="$pre_sudo apt"
+        $cmd update
     elif _command_exists yum; then
         cmd="$pre_sudo yum"
     elif _command_exists dnf; then
@@ -108,7 +109,9 @@ _check_dependence() {
     _command_exists curl || pkgs+=(curl)
     _command_exists git || pkgs+=(git zsh)
     _command_exists strings || pkgs+=(binutils)
-    [[ "${#pkgs[@]}" -gt 0 ]] && $cmd install -y "${pkgs[@]}"
+    if [[ "${#pkgs[@]}" -gt 0 ]]; then
+        $cmd install -y "${pkgs[@]}"
+    fi
     ## install docker/compose
     _command_exists docker && return
 
@@ -277,7 +280,7 @@ _get_image() {
     if ${exec_download_image:-false}; then
         :
     else
-        return
+        return 0
     fi
     image_name=$1
     if docker images | grep -E "laradock-$image_name|laradock_$image_name"; then
