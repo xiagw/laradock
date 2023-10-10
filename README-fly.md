@@ -25,7 +25,7 @@
 | 不推荐 | windows 系统 |
 
 
-## 部署方式一-容器/单机/多机docker-compose部署参考-推荐
+## 推荐方式一/单机/多机docker-compose部署参考
 ```sh
 ## 假如需要代理出公网，设置环境变量
 # export http_proxy=http://x.x.x.x:1080
@@ -41,20 +41,19 @@ curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx 
 ## curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql download_image
 ```
 
-
 ### docker部署方式站点URL对应服务器目录说明
 |  站点 URL 目录  | 对应服务器文件系统目录 |
 | :------------ | :------------ |
-| https://www.xxx.com/ | $HOME/docker/html/ |
-| 前端： VUE/TS 前端静态文件  | 若开启静态内容的 CDN 则只需针对此目录开启 |
-| https://www.xxx.com/static/ | $HOME/docker/html/static/ |
-| https://www.xxx.com/s/ |  $HOME/docker/html/s/ |
 | 后端： PHP 文件存放目录 | （可多个项目） |
+| 后端： Jar 程序文件存放目录 | （可多个jar文件） |
+| https://www.xxx.com/ | $HOME/docker/html/ |
+| https://www.xxx.com/s/ |  $HOME/docker/html/s/ |
+| https://www.xxx.com/static/ | $HOME/docker/html/static/ |
 | https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01 |
 | https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02 |
 | https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03 |
-| 后端： Jar 程序文件存放目录 | （可多个jar文件） |
 | https://www.xxx.com/spring-uri/ | $HOME/docker/laradock/spring/ |
+| 前端： VUE/TS 前端静态文件  | 若开启静态内容的 CDN 则只需针对此目录开启 |
 
 
 | nginx 配置  | 对应服务器文件系统目录 |
@@ -63,7 +62,7 @@ curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx 
 | nginx 日志 | $HOME/docker/laradock/logs/nginx/ |
 
 
-### 服务器操作容器简要方式
+### 操作容器简要方式
 ```sh
 ## !!! 必须进入此目录 !!! 操作容器
 cd $HOME/docker/laradock
@@ -86,7 +85,7 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/spring
 
 ```
 
-## 部署方式二-容器/K8S集群-helm-部署参考-推荐
+## 推荐方式二/K8S集群helm部署参考
 ```sh
 ## 1. 前提条件，确保命令 kubectl / helm 工作正常
 ## 2. 使用命令 helm create <project_name> 生成 helm 文件， 例如:
@@ -106,7 +105,7 @@ helm -n dev list
 kubectl -n dev get all
 ```
 
-## 部署方式三-单机/多机传统方式部署参考-不推荐
+## 不推荐方式三/单机/多机传统方式部署参考
 ```sh
 ### 安装 jdk (参考)
 # yum install -y java-1.8.0-openjdk
@@ -139,7 +138,7 @@ systemctl start redis
 exec run.sh start
 ```
 
-## 部署Windows服务器-不推荐
+## 不推荐部署于Windows服务器
 1. Download URL: https://cdn.flyh6.com/docker/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
 1. 文件存放一般位于 C:\xampp\htdocs\ （此目录对应站点根目录，例如 http://xxx.yyy.com/）

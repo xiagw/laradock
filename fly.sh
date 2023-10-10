@@ -19,7 +19,7 @@ _msg() {
         color_off=" $((duration / 3600))h$(((duration / 60) % 60))m$((duration % 60))s"
         ;;
     time)
-        color_on="[$(for ((i = 1; i <= ${#STEP}; i++)); do echo -n '+'; done)] $(date +%Y%m%d-%u-%T.%3N) "
+        color_on="[${STEP}] $(date +%Y%m%d-%u-%T.%3N) "
         color_off=" $((duration / 3600))h$(((duration / 60) % 60))m$((duration % 60))s"
         ;;
     log)
@@ -157,13 +157,12 @@ _check_docker() {
     if [[ "$USER" != ops ]] && id ops; then
         $pre_sudo usermod -aG docker ops
     fi
-    $pre_sudo systemctl enable docker
-    $pre_sudo systemctl start docker
     ## revert aliyun linux
     if ${aliyun_os:-false}; then
         $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     fi
-    return 0
+    $pre_sudo systemctl enable docker
+    $pre_sudo systemctl start docker
 }
 
 _check_timezone() {
@@ -287,7 +286,7 @@ _get_image() {
     image_name=$1
     if ${is_php:-false}; then
         if docker images | grep -E "laradock-$image_name|laradock_$image_name"; then
-            if [[ ${overwrite_php_image:-false} == 'false' ]]; then
+            if [[ ${overwrite_php_image:-false} == false ]]; then
                 return 0
             fi
         fi
@@ -302,8 +301,9 @@ _get_image() {
     _msg step "get image laradock-$image_name"
     image_save=/tmp/laradock-${image_name}.tar.gz
     curl -Lo "$image_save" "${url_image}"
-    echo "docker load image..."
+    _msg time "docker load image..."
     docker load <"$image_save"
+
     if docker --version | grep -q "version 19"; then
         docker tag "laradock-$image_name" "laradock_$image_name"
     else
@@ -616,16 +616,16 @@ _set_args() {
             build_opt="docker build --no-cache"
             ;;
         install-docker-without-aliyun)
-            aliyun_mirror='false'
+            aliyun_mirror=false
             ;;
         get-image-cdn)
-            get_image_cdn='true'
+            get_image_cdn=true
             ;;
         overwrite-php-image)
-            overwrite_php_image='true'
+            overwrite_php_image=true
             ;;
         man | manual)
-            manual_start='true'
+            manual_start=true
             ;;
         gitlab | git)
             args+=(gitlab)
