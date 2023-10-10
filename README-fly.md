@@ -35,10 +35,10 @@
 ## 2. 默认安装路径为 $PWD/docker/laradock 或 $HOME/docker/laradock
 ## 3. 安装程序默认下载并导入php-fpm镜像
 ## 4. 其他镜像使用 docker build 创建
-## 5. 如遇访问不到 hub.docker.com 问题需下载所有镜像 后面加跟参数 download_image
+## 5. 如遇访问不到 hub.docker.com 问题需下载所有镜像 后面加跟参数 get-image-cdn
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php redis mysql
 curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
-## curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql download_image
+## curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql get-image-cdn
 ```
 
 ### docker部署方式站点URL对应服务器目录说明

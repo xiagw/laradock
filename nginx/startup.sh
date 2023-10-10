@@ -16,6 +16,7 @@ fi
 
 html_path=/var/www/html
 log_path=/var/log/nginx
+[ -d $html_path/s ] || mkdir -p $html_path/s
 [ -f $html_path/index.html ] || date >>$html_path/index.html
 if [ ! -d $html_path/.well-known/acme-challenge ]; then
     mkdir -p $html_path/.well-known/acme-challenge
@@ -44,7 +45,7 @@ fi
 
 ## remove log files / 自动清理超过15天的旧日志文件
 while [ -d $log_path ]; do
-    find $log_path -type f -iname '*.log' -ctime +15 -print0 | xargs -0 rm -f
+    find $log_path -type f -iname '*.log' -ctime +12 -print0 | xargs -0 rm -f
     sleep 1d
 done &
 
