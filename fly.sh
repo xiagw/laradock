@@ -126,7 +126,7 @@ _check_dependence() {
     _command_exists strings || pkgs+=(binutils)
     if [[ "${#pkgs[@]}" -gt 0 ]]; then
         [[ "${apt_update:-0}" -eq 1 ]] && $cmd update -yqq
-        $cmd install -yq "${pkgs[@]}"
+        $cmd install -yqq "${pkgs[@]}"
     fi
     if ${set_sysctl:-false}; then
         grep '^vm.overcommit_memory' /etc/sysctl.conf ||
@@ -361,7 +361,10 @@ _install_zsh() {
         sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
         sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
     fi
-    if [[ "${apt_update:-0}" -eq 1 ]] && $cmd install -yqq fzf; then
+    if _command_exists fzf; then
+        :
+    else
+        $cmd install -yqq fzf
         sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
     fi
 }
