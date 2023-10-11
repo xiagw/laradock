@@ -1,100 +1,110 @@
 [TOC]
 
 ## 硬件/服务器/网络/配置推荐
-|  服务器  | 配置推荐 |
-| :------------ | :------------ |
-| CPU 处理器 | >= 2 core(核) |
-| MEM 内存 | >= 8 GB  |
-| Disk 系统硬盘 |  >= 60 GB  |
-| Net 网络带宽 |  >= 100M(按量付费) ， 或 网络带宽 >= 10M(固定带宽付费) |
-| 私有云服务器 | 带宽请自行根据实际业务情况配置网络带宽 |
-| 公有云服务器 | 初期： 建议所有采购项目初期使用“按量付费”(一周/一月) |
-| 公有云服务器 | 初期后： 根据每日账单确定采购“固定消费”套餐 |
-| 防火墙/安全组 |  开放TCP端口 22/80/443 |
+| 服务器        | 配置推荐                                         |
+|:--------------|:-------------------------------------------------|
+| CPU 处理器    | >= 2 core(核)                                    |
+| MEM 内存      | >= 8 GB                                          |
+| Disk 系统硬盘 | >= 60 GB                                         |
+| Net 网络带宽  | >= 100M(按量付费) >= 10M(固定带宽付费)           |
+| 私有云        | 带宽请自行根据实际业务情况配置网络带宽           |
+| 公有云费用    | 初期： 建议所有采购使用“按量付费”(一周？/一月？) |
+| 公有云费用    | 初期后： 根据账单决定采购“固定消费”套餐          |
+| 防火墙/安全组 | 开放TCP端口 22/80/443                            |
 
-## 软件/系统/版本
-|  软件  | 配置推荐 |
-| :------------ | :------------ |
-| Nginx | >= 1.18 |
-| PHP | >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB) |
-| JDK | >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB) (openjdk/amazoncorretto) |
-| MySQL | >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB) |
-| Redis | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB) |
-| 单机 | Ubuntu 22.04 (推荐), CentOS, Anolis OS, RedHat, Debian, Rocky 等 Linux |
-| 集群 | Kubernetes (根据云厂商自动推荐的 lifseaOS 或自行安排) |
-| 不推荐 | windows 系统 |
+## 软件/系统/版本推荐
+| 软件      | 配置推荐                                                               |
+|:----------|:-----------------------------------------------------------------------|
+| Nginx     | >= 1.18                                                                |
+| PHP       | >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)                            |
+| JDK       | >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB) (openjdk/amazoncorretto)   |
+| MySQL     | >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB)                            |
+| Redis     | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)                            |
+| OS/单机   | Ubuntu 22.04 (推荐), CentOS/Anolis OS/RedHat/Debian/Rocky 等 Linux |
+| OS/集群   | Kubernetes (根据云厂商自动推荐的OS/lifseaOS等/或自行安排)                  |
+| OS/不推荐 | windows 系统                                                           |
 
 
 ## 推荐方式一/单机/多机docker-compose部署参考
 ```sh
-## 假如需要代理出公网，设置环境变量
+
+## 假如服务器需要代理访问公网，则设置环境变量
 # export http_proxy=http://x.x.x.x:1080
 # export https_proxy=http://x.x.x.x:1080
 
-## 1. 默认安装环境, docker/nginx/redis/mysql/php-7.1/jdk-1.8
-## 2. 默认安装路径为 $PWD/docker/laradock 或 $HOME/docker/laradock
-## 3. 安装程序默认下载并导入php-fpm镜像
-## 4. 其他镜像使用 docker build 创建
-## 5. 如遇访问不到 hub.docker.com 问题需下载所有镜像 后面加跟参数 get-image-cdn
-curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php redis mysql
-curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
-## curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql get-image-cdn
+## 1. 默认部署环境， docker/nginx/redis/mysql/php-7.1/jdk-1.8
+## 2. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
+## 3. 默认下载并导入 php-fpm 镜像，其他镜像自动使用 docker build 创建
+## 4. 访问不到 hub.docker.com 等网络问题，后面加跟参数 "get-image-cdn"
+## PHP 单实例(不包含cache/db)： nginx/php 请执行
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php
+## PHP 套装(包含cache/db)： nginx/php/redis/mysql 请执行
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php redis mysql
+## Java 单实例(不包含cache/db)： nginx/java 请执行
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java
+## Java 套装(包含cache/db)： nginx/java/redis/mysql 请执行
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
+## 所有套装 nginx/php/java/redis/mysql 请执行
+# curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java php-fpm redis mysql
+
 ```
 
-### docker部署方式站点URL对应服务器目录说明
-|  站点 URL 目录  | 对应服务器文件系统目录 |
-| :------------ | :------------ |
-| 后端： PHP 文件存放目录 | （可多个项目） |
-| 后端： Jar 程序文件存放目录 | （可多个jar文件） |
-| https://www.xxx.com/ | $HOME/docker/html/ |
-| https://www.xxx.com/s/ |  $HOME/docker/html/s/ |
-| https://www.xxx.com/static/ | $HOME/docker/html/static/ |
-| https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01 |
-| https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02 |
-| https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03 |
-| https://www.xxx.com/spring-uri/ | $HOME/docker/laradock/spring/ |
-| 前端： VUE/TS 前端静态文件  | 若开启静态内容的 CDN 则只需针对此目录开启 |
+### 单机docker部署方式站点URL对应服务器目录说明
+| 站点 URL 目录                    | 对应服务器文件系统目录                    |
+|:---------------------------------|:------------------------------------------|
+| https://www.xxx.com/             | $HOME/docker/html/                        |
+| 前端：(VUE/TS 静态文件)          | 若开启静态内容的 CDN 则只需针对此目录开启 |
+| https://www.xxx.com/s/           | $HOME/docker/html/s/                      |
+| https://www.xxx.com/static/      | $HOME/docker/html/static/                 |
+| 后端：(PHP 文件存放目录)         | （可多个项目）                            |
+| https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01            |
+| https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02            |
+| https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03            |
+| 后端：(Jar 文件存放目录)         | （可多个jar文件）                         |
+| https://www.xxx.com/spring-uri/  | $HOME/docker/laradock/spring/             |
 
 
-| nginx 配置  | 对应服务器文件系统目录 |
-| :------------ | :------------ |
+| nginx 配置 | 对应服务器文件系统目录             |
+|:-----------|:-----------------------------------|
 | nginx 配置 | $HOME/docker/laradock/nginx/sites/ |
-| nginx 日志 | $HOME/docker/laradock/logs/nginx/ |
+| nginx 日志 | $HOME/docker/laradock/logs/nginx/  |
 
 
-### 操作容器简要方式
+### 操作docker容器简要方式
 ```sh
 ## !!! 必须进入此目录 !!! 操作容器
 cd $HOME/docker/laradock
-## 或 cd $PWD/docker/laradock
+## cd $PWD/docker/laradock
 
 ## 启动服务 php-fpm
 docker compose up -d nginx redis mysql php-fpm
 ## 启动服务 java (spring)
 docker compose up -d nginx redis mysql spring
 
-##  恢复文件权限
+## 恢复文件权限
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp
+## PHP 容器内 uid=33
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime
+## Java 容器内 uid=1000
 sudo chown -R 1000:1000 $HOME/docker/laradock/spring
 
 ## 如果有负载均衡，单台/多台服务器
 1. 设置服务器组（单台/多台）
 1. 设置负载均衡监听端口 80/443，指向服务器组
-1. 若有安全组则需设置安全组
+1. 若有安全组则需设置安全组开放 80/443
 
 ```
 
 ## 推荐方式二/K8S集群helm部署参考
 ```sh
 ## 1. 前提条件，确保命令 kubectl / helm 工作正常
-## 2. 使用命令 helm create <project_name> 生成 helm 文件， 例如:
+## 2. 使用命令 helm create <your_app_name> 生成 helm 文件， 例如:
 cd /path/to/helm/
-helm create project_app
+helm create your_app_name
 
-## 3. 根据需要自行修改 project_app/*.yml 文件，或使用软件服务商提供的 yml 文件
+## 3. 根据需要自行修改 your_app_name/*.yml 文件，或使用软件服务商提供的 yml 文件
 ## 4. 执行 k8s 部署
-helm upgrade spring  /path/to/helm/project_app/  --install  --history-max 1 \
+helm upgrade spring  /path/to/helm/your_app_name/  --install  --history-max 1 \
 --namespace dev --create-namespace \
 --set image.repository=registry-vpc.cn-hangzhou.aliyuncs.com/ns/repo \
 --set image.tag=spring-b962e447-1669878102 \
