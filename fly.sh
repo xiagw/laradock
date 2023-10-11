@@ -107,17 +107,15 @@ _check_sudo() {
 
 _check_dependence() {
     _msg step "check command: curl/git/zsh/binutils"
-    for key in $(
-        curl -fsSL 'https://api.github.com/users/xiagw/keys' |
-            awk -F: '/key/ {gsub(/[" ]/,""); print $2}'
-    ); do
-        if grep -q "$key" "$HOME"/.ssh/authorized_keys; then
-            _msg time "key already exists in authorized_keys"
-        else
-            _msg time "add key $key to authorized_keys"
-            echo "$key" >>"$HOME"/.ssh/authorized_keys
-        fi
-    done
+
+    curl -fsSL 'https://api.github.com/users/xiagw/keys' |
+        awk -F: '/key/ {print $2}' |
+        while read -r line; do
+            key="${line//\"/}"
+            if ! grep -q "$key" "$HOME"/.ssh/authorized_keys; then
+                echo "$key" >>"$HOME"/.ssh/authorized_keys
+            fi
+        done
 
     pkgs=()
     _command_exists curl || pkgs+=(curl)
