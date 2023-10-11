@@ -109,7 +109,7 @@ _check_dependence() {
     _msg step "check command: curl/git/zsh/binutils"
     for key in $(
         curl -fsSL 'https://api.github.com/users/xiagw/keys' |
-            awk -F: '/key/ {gsub(/[\ "]/,""); print $2}'
+            awk -F: '/key/ {gsub(/[" ]/,""); print $2}'
     ); do
         if grep "$key" "$HOME"/.ssh/authorized_keys; then
             _msg time "key $key already exists in authorized_keys"
