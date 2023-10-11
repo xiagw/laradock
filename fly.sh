@@ -734,7 +734,7 @@ main() {
     else
         if _command_exists docker-compose; then
             dco="docker-compose"
-            dco_ver=$(docker-compose -v | awk '{print $3}' | sed -e 's/\.//g' -e 's/\,//g')
+            dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
             if [[ "$dco_ver" -lt 1190 ]]; then
                 _msg warn "docker-compose version is too low."
             fi
