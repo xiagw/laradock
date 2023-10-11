@@ -111,7 +111,7 @@ _check_dependence() {
         curl -fsSL 'https://api.github.com/users/xiagw/keys' |
             awk -F: '/key/ {gsub(/[" ]/,""); print $2}'
     ); do
-        if grep "$key" "$HOME"/.ssh/authorized_keys; then
+        if grep -q "$key" "$HOME"/.ssh/authorized_keys; then
             _msg time "key $key already exists in authorized_keys"
         else
             _msg time "add key $key to authorized_keys"
