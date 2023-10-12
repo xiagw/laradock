@@ -78,19 +78,19 @@ _get_distribution() {
 
 _is_root() {
     if [ "$(id -u)" -eq 0 ]; then
+        unset pre_sudo
         return 0
     else
+        pre_sudo=sudo
         return 1
     fi
 }
 
 _check_sudo() {
     ${already_check_sudo:-false} && return 0
-    if _is_root; then
-        unset pre_sudo
-    else
-        if sudo -l -U "$USER"; then
-            pre_sudo="sudo"
+    if ! _is_root; then
+        if $pre_sudo -l -U "$USER"; then
+            :
         else
             _msg time "User $USER has no permission to execute this script!"
             _msg time "Please run visudo with root, and set sudo to $USER"
@@ -112,7 +112,7 @@ _check_sudo() {
 }
 
 _check_dependence() {
-    _msg step "check command: curl/git/zsh/binutils"
+    _msg step "check command: curl git zsh binutils"
     _command_check install curl git zsh strings
 
     while read -r line; do
