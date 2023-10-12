@@ -26,7 +26,7 @@ _msg() {
         ;;
     log)
         shift
-        echo "$time_now $*" >>$me_log
+        echo "$time_now $*" >>"$me_log"
         return
         ;;
     *)
@@ -40,11 +40,10 @@ _msg() {
 _get_yes_no() {
     if [[ "$1" == timeout ]]; then
         shift
-        _msg time "Automatic answer 'N' within 20 seconds"
-        read -t 20 -rp "${1:-Confirm the action?} [y/N] " read_yes_no
-    else
-        read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
+        time_out=20
+        _msg time "Automatic answer 'N' within $time_out seconds"
     fi
+    read -t "${time_out:-0}" -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     case ${read_yes_no:-n} in
     [Nn] | [Nn][Oo])
         return 1
@@ -55,10 +54,17 @@ _get_yes_no() {
     esac
 }
 
-_command_exists() {
-    for c in "$@"; do
-        command -v "$c"
-    done
+_command_check() {
+    if [[ "$1" == install ]]; then
+        shift
+        if command -v "$@"; then
+            return
+        else
+            [[ "${apt_update:-0}" -eq 1 ]] && $cmd update -yqq
+            $cmd install -y "$@"
+        fi
+    fi
+    command -v "$@"
 }
 
 _get_distribution() {
@@ -91,12 +97,12 @@ _check_sudo() {
             return 1
         fi
     fi
-    if _command_exists apt; then
+    if _command_check apt; then
         cmd="$pre_sudo apt"
         apt_update=1
-    elif _command_exists yum; then
+    elif _command_check yum; then
         cmd="$pre_sudo yum"
-    elif _command_exists dnf; then
+    elif _command_check dnf; then
         cmd="$pre_sudo dnf"
     else
         _msg time "not found apt/yum/dnf, exit 1"
@@ -107,25 +113,17 @@ _check_sudo() {
 
 _check_dependence() {
     _msg step "check command: curl/git/zsh/binutils"
+    _command_check install curl git zsh strings
 
-    curl -fsSL 'https://api.github.com/users/xiagw/keys' |
-        awk -F: '/key/ {print $2}' |
-        while read -r line; do
-            key="${line//\"/}"
-            if ! grep -q "$key" "$HOME"/.ssh/authorized_keys; then
-                echo "$key" >>"$HOME"/.ssh/authorized_keys
-            fi
-        done
-
-    pkgs=()
-    _command_exists curl || pkgs+=(curl)
-    _command_exists git || pkgs+=(git)
-    _command_exists zsh || pkgs+=(zsh)
-    _command_exists strings || pkgs+=(binutils)
-    if [[ "${#pkgs[@]}" -gt 0 ]]; then
-        [[ "${apt_update:-0}" -eq 1 ]] && $cmd update -yqq
-        $cmd install -yqq "${pkgs[@]}"
-    fi
+    while read -r line; do
+        key="${line//\"/}"
+        if ! grep -q "$key" "$HOME"/.ssh/authorized_keys; then
+            echo "$key" >>"$HOME"/.ssh/authorized_keys
+        fi
+    done < <(
+        curl -fsSL 'https://api.github.com/users/xiagw/keys' |
+            awk -F: '/key/ {print $2}'
+    )
     if ${set_sysctl:-false}; then
         grep '^vm.overcommit_memory' /etc/sysctl.conf ||
             echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
@@ -136,7 +134,7 @@ _check_dependence() {
 
 _check_docker() {
     _msg step "check docker"
-    if _command_exists docker; then
+    if _command_check docker; then
         _msg time "docker is already installed."
         return
     fi
@@ -170,7 +168,7 @@ _check_docker() {
     if [[ "$USER" != ops ]] && id ops; then
         $pre_sudo usermod -aG docker ops
     fi
-    ## revert aliyun linux
+    ## revert aliyun linux fake centos
     if ${aliyun_os:-false}; then
         $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     fi
@@ -227,6 +225,7 @@ _check_laradock_env() {
 
     _msg time "copy .env.example to .env, and set password"
     cp -vf "$laradock_env".example "$laradock_env"
+    ## change password
     sed -i \
         -e "/^MYSQL_PASSWORD=/s/=.*/=$pass_mysql_default/" \
         -e "/MYSQL_ROOT_PASSWORD=/s/=.*/=$pass_mysql/" \
@@ -239,7 +238,7 @@ _check_laradock_env() {
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
         "$laradock_env"
-
+    ## change listen port
     for p in 80 443 3306 6379; do
         local listen_port=$p
         while ss -lntu4 | grep "LISTEN.*:$listen_port\ "; do
@@ -266,7 +265,7 @@ _check_laradock_env() {
 }
 
 _reload_nginx() {
-    cd "$laradock_path" || exit 1
+    pushd "$laradock_path" || exit 1
     for i in {1..10}; do
         if $dco exec -T nginx nginx -t; then
             $dco exec -T nginx nginx -s reload
@@ -291,7 +290,7 @@ _set_nginx_java() {
 _set_env_php_ver() {
     sed -i \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/CHANGE_SOURCE=/s/false/true/" \
+        -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         "$laradock_env"
 }
 
@@ -316,10 +315,12 @@ _get_image() {
     _msg step "get image laradock-$image_name"
     image_save=/tmp/laradock-${image_name}.tar.gz
     curl -Lo "$image_save" "${url_image}"
+
     _msg time "docker load image..."
     docker load <"$image_save"
 
-    if docker --version | grep -q "version 19"; then
+    dk_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
+    if ((dk_ver <= 19)); then
         docker tag "laradock-$image_name" "laradock_$image_name"
     else
         if docker images | grep "laradock_$image_name"; then
@@ -345,22 +346,22 @@ _set_file_mode() {
 
 _install_zsh() {
     _msg step "install oh my zsh"
-    _check_sudo
-
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
         _msg warn "Found $HOME/.oh-my-zsh, skip."
-    else
-        if ${IN_CHINA:-true}; then
-            git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
-        else
-            bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-        fi
-        cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
-        sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
-        sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
+        return
     fi
-    if [[ ${apt_update:-0} -eq 1 ]] && ! _command_exists fzf; then
-        $cmd install -yqq fzf
+    ## install oh my zsh
+    if ${IN_CHINA:-true}; then
+        git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
+    else
+        bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    fi
+    cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
+    sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
+    sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
+
+    _check_sudo
+    if _command_check install fzf; then
         sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
     fi
 }
@@ -469,7 +470,7 @@ _install_lsyncd() {
         _msg warn "Found command lsyncd, skip."
         return
     else
-        $cmd install -y lsyncd
+        _command_check install lsyncd
     fi
 
     _msg time "new lsyncd.conf.lua"
@@ -748,7 +749,7 @@ main() {
     if $dco version; then
         _msg info "$dco ready."
     else
-        if _command_exists docker-compose; then
+        if _command_check docker-compose; then
             dco="docker-compose"
             dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
             if [[ "$dco_ver" -lt 1190 ]]; then
