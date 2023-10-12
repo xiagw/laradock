@@ -442,7 +442,7 @@ _test_java() {
 
 _get_redis_mysql_info() {
     echo
-    grep '^REDIS_' "$laradock_env" | sed -n '1,12 p' | grep -v 'REDIS_.*2='
+    grep '^REDIS_' "$laradock_env" | sed -n '1,4p'
     echo
     grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -v MYSQL_ROOT_PASSWORD | sed -n '1,6 p'
 }
