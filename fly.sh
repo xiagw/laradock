@@ -210,16 +210,15 @@ _check_laradock() {
     fi
 }
 
+_gen_password(){
+    strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10
+}
+
 _check_laradock_env() {
     if [[ -f "$laradock_env" && "${force_update_env:-0}" -eq 0 ]]; then
         return 0
     fi
     _msg step "set laradock .env"
-    pass_mysql="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
-    pass_mysql_default="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
-    pass_redis="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
-    pass_redisadmin="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
-    pass_gitlab="$(strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10)"
     ## change docker host ip
     docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
 
@@ -227,12 +226,12 @@ _check_laradock_env() {
     cp -vf "$laradock_env".example "$laradock_env"
     ## change password
     sed -i \
-        -e "/^MYSQL_PASSWORD=/s/=.*/=$pass_mysql_default/" \
-        -e "/MYSQL_ROOT_PASSWORD=/s/=.*/=$pass_mysql/" \
+        -e "/^MYSQL_PASSWORD=/s/=.*/=$(_gen_password)/" \
+        -e "/MYSQL_ROOT_PASSWORD=/s/=.*/=$(_gen_password)/" \
         -e "/MYSQL_VERSION=latest/s/=.*/=5.7/" \
-        -e "/REDIS_PASSWORD=/s/=.*/=$pass_redis/" \
-        -e "/PHPREDISADMIN_PASS=/s/=.*/=$pass_redisadmin/" \
-        -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$pass_gitlab/" \
+        -e "/REDIS_PASSWORD=/s/=.*/=$(_gen_password)/" \
+        -e "/PHPREDISADMIN_PASS=/s/=.*/=$(_gen_password)/" \
+        -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$(_gen_password)/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
