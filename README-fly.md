@@ -53,8 +53,9 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx ja
 | 站点 URL 目录                    | 对应服务器文件系统目录                    |
 |:---------------------------------|:------------------------------------------|
 | https://www.xxx.com/             | $HOME/docker/html/                        |
-| 前端：(VUE/TS 静态文件)          | 若开启静态内容的 CDN 则只需针对此目录开启 |
-| https://www.xxx.com/s/           | $HOME/docker/html/s/                      |
+| 前端：(VUE/TS 等静态文件)        | 若开启静态内容的 CDN 则只需针对此目录开启 |
+| https://www.xxx.com/s1/           | $HOME/docker/html/s1/                      |
+| https://www.xxx.com/s2/           | $HOME/docker/html/s2/                      |
 | https://www.xxx.com/static/      | $HOME/docker/html/static/                 |
 | 后端：(PHP 文件存放目录)         | （可多个项目）                            |
 | https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01            |
@@ -62,12 +63,9 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx ja
 | https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03            |
 | 后端：(Jar 文件存放目录)         | （可多个jar文件）                         |
 | https://www.xxx.com/spring-uri/  | $HOME/docker/laradock/spring/             |
-
-
-| nginx 配置 | 对应服务器文件系统目录             |
-|:-----------|:-----------------------------------|
-| nginx 配置 | $HOME/docker/laradock/nginx/sites/ |
-| nginx 日志 | $HOME/docker/laradock/logs/nginx/  |
+| Nginx：目录配置和日志            | （可多个站点配置）                        |
+| nginx conf 配置文件路径          | $HOME/docker/laradock/nginx/sites/        |
+| nginx 日志文件存放路径           | $HOME/docker/laradock/logs/nginx/         |
 
 
 ### 操作docker容器简要方式
@@ -104,8 +102,8 @@ helm create your_app_name
 
 ## 3. 根据需要自行修改 your_app_name/*.yml 文件，或使用软件服务商提供的 yml 文件
 ## 4. 执行 k8s 部署
-helm upgrade spring  /path/to/helm/your_app_name/  --install  --history-max 1 \
---namespace dev --create-namespace \
+helm upgrade --install --atomic --history-max 3 --namespace dev --create-namespace \
+spring /path/to/helm/your_app_name/ \
 --set image.repository=registry-vpc.cn-hangzhou.aliyuncs.com/ns/repo \
 --set image.tag=spring-b962e447-1669878102 \
 --set image.pullPolicy=Always --timeout 120s
