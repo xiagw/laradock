@@ -119,10 +119,10 @@ _check_sudo() {
 }
 
 _check_dependence() {
-    _msg step "check command: curl git zsh binutils"
+    _msg step "check command: curl git binutils"
     _check_sudo
     _check_distribution
-    _check_cmd install curl git strings byobu zsh
+    _check_cmd install curl git strings
 
     while read -r line; do
         key="${line//\"/}"
@@ -353,6 +353,7 @@ _set_file_mode() {
 
 _install_zsh() {
     _msg step "install oh my zsh"
+    _check_cmd install zsh byobu
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
         _msg warn "Found $HOME/.oh-my-zsh, skip."
         return
