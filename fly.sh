@@ -355,9 +355,12 @@ _install_zsh() {
     _msg step "install oh my zsh"
     _check_cmd install zsh byobu
     if [[ "$lsb_dist" == centos ]]; then
-        git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME"/.fzf
+        if ${IN_CHINA:-true}; then
+            git clone --depth 1 https://gitee.com/mirrors/fzf.git "$HOME"/.fzf
+        else
+            git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME"/.fzf
+        fi
         "$HOME"/.fzf/install
-        return
     else
         if _check_cmd install fzf; then
             sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
