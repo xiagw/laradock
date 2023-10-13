@@ -90,9 +90,11 @@ _is_root() {
 
 _check_sudo() {
     ${already_check_sudo:-false} && return 0
-    if ! _is_root; then
+    if _is_root; then
+        :
+    else
         if $pre_sudo -l -U "$USER"; then
-            :
+            _msg time "User $USER has permission to execute this script!"
         else
             _msg time "User $USER has no permission to execute this script!"
             _msg time "Please run visudo with root, and set sudo to $USER"
@@ -212,7 +214,7 @@ _check_laradock() {
     fi
 }
 
-_gen_password(){
+_gen_password() {
     strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10
 }
 
@@ -735,7 +737,7 @@ main() {
         return
     fi
 
-    _is_root
+    _check_sudo
     _check_dependence
 
     if ${exec_install_zsh:-false}; then
