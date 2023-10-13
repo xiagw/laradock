@@ -79,9 +79,11 @@ _get_distribution() {
 _is_root() {
     if [ "$(id -u)" -eq 0 ]; then
         unset pre_sudo
+        _msg time "You are root, continue..."
         return 0
     else
         pre_sudo=sudo
+        _msg time "You are not root, run with sudo..."
         return 1
     fi
 }
@@ -733,6 +735,7 @@ main() {
         return
     fi
 
+    _is_root
     _check_dependence
 
     if ${exec_install_zsh:-false}; then
