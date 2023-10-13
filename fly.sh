@@ -73,10 +73,10 @@ _check_cmd() {
 _check_distribution() {
     if [ -r /etc/os-release ]; then
         lsb_dist="$(. /etc/os-release && echo "$ID")"
-        lsb_dist="$(echo "$lsb_dist" | tr '[:upper:]' '[:lower:]')"
-    else
-        lsb_dist='unknown'
+        lsb_dist="${lsb_dist,,}"
     fi
+    lsb_dist="${lsb_dist:-unknown}"
+    _msg time "Your distribution is $lsb_dist"
 }
 
 _check_root() {
@@ -368,6 +368,11 @@ _install_zsh() {
     sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
     sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
 
+    if [[ "$lsb_dist" == centos ]]; then
+        git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME"/.fzf
+        "$HOME"/.fzf/install
+        return
+    fi
     if _check_cmd install fzf; then
         sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
     fi
