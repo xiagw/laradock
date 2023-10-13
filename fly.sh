@@ -354,6 +354,15 @@ _set_file_mode() {
 _install_zsh() {
     _msg step "install oh my zsh"
     _check_cmd install zsh byobu
+    if [[ "$lsb_dist" == centos ]]; then
+        git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME"/.fzf
+        "$HOME"/.fzf/install
+        return
+    else
+        if _check_cmd install fzf; then
+            sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
+        fi
+    fi
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
         _msg warn "Found $HOME/.oh-my-zsh, skip."
         return
@@ -368,14 +377,6 @@ _install_zsh() {
     sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
     sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
 
-    if [[ "$lsb_dist" == centos ]]; then
-        git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME"/.fzf
-        "$HOME"/.fzf/install
-        return
-    fi
-    if _check_cmd install fzf; then
-        sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
-    fi
 }
 
 _start_manual() {
