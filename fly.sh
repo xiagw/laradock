@@ -333,7 +333,6 @@ _get_image() {
 }
 
 _set_file_mode() {
-    _check_sudo
     for d in "$laradock_path"/../*/; do
         [[ "$d" == *laradock/ ]] && continue
         find "$d" | while read -r line; do
@@ -363,7 +362,6 @@ _install_zsh() {
     sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
     sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
 
-    _check_sudo
     if _command_check install fzf; then
         sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
     fi
@@ -413,8 +411,6 @@ _test_nginx() {
 }
 
 _test_php() {
-    _check_sudo
-
     path_nginx_root="$laradock_path/../html"
     $pre_sudo chown "$USER:$USER" "$path_nginx_root"
     if [[ ! -f "$path_nginx_root/test.php" ]]; then
@@ -468,7 +464,6 @@ _redis_cli() {
 
 _install_lsyncd() {
     _msg time "install lsyncd"
-    _check_sudo
     if _command_exists lsyncd; then
         _msg warn "Found command lsyncd, skip."
         return
@@ -749,6 +744,7 @@ main() {
         return
     fi
 
+    _check_docker
     dco="docker compose"
     if $dco version; then
         _msg info "$dco ready."
@@ -769,7 +765,6 @@ main() {
             $dco stop
             $dco rm -f
         )
-        _check_sudo
         $pre_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
         return
     fi
@@ -801,9 +796,7 @@ main() {
     fi
 
     if ${enable_check:-true}; then
-        _check_sudo
         _check_timezone
-        _check_docker
         _check_laradock
         _check_laradock_env
     fi
