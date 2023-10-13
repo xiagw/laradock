@@ -54,7 +54,7 @@ _get_yes_no() {
     esac
 }
 
-_command_check() {
+_check_cmd() {
     if [[ "$1" == install ]]; then
         shift
         for c in "$@"; do
@@ -63,13 +63,14 @@ _command_check() {
                 $cmd install -y "$@"
             fi
         done
+    else
+        for c in "$@"; do
+            command -v "$c"
+        done
     fi
-    for c in "$@"; do
-        command -v "$c"
-    done
 }
 
-_get_distribution() {
+_check_distribution() {
     if [ -r /etc/os-release ]; then
         lsb_dist="$(. /etc/os-release && echo "$ID")"
         lsb_dist="$(echo "$lsb_dist" | tr '[:upper:]' '[:lower:]')"
@@ -78,7 +79,7 @@ _get_distribution() {
     fi
 }
 
-_is_root() {
+_check_root() {
     if [ "$(id -u)" -eq 0 ]; then
         unset pre_sudo
         _msg time "You are root, continue..."
@@ -92,7 +93,7 @@ _is_root() {
 
 _check_sudo() {
     ${already_check_sudo:-false} && return 0
-    if _is_root; then
+    if _check_root; then
         :
     else
         if $pre_sudo -l -U "$USER"; then
@@ -103,12 +104,12 @@ _check_sudo() {
             return 1
         fi
     fi
-    if _command_check apt; then
+    if _check_cmd apt; then
         cmd="$pre_sudo apt"
         apt_update=1
-    elif _command_check yum; then
+    elif _check_cmd yum; then
         cmd="$pre_sudo yum"
-    elif _command_check dnf; then
+    elif _check_cmd dnf; then
         cmd="$pre_sudo dnf"
     else
         _msg time "not found apt/yum/dnf, exit 1"
@@ -119,7 +120,9 @@ _check_sudo() {
 
 _check_dependence() {
     _msg step "check command: curl git zsh binutils"
-    _command_check install curl git zsh strings
+    _check_sudo
+    _check_distribution
+    _check_cmd install curl git strings byobu zsh
 
     while read -r line; do
         key="${line//\"/}"
@@ -140,7 +143,7 @@ _check_dependence() {
 
 _check_docker() {
     _msg step "check docker"
-    if _command_check docker; then
+    if _check_cmd docker; then
         _msg time "docker is already installed."
         return
     fi
@@ -156,7 +159,7 @@ _check_docker() {
     else
         curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
     fi
-    if ! _is_root; then
+    if ! _check_root; then
         _msg time "Add user \"$USER\" to group docker."
         $pre_sudo usermod -aG docker "$USER"
         echo '############################################'
@@ -364,7 +367,7 @@ _install_zsh() {
     sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
     sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
 
-    if _command_check install fzf; then
+    if _check_cmd install fzf; then
         sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
     fi
 }
@@ -470,7 +473,7 @@ _install_lsyncd() {
         _msg warn "Found command lsyncd, skip."
         return
     else
-        _command_check install lsyncd
+        _check_cmd install lsyncd
     fi
 
     _msg time "new lsyncd.conf.lua"
@@ -734,7 +737,6 @@ main() {
         return
     fi
 
-    _check_sudo
     _check_dependence
 
     if ${exec_install_zsh:-false}; then
@@ -751,7 +753,7 @@ main() {
     if $dco version; then
         _msg info "$dco ready."
     else
-        if _command_check docker-compose; then
+        if _check_cmd docker-compose; then
             dco="docker-compose"
             dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
             if [[ "$dco_ver" -lt 1190 ]]; then
