@@ -57,14 +57,16 @@ _get_yes_no() {
 _command_check() {
     if [[ "$1" == install ]]; then
         shift
-        if command -v "$@"; then
-            return
-        else
-            [[ "${apt_update:-0}" -eq 1 ]] && $cmd update -yqq
-            $cmd install -y "$@"
-        fi
+        for c in "$@"; do
+            if ! command -v "$c"; then
+                [[ "${apt_update:-0}" -eq 1 ]] && $cmd update -yqq
+                $cmd install -y "$@"
+            fi
+        done
     fi
-    command -v "$@"
+    for c in "$@"; do
+        command -v "$c"
+    done
 }
 
 _get_distribution() {
