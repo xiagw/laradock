@@ -143,11 +143,11 @@ _check_dependence() {
 
 _install_wg() {
     if [[ "$lsb_dist" == centos ]]; then
-        $pre_sudo yum install epel-release elrepo-release
-        $pre_sudo yum install yum-plugin-elrepo
-        $pre_sudo yum install kmod-wireguard wireguard-tools
+        $pre_sudo yum install -y epel-release elrepo-release
+        $pre_sudo yum install -y yum-plugin-elrepo
+        $pre_sudo yum install -y kmod-wireguard wireguard-tools
     else
-        $pre_sudo apt install wireguard wireguard-tools
+        $pre_sudo apt install -yqq wireguard wireguard-tools
     fi
     $pre_sudo modprobe wireguard
 }
