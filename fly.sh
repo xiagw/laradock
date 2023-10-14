@@ -141,6 +141,17 @@ _check_dependence() {
     fi
 }
 
+_install_wg() {
+    if [[ "$lsb_dist" == centos ]]; then
+        $pre_sudo yum install epel-release elrepo-release
+        $pre_sudo yum install yum-plugin-elrepo
+        $pre_sudo yum install kmod-wireguard wireguard-tools
+    else
+        $pre_sudo apt install wireguard wireguard-tools
+    fi
+    $pre_sudo modprobe wireguard
+}
+
 _check_docker() {
     _msg step "check docker"
     if _check_cmd docker; then
@@ -671,6 +682,10 @@ _set_args() {
             exec_install_lsyncd=true
             enable_check=false
             ;;
+        install-wg | wg | wireguard)
+            exec_install_wg=true
+            enable_check=true
+            ;;
         info)
             exec_get_redis_mysql_info=true
             enable_check=false
@@ -755,6 +770,10 @@ main() {
     fi
     if ${exec_install_lsyncd:-false}; then
         _install_lsyncd
+        return
+    fi
+    if ${exec_install_wg:-false}; then
+        _install_wg
         return
     fi
 
