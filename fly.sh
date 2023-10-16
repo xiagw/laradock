@@ -183,7 +183,7 @@ _check_docker() {
         _msg red "!!!! Please logout $USER, and login again. !!!!"
         _msg red "And re-execute the above command."
         echo '############################################'
-        need_logout=1
+        need_logout=true
     fi
     if [[ "$USER" != ubuntu ]] && id ubuntu; then
         $pre_sudo usermod -aG docker ubuntu
