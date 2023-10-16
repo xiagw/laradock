@@ -393,12 +393,10 @@ _install_zsh() {
     fi
     cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
     sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
-    if ! grep '^plugins=.*docker' "$HOME"/.zshrc; then
-        if _check_cmd fzf; then
-            sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
-        else
-            sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
-        fi
+    if _check_cmd fzf; then
+        sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
+    else
+        sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
     fi
 }
 
@@ -476,7 +474,7 @@ _test_java() {
 
 _get_redis_mysql_info() {
     echo
-    grep '^REDIS_' "$laradock_env" | sed -n '1,4p'
+    grep '^REDIS_' "$laradock_env" | sed -n '1,3p'
     echo
     grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -v MYSQL_ROOT_PASSWORD | sed -n '1,6 p'
 }
@@ -546,13 +544,19 @@ Usage: $0 [parameters ...]
 Parameters:
     -h, --help          Show this help message.
     -v, --version       Show version info.
-    info                get mysql redis info
-    php                 install php-fpm 7.1
     build               build php image
+    info                get mysql redis info
+    nginx               install nginx
+    php                 install php-fpm 7.1
     java                install jdk / spring
-    mysql               exec into mysql cli
-    perm                set file permission
+    mysql               install mysql
+    redis               install redis
+    mysql-cli           exec into mysql cli
+    redis-cli           exec into mysql cli
     lsync               setup lsyncd
+    zsh                 install zsh
+    reset               reset laradock
+    upgrade             upgrade php / java
 "
     exit 1
 }

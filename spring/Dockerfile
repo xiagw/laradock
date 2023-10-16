@@ -26,7 +26,7 @@ CMD ["/opt/run.sh"]
 
 # COPY --from=builder /jars/ .
 RUN set -xe; \
-    if [ -f /opt/build.sh ]; then echo "found /opt/build.sh"; else curl -fLo /opt/build.sh $BUILD_URL; fi; \
-    bash /opt/build.sh
+    if [ ! -f /opt/build.sh ]; then curl -fLo /opt/build.sh $BUILD_URL; fi; \
+    if [ -f /opt/build.sh ]; then bash /opt/build.sh; fi
 
 USER 1000
