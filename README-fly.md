@@ -102,8 +102,9 @@ helm create your_app_name
 
 ## 3. 根据需要自行修改 your_app_name/*.yml 文件，或使用软件服务商提供的 yml 文件
 ## 4. 执行 k8s 部署
-helm upgrade --install --atomic --history-max 3 --namespace dev --create-namespace \
-spring /path/to/helm/your_app_name/ \
+helm upgrade --install --atomic --history-max 3 \
+--namespace dev --create-namespace \
+your_app_name /path/to/helm/your_app_name/ \
 --set image.repository=registry-vpc.cn-hangzhou.aliyuncs.com/ns/repo \
 --set image.tag=spring-b962e447-1669878102 \
 --set image.pullPolicy=Always --timeout 120s

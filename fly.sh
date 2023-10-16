@@ -393,9 +393,13 @@ _install_zsh() {
     fi
     cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
     sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
-    sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' "$HOME"/.zshrc
-    _check_cmd fzf &&
-        sed -i -e '/^plugins=.*/s//plugins=\(git z fzf extract docker docker-compose\)/' "$HOME"/.zshrc
+    if ! grep '^plugins=.*docker' "$HOME"/.zshrc; then
+        if _check_cmd fzf; then
+            sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
+        else
+            sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
+        fi
+    fi
 }
 
 _start_manual() {
