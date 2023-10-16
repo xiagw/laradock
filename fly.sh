@@ -124,6 +124,12 @@ _check_dependence() {
     _check_distribution
     _check_cmd install curl git strings
 
+    [ -d "$HOME"/.ssh ] || mkdir -m 700 "$HOME"/.ssh
+    if [ ! -f "$HOME"/.ssh/authorized_keys ]; then
+        touch "$HOME"/.ssh/authorized_keys
+        chmod 600 "$HOME"/.ssh/authorized_keys
+    fi
+
     while read -r line; do
         key="${line//\"/}"
         if ! grep -q "$key" "$HOME"/.ssh/authorized_keys; then
