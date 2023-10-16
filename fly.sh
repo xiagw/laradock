@@ -885,7 +885,7 @@ EOF
             _get_image spring
             # _set_file_mode
             _set_nginx_java
-            exec_test_java=1
+            exec_test_java=true
             ;;
         php*)
             url_image="$url_fly_cdn/laradock-php-fpm.${php_ver}.tar.gz"
