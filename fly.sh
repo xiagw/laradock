@@ -379,9 +379,7 @@ _install_zsh() {
         fi
         "$HOME"/.fzf/install
     else
-        if _check_cmd install fzf; then
-            sed -i -e "/^plugins=\(git\)/s/git/git z extract fzf docker-compose/" "$HOME"/.zshrc
-        fi
+        _check_cmd install fzf
     fi
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
         _msg warn "Found $HOME/.oh-my-zsh, skip."
@@ -395,8 +393,9 @@ _install_zsh() {
     fi
     cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
     sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
-    sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' ~/.zshrc
-
+    sed -i -e '/^plugins=.*/s//plugins=\(git z extract docker docker-compose\)/' "$HOME"/.zshrc
+    _check_cmd fzf &&
+        sed -i -e '/^plugins=.*/s//plugins=\(git z fzf extract docker docker-compose\)/' "$HOME"/.zshrc
 }
 
 _start_manual() {
