@@ -791,6 +791,11 @@ main() {
     fi
 
     _check_docker
+    ## if install docker and add normal user (not root) to group "docker"
+    if ${need_logout:-false}; then
+        return
+    fi
+
     dco="docker compose"
     if $dco version; then
         _msg info "$dco ready."
@@ -845,11 +850,6 @@ main() {
         _check_timezone
         _check_laradock
         _check_laradock_env
-    fi
-
-    ## if install docker and add normal user (not root) to group "docker"
-    if ${need_logout:-false}; then
-        return
     fi
 
     _msg step "check docker image..."
