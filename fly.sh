@@ -368,6 +368,20 @@ _set_file_mode() {
     done
 }
 
+_install_trzsz() {
+    ## apt
+    $pre_sudo apt update -yq
+    $pre_sudo apt install -y software-properties-common
+    $pre_sudo add-apt-repository --yes ppa:trzsz/ppa
+    $pre_sudo apt update -yq
+    $pre_sudo apt install -yq trzsz
+
+    ## yum
+    $pre_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm
+
+    $pre_sudo yum install -y trzsz
+}
+
 _install_zsh() {
     _msg step "install oh my zsh"
     _check_cmd install zsh byobu
