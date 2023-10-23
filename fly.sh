@@ -446,10 +446,10 @@ _start_auto() {
 
 _test_nginx() {
     _reload_nginx
-    nginx_port=$(awk -F= '/NGINX_HOST_HTTP_PORT/ {print $2}' "$laradock_env")
+    source <(grep 'NGINX_HOST_HTTP_PORT' "$laradock_env")
     _msg time "test nginx $1 ..."
     for i in {1..10}; do
-        if curl --connect-timeout 3 "http://localhost:$nginx_port/${1}"; then
+        if curl --connect-timeout 3 "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
             break
         else
             _msg time "[$((i * 2))] test nginx err."
@@ -497,17 +497,15 @@ _get_redis_mysql_info() {
 _mysql_cli() {
     _msg time "exec mysql"
     cd "$laradock_path"
-    db_default=$(awk -F= '/^MYSQL_DATABASE=/ {print $2}' "$laradock_env")
-    user_default=$(awk -F= '/^MYSQL_USER=/ {print $2}' "$laradock_env")
-    password_default=$(awk -F= '/^MYSQL_PASSWORD=/ {print $2}' "$laradock_env")
-    $dco exec -T mysql bash -c "LANG=C.UTF-8 mysql $db_default -u $user_default -p$password_default"
+    source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=' "$laradock_env")
+    $dco exec -T mysql bash -c "LANG=C.UTF-8 mysql $MYSQL_DATABASE -u $MYSQL_USER -p$MYSQL_PASSWORD"
 }
 
 _redis_cli() {
     _msg time "exec redis"
     cd "$laradock_path"
-    password_default=$(awk -F= '/^REDIS_PASSWORD=/ {print $2}' "$laradock_env")
-    $dco exec redis bash -c "redis-cli --no-auth-warning -a $password_default"
+    source <(grep '^REDIS_PASSWORD=' "$laradock_env")
+    $dco exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
 }
 
 _install_lsyncd() {
@@ -931,7 +929,7 @@ EOF
         _start_auto
     fi
 
-    _msg step "check service"
+    _msg step "check service..."
 
     if ${exec_test_nginx:-false}; then
         _test_nginx
