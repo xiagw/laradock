@@ -122,7 +122,7 @@ _check_dependence() {
     _msg step "check command: curl git binutils"
     _check_sudo
     _check_distribution
-    _check_cmd install curl git strings
+    _check_cmd install curl git binutils
 
     [ -d "$HOME"/.ssh ] || mkdir -m 700 "$HOME"/.ssh
     if [ ! -f "$HOME"/.ssh/authorized_keys ]; then
