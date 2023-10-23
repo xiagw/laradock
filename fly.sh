@@ -513,23 +513,32 @@ _install_lsyncd() {
     _msg time "install lsyncd"
     _check_cmd install lsyncd
 
-    _msg time "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
     [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd
-    [ -f $lsyncd_conf ] || $pre_sudo cp -vf "$laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
+    if [ -f $lsyncd_conf ]; then
+        _msg time "found $lsyncd_conf"
+    else
+        _msg time "new lsyncd.conf.lua"
+        $pre_sudo cp -vf "$laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
+    fi
     [[ "$USER" == "root" ]] || $pre_sudo sed -i "s/\/root\/docker/$HOME\/docker/g" $lsyncd_conf
 
-    _msg time "new key, ssh-keygen"
     id_file="$HOME/.ssh/id_ed25519"
-    [ -f "$id_file" ] || ssh-keygen -t ed25519 -f "$id_file" -N ''
-    while read -rp "Enter ssh host IP [${count:=1}] (enter q break): " ssh_host_ip; do
+    if [ -f "$id_file" ]; then
+        _msg time "found $id_file"
+    else
+        _msg time "new key, ssh-keygen"
+        ssh-keygen -t ed25519 -f "$id_file" -N ''
+    fi
+
+    _msg time "config $lsyncd_conf"
+    while read -rp "[((++count))] Enter ssh host IP (enter q break): " ssh_host_ip; do
         [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
         _msg time "ssh-copy-id -i $id_file root@$ssh_host_ip"
         ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
-        _msg time "update $lsyncd_conf"
+        _msg time "add $ssh_host_ip to $lsyncd_conf"
         line_num=$(grep -n '^targets' $lsyncd_conf | awk -F: '{print $1}')
         $pre_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
-        count=$((count + 1))
         echo
     done
 }
