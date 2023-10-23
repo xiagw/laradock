@@ -515,11 +515,9 @@ _install_lsyncd() {
 
     _msg time "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
-    if [ ! -d /etc/lsyncd/ ]; then
-        $pre_sudo mkdir /etc/lsyncd
-        $pre_sudo cp "$laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
-        [[ "$USER" == "root" ]] || $pre_sudo sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
-    fi
+    [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd
+    [ -f $lsyncd_conf ] || $pre_sudo cp -vf "$laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
+    [[ "$USER" == "root" ]] || $pre_sudo sed -i "s/\/root\/docker/$HOME\/docker/g" $lsyncd_conf
 
     _msg time "new key, ssh-keygen"
     id_file="$HOME/.ssh/id_ed25519"
