@@ -525,11 +525,12 @@ _install_lsyncd() {
     while read -rp "Enter ssh host IP [${count:=1}] (enter q break): " ssh_host_ip; do
         [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
         _msg time "ssh-copy-id -i $id_file root@$ssh_host_ip"
-        ssh-copy-id -i "$id_file" "root@$ssh_host_ip"
+        ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
         _msg time "update $lsyncd_conf"
         line_num=$(grep -n '^targets' $lsyncd_conf | awk -F: '{print $1}')
         $pre_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
         count=$((count + 1))
+        echo
     done
 }
 
