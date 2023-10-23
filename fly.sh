@@ -511,18 +511,13 @@ _redis_cli() {
 
 _install_lsyncd() {
     _msg time "install lsyncd"
-    if _command_exists lsyncd; then
-        _msg warn "Found command lsyncd, skip."
-        return
-    else
-        _check_cmd install lsyncd
-    fi
+    _check_cmd install lsyncd
 
     _msg time "new lsyncd.conf.lua"
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
     if [ ! -d /etc/lsyncd/ ]; then
         $pre_sudo mkdir /etc/lsyncd
-        $pre_sudo cp "$laradock_path"/usvn$lsyncd_conf $lsyncd_conf
+        $pre_sudo cp "$laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
         [[ "$USER" == "root" ]] || $pre_sudo sed -i "s@/root/docker@$HOME/docker@" $lsyncd_conf
     fi
 
