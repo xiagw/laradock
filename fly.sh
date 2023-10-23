@@ -45,11 +45,11 @@ _get_yes_no() {
     fi
     read -t "${time_out:-0}" -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     case ${read_yes_no:-n} in
-    [Nn] | [Nn][Oo])
-        return 1
-        ;;
     [Yy] | [Yy][Ee][Ss])
         return 0
+        ;;
+    *)
+        return 1
         ;;
     esac
 }
@@ -60,7 +60,8 @@ _check_cmd() {
         for c in "$@"; do
             if ! command -v "$c"; then
                 [[ "${apt_update:-0}" -eq 1 ]] && $cmd update -yqq
-                $cmd install -y "$@"
+                [[ "$c" == strings ]] && pkg=binutils
+                $cmd install -y "$pkg"
             fi
         done
     else
@@ -122,7 +123,7 @@ _check_dependence() {
     _msg step "check command: curl git binutils"
     _check_sudo
     _check_distribution
-    _check_cmd install curl git binutils
+    _check_cmd install curl git strings
 
     [ -d "$HOME"/.ssh ] || mkdir -m 700 "$HOME"/.ssh
     if [ ! -f "$HOME"/.ssh/authorized_keys ]; then
