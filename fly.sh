@@ -533,7 +533,7 @@ _install_lsyncd() {
     fi
 
     _msg time "config $lsyncd_conf"
-    while read -rp "[((++count))] Enter ssh host IP (enter q break): " ssh_host_ip; do
+    while read -rp "[$((++count))] Enter ssh host IP (enter q break): " ssh_host_ip; do
         [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
         _msg time "ssh-copy-id -i $id_file root@$ssh_host_ip"
         ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
