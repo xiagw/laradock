@@ -388,12 +388,16 @@ _install_zsh() {
     _msg step "install oh my zsh"
     _check_cmd install zsh byobu
     if [[ "$lsb_dist" == centos ]]; then
-        if ${IN_CHINA:-true}; then
-            git clone --depth 1 https://gitee.com/mirrors/fzf.git "$HOME"/.fzf
+        if [[ -d "$HOME"/.fzf ]]; then
+            _msg warn "Found $HOME/.fzf, skip git clone fzf."
         else
-            git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME"/.fzf
+            if ${IN_CHINA:-true}; then
+                git clone --depth 1 https://gitee.com/mirrors/fzf.git "$HOME"/.fzf
+            else
+                git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME"/.fzf
+            fi
+            "$HOME"/.fzf/install
         fi
-        "$HOME"/.fzf/install
     else
         _check_cmd install fzf
     fi
