@@ -60,6 +60,7 @@ _check_cmd() {
         for c in "$@"; do
             if ! command -v "$c"; then
                 [[ "${apt_update:-0}" -eq 1 ]] && $cmd update -yqq
+                pkg=$c
                 [[ "$c" == strings ]] && pkg=binutils
                 $cmd install -y "$pkg"
             fi
