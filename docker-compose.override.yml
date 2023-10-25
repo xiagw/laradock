@@ -556,6 +556,34 @@ services:
         - frontend
         - backend
 
+    spring2:
+      build:
+        context: ./spring2
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
+          - JDK_IMAGE=${JDK_IMAGE}
+          - JDK_VERSION=${JDK_VERSION}
+      restart: always
+      volumes:
+        - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+        - ./spring2:/app
+      networks:
+        - frontend
+        - backend
+
+    nodejs:
+      build:
+        context: ./nodejs
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
+      restart: always
+      volumes:
+        - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+        - ./nodejs:/app
+      networks:
+        - frontend
+        - backend
+
     xxljob:
       image: xuxueli/xxl-job-admin
       volumes:
