@@ -1,16 +1,16 @@
 [TOC]
 
 ## 硬件/服务器/网络/配置推荐
-| 服务器        | 配置推荐                                           |
-|:--------------|:---------------------------------------------------|
-| CPU 处理器    | >= 2 core(核)                                      |
-| MEM 内存      | >= 8 GB                                            |
-| Disk 系统硬盘 | >= 60 GB                                           |
-| Net 网络带宽  | >= 100M(按量付费) >= 10M(固定带宽付费)             |
-| 私有云        | 带宽请自行根据实际业务情况配置网络带宽             |
-| 公有云费用    | 初期： 建议所有采购使用“按量付费”观察时间(一周/一月)       |
-| 公有云费用    | 初期后： 根据账单决定采购“固定消费”套餐(一月/一年) |
-| 防火墙/安全组 | 开放TCP端口 22/80/443                              |
+| 服务器        | 配置推荐                                      |
+|:--------------|:-------------------------------------------|
+| CPU 处理器    | >= 2 core(核)                                |
+| MEM 内存      | >= 8 GB                                      |
+| Disk 系统硬盘 | >= 60 GB                                      |
+| Net 网络带宽  | >= 100M(按量付费) >= 10M(固定带宽付费)           |
+| 私有云        | 带宽请自行根据实际业务情况配置网络带宽              |
+| 公有云费用    | 初期： 建议所有采购使用“按量付费”观察时间(一周/一月)  |
+| 公有云费用    | 初期后： 根据账单决定采购“固定消费”套餐(一月/一年)    |
+| 防火墙/安全组 | 开放TCP端口 22/80/443                           |
 
 
 ## 业务并发量服务器套餐推荐
@@ -24,13 +24,13 @@
 
 ## 软件/系统/版本推荐
 | 软件      | 配置推荐                                                               |
-|:----------|:-----------------------------------------------------------------------|
-| Nginx     | >= 1.18                                                                |
+|:----------|:---------------------------------------------------------------------|
+| Nginx     | >= 1.18                                                              |
 | PHP       | >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)                            |
 | JDK       | >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB) (openjdk/amazoncorretto)   |
 | MySQL     | >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB)                            |
 | Redis     | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)                            |
-| OS/单机   | Ubuntu 22.04 (推荐), CentOS/Anolis OS/RedHat/Debian/Rocky 等 Linux |
+| OS/单机   | Ubuntu 22.04 (推荐), CentOS/Anolis OS/RedHat/Debian/Rocky 等 Linux     |
 | OS/集群   | Kubernetes (根据云厂商自动推荐的OS/lifseaOS等/或自行安排)                  |
 | OS/不推荐 | windows 系统                                                           |
 
@@ -60,22 +60,23 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx ja
 ```
 
 ### 单机docker部署方式站点URL对应服务器目录说明
-| 站点 URL 目录                    | 对应服务器文件系统目录                    |
+| 站点 URL 目录                     | 对应服务器文件系统目录                        |
 |:---------------------------------|:------------------------------------------|
 | https://www.xxx.com/             | $HOME/docker/html/                        |
-| 前端：(VUE/TS 等静态文件)        | 若开启静态内容的 CDN 则只需针对此目录开启 |
-| https://www.xxx.com/s1/           | $HOME/docker/html/s1/                      |
-| https://www.xxx.com/s2/           | $HOME/docker/html/s2/                      |
+| 前端：(VUE/TS 等静态文件)           | 若开启静态内容的 CDN 则只需针对此目录开启       |
+| https://www.xxx.com/s1/          | $HOME/docker/html/s1/                     |
+| https://www.xxx.com/s2/          | $HOME/docker/html/s2/                     |
 | https://www.xxx.com/static/      | $HOME/docker/html/static/                 |
-| 后端：(PHP 文件存放目录)         | （可多个项目）                            |
+| 后端：(PHP 文件存放目录)            | （可多个项目）                              |
 | https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01            |
 | https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02            |
 | https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03            |
-| 后端：(Jar 文件存放目录)         | （可多个jar文件）                         |
-| https://www.xxx.com/spring-uri/  | $HOME/docker/laradock/spring/             |
-| Nginx：目录配置和日志            | （可多个站点配置）                        |
-| nginx conf 配置文件路径          | $HOME/docker/laradock/nginx/sites/        |
-| nginx 日志文件存放路径           | $HOME/docker/laradock/logs/nginx/         |
+| 后端：(Jar 文件存放目录)            | （可多个jar文件）                           |
+| https://www.xxx.com/uri/         | $HOME/docker/laradock/spring/             |
+| https://www.xxx.com/uri2/        | $HOME/docker/laradock/spring2/            |
+| Nginx：目录配置和日志               | （可多个站点配置）                           |
+| nginx conf 配置文件路径            | $HOME/docker/laradock/nginx/sites/        |
+| nginx 日志文件存放路径              | $HOME/docker/laradock/logs/nginx/         |
 
 
 ### 操作docker容器简要方式

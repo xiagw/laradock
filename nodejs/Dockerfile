@@ -16,7 +16,7 @@ RUN set -xe; \
   [ -d /app ] || mkdir /app; \
   chown -R node:node /.cache /app; \
   npm config set registry https://registry.npmmirror.com/; \
-  if [ $IN_CHINA = true ]; then \
+  if [ "$CHANGE_SOURCE" = true ]; then \
     npm install -g cnpm; \
   fi
   # yarn config set registry https://registry.npmmirror.com/; \
@@ -25,7 +25,7 @@ RUN set -xe; \
 USER node
 COPY --chown=node:node ./package.json .
 RUN set -xe; \
-  if [ $IN_CHINA = true ]; then \
+  if [ "$CHANGE_SOURCE" = true ]; then \
     cnpm install; \
   else \
     npm install; \
