@@ -6,7 +6,7 @@ ARG CHANGE_SOURCE=false
 
 EXPOSE 8080
 WORKDIR /app
-CMD [ "/app/run.sh" ]
+CMD [ "bash", "-c", "/app/run.sh" ]
 # CMD [ "npm", "run", "start" ]
 
 # COPY ./root/ /
