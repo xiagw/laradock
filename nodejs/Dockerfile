@@ -6,7 +6,7 @@ ARG CHANGE_SOURCE=false
 
 EXPOSE 8080
 WORKDIR /app
-CMD [ "bash", "-c", "/app/run.sh" ]
+CMD [ "bash", "/app/run.sh" ]
 # CMD [ "npm", "run", "start" ]
 
 # COPY ./root/ /
@@ -16,11 +16,11 @@ RUN set -xe; \
   [ -d /app ] || mkdir /app; \
   chown -R node:node /.cache /app; \
   npm config set registry https://registry.npmmirror.com/; \
+  yarn config set registry https://registry.npmmirror.com/; \
+  npm install -g npm; \
   if [ "$CHANGE_SOURCE" = true ]; then \
     npm install -g cnpm; \
   fi
-  # yarn config set registry https://registry.npmmirror.com/; \
-  # npm install -g npm; \
 
 USER node
 COPY --chown=node:node ./package.json .
