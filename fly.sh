@@ -95,9 +95,7 @@ _check_root() {
 
 _check_sudo() {
     ${already_check_sudo:-false} && return 0
-    if _check_root; then
-        :
-    else
+    if ! _check_root; then
         if $pre_sudo -l -U "$USER"; then
             _msg time "User $USER has permission to execute this script!"
         else
@@ -141,12 +139,19 @@ _check_dependence() {
         curl -fsSL 'https://api.github.com/users/xiagw/keys' |
             awk -F: '/key/ {print $2}'
     )
+
     if ${set_sysctl:-false}; then
-        grep '^vm.overcommit_memory' /etc/sysctl.conf ||
+        ## redis-server 安装在服务器本机，非docker
+        # grep -q 'transparent_hugepage/enabled' /etc/rc.local ||
+        #     echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' | $pre_sudo tee -a /etc/rc.local
+        # $pre_sudo source /etc/rc.local
+        grep -q 'net.core.somaxconn' /etc/sysctl.conf ||
+            echo 'net.core.somaxconn = 1024' | $pre_sudo tee -a /etc/sysctl.conf
+        grep -q 'vm.overcommit_memory' /etc/sysctl.conf ||
             echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
-    else
-        :
+        $pre_sudo sysctl -p
     fi
+    _msg time "dependence check done."
 }
 
 _install_wg() {
@@ -172,8 +177,8 @@ _check_docker() {
         $pre_sudo sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
         aliyun_os=true
     fi
-    get_docker=https://cdn.flyh6.com/docker/get-docker.sh
     if ${aliyun_mirror:-true}; then
+        get_docker=https://cdn.flyh6.com/docker/get-docker.sh
         curl -fsSL --connect-timeout 10 $get_docker | $pre_sudo bash -s - --mirror Aliyun
     else
         curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
