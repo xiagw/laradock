@@ -40,7 +40,7 @@ main() {
     elif mysql --version | grep -q "mysql.*Ver.*Linux.*Community"; then
         ver_number=$(mysql --version | awk '{print int($3)}')
     fi
-    if [[ $ver_number -le 8 ]]; then
+    if [[ $ver_number -lt 8 ]]; then
         mysql_dump="$mysql_dump --master-data=2"
     else
         mysql_dump="$mysql_dump --source-data=2"
