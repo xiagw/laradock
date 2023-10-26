@@ -17,7 +17,7 @@ main() {
     me_log="$me_path/${me_name}.log"
     backup_path="/backup"
 
-    ## check permission
+    ## check /backup permission
     if [ -w "$backup_path" ]; then
         echo "[OK] $backup_path is writable."
     else
@@ -35,8 +35,12 @@ main() {
     ## check mysql version
     mysql_bin="mysql $mysql_cnf"
     mysql_dump="mysqldump $mysql_cnf --set-gtid-purged=OFF -E -R --triggers"
-    ver_number=$(mysql --version | awk '{print $3}' | sed 's/\.//g')
-    if [[ $ver_number -le 8025 ]]; then
+    if mysql --version | grep -q "mysql.*Ver.*Distrib"; then
+        ver_number=$(mysql --version | awk '{print int($5)}')
+    elif mysql --version | grep -q "mysql.*Ver.*Linux.*Community"; then
+        ver_number=$(mysql --version | awk '{print int($3)}')
+    fi
+    if [[ $ver_number -le 8 ]]; then
         mysql_dump="$mysql_dump --master-data=2"
     else
         mysql_dump="$mysql_dump --source-data=2"
@@ -46,7 +50,7 @@ main() {
     user_perm=$backup_path/user.perm.sql
     mysql -Ne 'select user,host from mysql.user' >"$user_list"
     while read -r line; do
-        IFS=" " read -r -a user_host <<<$line
+        read -r -a user_host <<<$line
         mysql -Ne "show grants for \`${user_host[0]}\`@'${user_host[1]}';" >>"$user_perm"
     done <"$user_list"
     ## restore database
