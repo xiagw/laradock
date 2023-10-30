@@ -50,7 +50,7 @@ main() {
     user_perm=$backup_path/user.perm.sql
     mysql -Ne 'select user,host from mysql.user' >"$user_list"
     while read -r line; do
-        read -r -a user_host <<<$line
+        read -r -a user_host <<<"$line"
         mysql -Ne "show grants for \`${user_host[0]}\`@'${user_host[1]}';" >>"$user_perm"
     done <"$user_list"
     ## restore database

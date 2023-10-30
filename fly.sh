@@ -59,10 +59,10 @@ _check_cmd() {
         shift
         for c in "$@"; do
             if ! command -v "$c"; then
-                [[ "${apt_update:-0}" -eq 1 ]] && $cmd update -yqq
+                [[ "${apt_update:-0}" -eq 1 ]] && $cmd_pkg update -yqq
                 pkg=$c
                 [[ "$c" == strings ]] && pkg=binutils
-                $cmd install -y "$pkg"
+                $cmd_pkg install -y "$pkg"
             fi
         done
     else
@@ -105,12 +105,12 @@ _check_sudo() {
         fi
     fi
     if _check_cmd apt; then
-        cmd="$pre_sudo apt"
+        cmd_pkg="$pre_sudo apt-get"
         apt_update=1
     elif _check_cmd yum; then
-        cmd="$pre_sudo yum"
+        cmd_pkg="$pre_sudo yum"
     elif _check_cmd dnf; then
-        cmd="$pre_sudo dnf"
+        cmd_pkg="$pre_sudo dnf"
     else
         _msg time "not found apt/yum/dnf, exit 1"
         return 1
