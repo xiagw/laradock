@@ -24,6 +24,7 @@ main() {
         echo "[Fail] permission denied to $backup_path, exit."
         return 1
     fi
+
     ## .my.cnf
     if [ -f "$me_path/.my.cnf" ]; then
         mysql_cnf="--defaults-extra-file=$me_path/.my.cnf"
@@ -32,6 +33,7 @@ main() {
     else
         mysql_cnf="--defaults-extra-file=/var/lib/mysql/.my.cnf"
     fi
+
     ## check mysql version
     mysql_bin="mysql $mysql_cnf"
     mysql_dump="mysqldump $mysql_cnf --set-gtid-purged=OFF -E -R --triggers"
@@ -45,6 +47,7 @@ main() {
     else
         mysql_dump="$mysql_dump --source-data=2"
     fi
+
     ## backup user and grants
     user_list=$backup_path/user.list.txt
     user_perm=$backup_path/user.perm.sql
@@ -53,17 +56,25 @@ main() {
         read -r -a user_host <<<"$line"
         mysql -Ne "show grants for \`${user_host[0]}\`@'${user_host[1]}';" >>"$user_perm"
     done <"$user_list"
-    ## restore database
-    if [[ "$1" == restore ]]; then
+
+    case "$1" in
+    restore)
         _restore_db
         return 0
-    fi
-    ## backup single/multiple databases
-    if [[ -z "$1" ]]; then
-        dbs="$($mysql_bin -Ne 'show databases' | grep -vE 'information_schema|performance_schema|^sys$|^mysql$')"
-    else
-        dbs="$1"
-    fi
+        ;;
+    *)
+        ## backup single/multiple databases
+        if [[ -z "$1" ]]; then
+            dbs="$(
+                $mysql_bin -Ne 'show databases' |
+                    grep -vE 'information_schema|performance_schema|^sys$|^mysql$'
+            )"
+        else
+            dbs="$1"
+        fi
+        ;;
+    esac
+
     backup_time="$(date +%s)"
     for db in $dbs; do
         backup_file="$backup_path/${backup_time}.full.${db}.sql"

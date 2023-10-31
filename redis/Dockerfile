@@ -8,7 +8,9 @@ ARG REDIS_PASSWORD
 # RUN mkdir -p /usr/local/etc/redis
 COPY redis.conf /etc/redis.conf
 RUN set -xe; \
-  [ -n "${REDIS_PASSWORD}" ] && sed -i -e "s/.*requirepass foobared/requirepass ${REDIS_PASSWORD}/" /etc/redis.conf; \
+  if [ -n "${REDIS_PASSWORD}" ]; then; \
+    sed -i -e "s/.*requirepass foobared/requirepass ${REDIS_PASSWORD}/" /etc/redis.conf; \
+  fi; \
   mkdir /run/redis; \
   chown redis:redis /run/redis
 
@@ -17,4 +19,5 @@ VOLUME /data
 EXPOSE 6379
 
 CMD ["redis-server", "/etc/redis.conf"]
+
 # CMD ["redis-server"]

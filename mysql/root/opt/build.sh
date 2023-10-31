@@ -12,13 +12,12 @@ me_path="$(dirname "$(readlink -f "$0")")"
 # me_log="$me_path/${me_name}.log"
 
 my_cnf=/etc/mysql/conf.d/my.cnf
-if mysqld --version | grep '5\.7'; then
-    cp -f $me_path/my.5.7.cnf $my_cnf
-elif mysqld --version | grep '8\..\.'; then
+if mysqld --version | grep '8\..\.'; then
     cp -f $me_path/my.8.0.cnf $my_cnf
 else
-    cp -f $me_path/my.cnf $my_cnf
+    cp -f $me_path/my.5.7.cnf $my_cnf
 fi
+
 chmod 0644 $my_cnf
 if [ "$MYSQL_SLAVE" = 'true' ]; then
     sed -i -e "/server_id/s/1/${MYSQL_SLAVE_ID:-2}/" -e "/auto_increment_offset/s/1/2/" $my_cnf

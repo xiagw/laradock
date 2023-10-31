@@ -15,12 +15,12 @@ RUN set -xe; \
   [ -d /.cache ] || mkdir /.cache; \
   [ -d /app ] || mkdir /app; \
   chown -R node:node /.cache /app; \
-  npm config set registry https://registry.npmmirror.com/; \
-  yarn config set registry https://registry.npmmirror.com/; \
-  npm install -g npm; \
   if [ "$CHANGE_SOURCE" = true ]; then \
+    npm config set registry https://registry.npmmirror.com/; \
+    yarn config set registry https://registry.npmmirror.com/; \
     npm install -g cnpm; \
-  fi
+  fi; \
+  npm install -g npm
 
 USER node
 COPY --chown=node:node ./package.json .
