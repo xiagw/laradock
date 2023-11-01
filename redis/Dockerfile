@@ -8,7 +8,7 @@ ARG REDIS_PASSWORD
 # RUN mkdir -p /usr/local/etc/redis
 COPY redis.conf /etc/redis.conf
 RUN set -xe; \
-  if [ -n "${REDIS_PASSWORD}" ]; then; \
+  if [ -n "${REDIS_PASSWORD}" ]; then \
     sed -i -e "s/.*requirepass foobared/requirepass ${REDIS_PASSWORD}/" /etc/redis.conf; \
   fi; \
   mkdir /run/redis; \
