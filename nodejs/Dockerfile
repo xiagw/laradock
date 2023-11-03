@@ -3,6 +3,7 @@ ARG NODE_VERSION=18
 FROM node:${NODE_VERSION}-slim
 
 ARG CHANGE_SOURCE=false
+ARG IN_CHINA=false
 
 EXPOSE 8080
 WORKDIR /app
@@ -10,7 +11,7 @@ CMD [ "bash", "/app/run.sh" ]
 # CMD [ "npm", "run", "start" ]
 
 # COPY ./root/ /
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN set -xe; \
   [ -d /.cache ] || mkdir /.cache; \
   [ -d /app ] || mkdir /app; \
@@ -23,16 +24,3 @@ RUN set -xe; \
   npm install -g npm
 
 USER node
-COPY --chown=node:node ./package.json .
-RUN set -xe; \
-  if [ "$CHANGE_SOURCE" = true ]; then \
-    cnpm install; \
-  else \
-    npm install; \
-  fi
-
-ONBUILD COPY --chown=node:node . .
-ONBUILD RUN set -xe; if [ -f /opt/onbuild.sh ]; then bash /opt/onbuild.sh; else :; fi
-
-# podman build --force-rm --format=docker -t deploy/base:node-v18t01 -f Dockerfile.base .
-# docker build --force-rm -t deploy/base:node-v18t01 -f Dockerfile.base .

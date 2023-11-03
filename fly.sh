@@ -401,8 +401,9 @@ _install_zsh() {
             else
                 git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME"/.fzf
             fi
-            "$HOME"/.fzf/install
         fi
+        # sed -i -e "" "$HOME"/.fzf/install
+        "$HOME"/.fzf/install
     else
         _check_cmd install fzf
     fi
