@@ -23,7 +23,7 @@ RUN apk update \
 RUN set -x ; \
     touch /var/log/messages; \
     addgroup -g 1000 -S www-data ; \
-    adduser -u 1000 -D -S -G www-data www-data && exit 0 ; exit 1
+    adduser -u 1000 -D -S -G www-data www-data
 
 # ARG PHP_UPSTREAM_CONTAINER=php-fpm
 # ARG PHP_UPSTREAM_PORT=9000

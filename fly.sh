@@ -474,7 +474,7 @@ _test_php() {
     $pre_sudo chown "$USER:$USER" "$path_nginx_root"
     if [[ ! -f "$path_nginx_root/test.php" ]]; then
         _msg time "Create test.php"
-        $pre_sudo cp -avf "$laradock_path/php-fpm/root/opt/test.php" "$path_nginx_root/test.php"
+        $pre_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
         # shellcheck disable=1090
         source "$laradock_env" 2>/dev/null
         sed -i \
@@ -589,9 +589,16 @@ Parameters:
 }
 
 _build_image_nginx() {
-    build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    build_opt="$build_opt --build-arg CHANGE_SOURCE=${CHANGE_SOURCE} --build-arg IN_CHINA=${IN_CHINA}"
     image_tag_base=fly/nginx:base
     image_tag=fly/nginx
+
+    root_opt=root/opt
+    [ -d root ] || mkdir -p $root_opt
+    curl -fLo Dockerfile.base $url_deploy_raw/conf/dockerfile/Dockerfile.nginx
+    curl -fLo $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
+    curl -fLo $root_opt/onbuild.sh $url_deploy_raw/conf/dockerfile/$root_opt/onbuild.sh
+    curl -fLo $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
 
     $build_opt -t "$image_tag_base" -f Dockerfile.base .
 
@@ -600,49 +607,36 @@ _build_image_nginx() {
 }
 
 _build_image_php() {
-    build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA} --build-arg LARADOCK_PHP_VERSION=$php_ver"
+    build_opt="$build_opt --build-arg CHANGE_SOURCE=${CHANGE_SOURCE} --build-arg IN_CHINA=${IN_CHINA} --build-arg LARADOCK_PHP_VERSION=$php_ver"
     image_tag_base=fly/php:${php_ver}-base
     image_tag=fly/php:${php_ver}
 
     root_opt=root/opt
     [ -d root ] || mkdir -p $root_opt
-    if ${build_remote:-false}; then
-        curl -fLo Dockerfile.base $url_laradock_raw/php-fpm/Dockerfile.base
-        curl -fLo $root_opt/nginx.conf $url_laradock_raw/php-fpm/$root_opt/nginx.conf
-        curl -fLo $root_opt/build.sh $url_laradock_raw/php-fpm/$root_opt/build.sh
-        curl -fLo $root_opt/onbuild.sh $url_laradock_raw/php-fpm/$root_opt/onbuild.sh
-        curl -fLo $root_opt/run.sh $url_laradock_raw/php-fpm/$root_opt/run.sh
-    fi
+    curl -fLo Dockerfile.base $url_deploy_raw/conf/dockerfile/Dockerfile.php.base
+    curl -fLo $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
+    curl -fLo $root_opt/onbuild.sh $url_deploy_raw/conf/dockerfile/$root_opt/onbuild.sh
+    curl -fLo $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
 
     if docker images | grep "fly/php.*${php_ver}-base"; then
         _msg time "ignore build base image."
     else
-        if ${build_remote:-false}; then
-            $build_opt -t "$image_tag_base" -f Dockerfile.base .
-        else
-            $build_opt -t "$image_tag_base" -f php-fpm/Dockerfile.base php-fpm/
-        fi
+        $build_opt -t "$image_tag_base" -f Dockerfile.base .
     fi
-    if ${build_remote:-false}; then
-        echo "FROM $image_tag_base" >Dockerfile
-        $build_opt -t "$image_tag" .
-    else
-        echo "FROM $image_tag_base" >php-fpm/Dockerfile
-        $build_opt -t "$image_tag" -f php-fpm/Dockerfile php-fpm/
-    fi
+    echo "FROM $image_tag_base" >Dockerfile
+    $build_opt -t "$image_tag" .
 }
 
 _build_image_java() {
-    build_opt="$build_opt --build-arg CHANGE_SOURCE=${IN_CHINA} --build-arg IN_CHINA=${IN_CHINA}"
+    build_opt="$build_opt --build-arg CHANGE_SOURCE=${CHANGE_SOURCE} --build-arg IN_CHINA=${IN_CHINA}"
     # image_tag_base=fly/spring:base
     image_tag=fly/spring
 
-    [ -d root ] || mkdir -p root/opt
-    if ${build_remote:-false}; then
-        curl -fLo Dockerfile $url_deploy_raw/conf/dockerfile/Dockerfile.java
-        curl -fLo root/opt/build.sh $url_deploy_raw/conf/dockerfile/root/build.sh
-        curl -fLo root/opt/run.sh $url_deploy_raw/conf/dockerfile/root/run.sh
-    fi
+    root_opt=root/opt
+    [ -d root ] || mkdir -p $root_opt
+    curl -fLo Dockerfile $url_deploy_raw/conf/dockerfile/Dockerfile.java
+    curl -fLo $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
+    curl -fLo $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
     # $build_opt -t "$image_tag_base" -f Dockerfile.base .
 
     $build_opt -t "$image_tag" .
