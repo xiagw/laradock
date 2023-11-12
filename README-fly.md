@@ -104,7 +104,7 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/spring
 
 ```
 
-## 推荐方式二/K8S集群helm部署参考
+## 推荐方式二/K8S集群kubectl/helm部署参考
 ```sh
 ## 1. 前提条件，确保命令 kubectl / helm 工作正常
 ## 2. 使用命令 helm create <your_app_name> 生成 helm 文件， 例如:
@@ -159,15 +159,15 @@ exec run.sh start
 ```
 
 ## 不推荐部署于Windows服务器
-1. Download URL: https://cdn.flyh6.com/docker/xampp.zip
+1. Download URL: http://cdn.flyh6.com/docker/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
 1. 文件存放一般位于 C:\xampp\htdocs\ （此目录对应站点根目录，例如 http://xxx.yyy.com/）
 1. C:\xampp\htdocs\tp\ (PHP 代码文件)（此目录对应站点目录，例如 http://xxx.yyy.com/tp/）
-1. C:\xampp\htdocs\static\ (前端静态资源文件)（此目录对应站点目录，例如 http://xxx.yyy.com/static/）
+1. C:\xampp\htdocs\s\ (前端静态资源文件)（此目录对应站点目录，例如 http://xxx.yyy.com/s/）
 1. C:\xampp\spring\ 安装 JDK， 部署 jar 文件
-```bat
-curl.exe -LO https://cdn.flyh6.com/docker/xampp.zip
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.zip C:\xampp\"
+```sh
+curl.exe -LO http://cdn.flyh6.com/docker/xampp.zip
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.zip C:\"
 ```
 
 
