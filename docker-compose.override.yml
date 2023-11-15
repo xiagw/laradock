@@ -682,3 +682,17 @@ services:
       networks:
         - frontend
         - backend
+
+## ddns for aliyun
+    ddns:
+      image: sanjusss/aliyun-ddns
+      environment:
+        AKID: ${DDNS_AKID}
+        AKSCT: ${DDNS_AKSCT}
+        DOMAIN: ${DDNS_DOMAIN}
+        REDO: 30
+        TTL: 600
+        TIMEZONE: 8.0
+        TYPE: A,AAAA
+      networks:
+        - backend
