@@ -166,8 +166,18 @@ exec run.sh start
 1. C:\xampp\htdocs\s\ (前端静态资源文件)（此目录对应站点目录，例如 http://xxx.yyy.com/s/）
 1. C:\xampp\spring\ 安装 JDK， 部署 jar 文件
 ```sh
+cd .\Downloads
+
+# irm https://gitee.com/xiagw/deploy.sh/raw/main/docs/bin/win.ssh.ps1 | iex
+
 curl.exe -LO http://cdn.flyh6.com/docker/xampp.zip
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.zip C:\"
+Expand-Archive .\xampp.zip C:\
+# powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.zip C:\"
+
+curl.exe -LO https://corretto.aws/downloads/latest/amazon-corretto-8-x64-windows-jdk.msi
+Start-Process .\amazon-corretto-8-x64-windows-jdk.msi
+# curl.exe -LO https://corretto.aws/downloads/latest/amazon-corretto-17-x64-windows-jdk.msi
+# Start-Process .\amazon-corretto-17-x64-windows-jdk.msi
 ```
 
 
