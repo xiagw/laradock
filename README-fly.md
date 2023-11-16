@@ -170,6 +170,9 @@ cd .\Downloads
 
 # irm https://gitee.com/xiagw/deploy.sh/raw/main/docs/bin/win.ssh.ps1 | iex
 
+# Import-Module BitsTransfer
+# Start-BitsTransfer -Source http://cdn.flyh6.com/docker/xampp.zip -Description .\xampp.zip
+
 curl.exe -LO http://cdn.flyh6.com/docker/xampp.zip
 Expand-Archive .\xampp.zip C:\
 # powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.zip C:\"
