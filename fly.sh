@@ -41,16 +41,14 @@ _get_yes_no() {
     if [[ "$1" == timeout ]]; then
         shift
         time_out=20
-        _msg time "Automatic answer 'N' within $time_out seconds"
+        _msg time "Automatic answer 'N' within ${time_out} seconds"
+        read -t "${time_out}" -rp "${1:-Confirm the action?} [y/N] " read_yes_no
+    else
+        read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     fi
-    read -t "${time_out:-0}" -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     case ${read_yes_no:-n} in
-    [Yy] | [Yy][Ee][Ss])
-        return 0
-        ;;
-    *)
-        return 1
-        ;;
+    [Yy] | [Yy][Ee][Ss]) return 0 ;;
+    *) return 1 ;;
     esac
 }
 
