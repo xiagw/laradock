@@ -125,7 +125,6 @@ services:
 
 ### percona-xtrabackup ################################################
     percona-xtrabackup:
-      restart: always
       build:
         context: ./percona-xtrabackup
         args:
@@ -140,7 +139,8 @@ services:
       volumes:
         - ${DATA_PATH_HOST}/mysql:/var/lib/mysql
         - ${DATA_PATH_HOST}/mysqlbak:/backup
-      command: xtrabackup --backup --datadir=/var/lib/mysql/ --target-dir=/backup --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD}
+      command: xtrabackup --backup --datadir=/var/lib/mysql/ --target-dir=/backup/xtrabackup --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD}
+      # command: xtrabackup --backup --target-dir=/backup/inc1 --incremental-basedir=/backup/xtrabackup --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD}
       networks:
         - backend
         - frontend
