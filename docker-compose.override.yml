@@ -83,8 +83,8 @@ services:
         - backend
         - frontend
       depends_on:
-        # - mysqlbak
-        - percona-xtrabackup
+        - mysqlbak
+        # - percona-xtrabackup
 
 ### MySQL backup ################################################
     mysqlbak:
