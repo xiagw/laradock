@@ -129,13 +129,11 @@ _check_dependence() {
     fi
 
     while read -r line; do
-        key="${line//\"/}"
-        if ! grep -q "$key" "$HOME"/.ssh/authorized_keys; then
-            echo "$key" >>"$HOME"/.ssh/authorized_keys
-        fi
+        grep -q "$line" "$HOME"/.ssh/authorized_keys ||
+            echo "$line" >>"$HOME"/.ssh/authorized_keys
     done < <(
         curl -fsSL 'https://api.github.com/users/xiagw/keys' |
-            awk -F: '/key/ {print $2}'
+            awk -F: '/key/,gsub("\"","") {print $2}'
     )
 
     if ${set_sysctl:-false}; then
@@ -229,8 +227,8 @@ _check_laradock() {
     ## clone laradock
     _msg step "install laradock to $laradock_path/."
     mkdir -p "$laradock_path"
-
     git clone -b in-china --depth 1 $url_laradock_git "$laradock_path"
+
     ## jdk image, uid is 1000.(see spring/Dockerfile)
     if [[ "$(stat -c %u "$laradock_path/spring")" != 1000 ]]; then
         if $pre_sudo chown 1000:1000 "$laradock_path/spring"; then
@@ -242,7 +240,7 @@ _check_laradock() {
 }
 
 _gen_password() {
-    strings /dev/urandom | tr -dc A-Za-z0-9 | head -c10
+    strings /dev/urandom | tr -dc A-Za-z0-9 | head -c12
 }
 
 _check_laradock_env() {
@@ -373,20 +371,6 @@ _set_file_mode() {
     done
 }
 
-_install_trzsz() {
-    ## apt
-    $pre_sudo apt update -yq
-    $pre_sudo apt install -y software-properties-common
-    $pre_sudo add-apt-repository --yes ppa:trzsz/ppa
-    $pre_sudo apt update -yq
-    $pre_sudo apt install -yq trzsz
-
-    ## yum
-    $pre_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm
-
-    $pre_sudo yum install -y trzsz
-}
-
 _install_zsh() {
     _msg step "install oh my zsh"
     _check_cmd install zsh byobu
@@ -421,6 +405,18 @@ _install_zsh() {
         sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
     else
         sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
+    fi
+    ## trzsz
+    if command -v apt; then
+        $cmd_pkg install -yq software-properties-common
+        $pre_sudo add-apt-repository --yes ppa:trzsz/ppa
+        $cmd_pkg apt update -yq
+        $cmd_pkg apt install -yq trzsz
+    elif command -v rpm; then
+        $pre_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm
+        $cmd_pkg install -y trzsz
+    else
+        _msg warn "not support install trzsz"
     fi
 }
 

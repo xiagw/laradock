@@ -1,4 +1,7 @@
 FROM php:7.4-apache
+
+ARG CHANGE_SOURCE=false
+
 ## for apt to be noninteractive
 ENV DEBIAN_FRONTEND noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN true

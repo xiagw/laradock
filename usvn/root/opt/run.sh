@@ -25,7 +25,7 @@ _schedule_svn_update() {
     done
 }
 
-_watch_new() {
+_inotify() {
     while read -r path action rev; do
         echo "${path}${action}${rev}" | grep -P '/db/revprops/\d+/CREATE\d+' || continue
         ## get $repo_name
@@ -72,9 +72,9 @@ main() {
         set -xe
     fi
     if [[ -d $usvn_path/public ]]; then
-        echo "Found $usvn_path/public, skip copy."
+        echo "Found $usvn_path/public, skip copy usvn source code."
     else
-        echo "Not found $usvn_path/public, copy..."
+        echo "Not found $usvn_path/public, copy usvn source code..."
         rsync -a ${usvn_path}_src/ $usvn_path/
     fi
     if [[ -d $svn_repo_path ]]; then
@@ -89,7 +89,7 @@ main() {
     _schedule_svn_update &
     pids+=("$!")
 
-    _watch_new &
+    _inotify &
     pids+=("$!")
 
     # svnserve -d -r $svn_repo_path

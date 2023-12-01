@@ -497,7 +497,11 @@ services:
 
     usvn:
       # image: kempkensteffen/usvn
-      build: ./usvn
+      build:
+        context: ./usvn
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
+          - TZ=${WORKSPACE_TIMEZONE}
       ports:
         - "8081:80"
         - "3690:3690"
