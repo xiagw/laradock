@@ -83,7 +83,8 @@ services:
         - backend
         - frontend
       depends_on:
-        - mysqlbak
+        # - mysqlbak
+        - percona-xtrabackup
 
 ### MySQL backup ################################################
     mysqlbak:
@@ -140,8 +141,6 @@ services:
         - ${DATA_PATH_HOST}/mysql:/var/lib/mysql
         - ${DATA_PATH_HOST}/mysqlbak:/backup
       command: xtrabackup --backup --datadir=/var/lib/mysql/ --target-dir=/backup --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD}
-      depends_on:
-        - mysql
       networks:
         - backend
         - frontend
