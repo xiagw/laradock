@@ -325,7 +325,7 @@ _set_env_php_ver() {
 _get_image() {
     image_name=$1
     if ${is_php:-false}; then
-        if docker images | grep -E "laradock-$image_name|laradock_$image_name"; then
+        if docker images | grep -E "laradock[-_]${image_name}\s+"; then
             if [[ ${overwrite_php_image:-false} == true ]]; then
                 echo "download php image..."
             else
@@ -347,6 +347,7 @@ _get_image() {
     _msg time "docker load image..."
     docker load <"$image_save"
 
+    local dk_ver
     dk_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
     if ((dk_ver <= 19)); then
         docker tag "laradock-$image_name" "laradock_$image_name"
@@ -565,19 +566,19 @@ Usage: $0 [parameters ...]
 Parameters:
     -h, --help          Show this help message.
     -v, --version       Show version info.
-    build               build php image
-    info                get mysql redis info
-    nginx               install nginx
-    php                 install php-fpm 7.1
-    java                install jdk / spring
-    mysql               install mysql
-    redis               install redis
-    mysql-cli           exec into mysql cli
-    redis-cli           exec into mysql cli
-    lsync               setup lsyncd
-    zsh                 install zsh
-    reset               reset laradock
-    upgrade             upgrade php / java
+    build               Build PHP image.
+    info                Get MySQL and Redis info.
+    nginx               Install nginx.
+    php                 Install php-fpm 7.1.
+    java                Install JDK / spring.
+    mysql               Install MySQL.
+    redis               Install Redis.
+    mysql-cli           Exec into MySQL CLI.
+    redis-cli           Exec into Redis CLI.
+    lsync               Setup lsyncd.
+    zsh                 Install zsh.
+    reset               Reset laradock.
+    upgrade             Upgrade PHP / Java.
 "
     exit 1
 }
