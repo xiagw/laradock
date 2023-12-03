@@ -132,8 +132,8 @@ _check_dependence() {
         grep -q "$line" "$HOME"/.ssh/authorized_keys ||
             echo "$line" >>"$HOME"/.ssh/authorized_keys
     done < <(
-        curl -fsSL 'https://api.github.com/users/xiagw/keys' |
-            awk -F: '/key/,gsub("\"","") {print $2}'
+        # curl -fsSL 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
+        curl -fsSL 'https://github.com/xiagw.keys'
     )
 
     if ${set_sysctl:-false}; then
