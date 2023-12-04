@@ -27,22 +27,22 @@ main() {
 
     ## .my.cnf
     if [ -f "$me_path/.my.cnf" ]; then
-        mysql_cnf="--defaults-extra-file=$me_path/.my.cnf"
+        mysql_conf="--defaults-extra-file=$me_path/.my.cnf"
     elif [ -f "$HOME/.my.cnf" ]; then
-        mysql_cnf="--defaults-extra-file=$HOME/.my.cnf"
+        mysql_conf="--defaults-extra-file=$HOME/.my.cnf"
     else
-        mysql_cnf="--defaults-extra-file=/var/lib/mysql/.my.cnf"
+        mysql_conf="--defaults-extra-file=/var/lib/mysql/.my.cnf"
     fi
 
     ## check mysql version
-    mysql_bin="mysql $mysql_cnf"
-    mysql_dump="mysqldump $mysql_cnf --set-gtid-purged=OFF -E -R --triggers"
+    mysql_bin="mysql $mysql_conf"
+    mysql_dump="mysqldump $mysql_conf --set-gtid-purged=OFF -E -R --triggers"
     if mysql --version | grep -q "mysql.*Ver.*Distrib"; then
-        ver_number=$(mysql --version | awk '{print int($5)}')
+        mysql_ver=$(mysql --version | awk '{print int($5)}')
     elif mysql --version | grep -q "mysql.*Ver.*Linux.*Community"; then
-        ver_number=$(mysql --version | awk '{print int($3)}')
+        mysql_ver=$(mysql --version | awk '{print int($3)}')
     fi
-    if [[ $ver_number -lt 8 ]]; then
+    if [[ $mysql_ver -lt 8 ]]; then
         mysql_dump="$mysql_dump --master-data=2"
     else
         mysql_dump="$mysql_dump --source-data=2"
@@ -65,18 +65,18 @@ main() {
     *)
         ## backup single/multiple databases
         if [[ -z "$1" ]]; then
-            dbs="$(
+            databases="$(
                 $mysql_bin -Ne 'show databases' |
                     grep -vE 'information_schema|performance_schema|^sys$|^mysql$'
             )"
         else
-            dbs="$1"
+            databases="$1"
         fi
         ;;
     esac
 
     backup_time="$(date +%s)"
-    for db in $dbs; do
+    for db in $databases; do
         backup_file="$backup_path/${backup_time}.full.${db}.sql"
         if $mysql_bin "$db" -e 'select now()' >/dev/null; then
             $mysql_dump "$db" -r "$backup_file"
@@ -85,6 +85,9 @@ main() {
             echo "database $db not exists."
         fi
     done
+
+    ## remove backup before 1 year
+    find "$backup_path" -mtime +180 -type f -delete
 }
 
 main "$@"
