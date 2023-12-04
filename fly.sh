@@ -374,7 +374,9 @@ _set_file_mode() {
 
 _install_zsh() {
     _msg step "install oh my zsh"
+
     _check_cmd install zsh byobu
+    ## fzf
     if [[ "$lsb_dist" == centos ]]; then
         if [[ -d "$HOME"/.fzf ]]; then
             _msg warn "Found $HOME/.fzf, skip git clone fzf."
@@ -390,23 +392,7 @@ _install_zsh() {
     else
         _check_cmd install fzf
     fi
-    if [[ -d "$HOME"/.oh-my-zsh ]]; then
-        _msg warn "Found $HOME/.oh-my-zsh, skip."
-        return
-    fi
-    ## install oh my zsh
-    if ${IN_CHINA:-true}; then
-        git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
-    else
-        bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    fi
-    cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
-    sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
-    if _check_cmd fzf; then
-        sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
-    else
-        sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
-    fi
+
     ## trzsz
     if command -v apt; then
         $cmd_pkg install -yq software-properties-common
@@ -418,6 +404,24 @@ _install_zsh() {
         $cmd_pkg install -y trzsz
     else
         _msg warn "not support install trzsz"
+    fi
+
+    ## install oh my zsh
+    if [[ -d "$HOME"/.oh-my-zsh ]]; then
+        _msg warn "Found $HOME/.oh-my-zsh, skip."
+        return
+    fi
+    if ${IN_CHINA:-true}; then
+        git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
+    else
+        bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    fi
+    cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
+    sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
+    if _check_cmd fzf; then
+        sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
+    else
+        sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
     fi
 }
 
