@@ -39,32 +39,6 @@ services:
       volumes:
         - ${NGINX_SSL_PATH}:/acmedata
 
-### MySQL 5.7 ################################################
-    mysql57:
-      restart: always
-      build:
-        context: ./mysql
-        args:
-          - MYSQL_VERSION=${MYSQL_VERSION_57:-5.7}
-          - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      security_opt:
-        - seccomp:unconfined
-      environment:
-        - MYSQL_DATABASE=${MYSQL_DATABASE}
-        - MYSQL_USER=${MYSQL_USER}
-        - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-        - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-        - TZ=${WORKSPACE_TIMEZONE}
-      volumes:
-        - ${DATA_PATH_HOST}/mysql57:/var/lib/mysql
-        - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
-        - ${DATA_PATH_HOST}/mysqlbak:/backup
-      ports:
-        - "${MYSQL_PORT_57:-3307}:3306"
-      networks:
-        - backend
-        - frontend
-
 ### MySQL ################################################
     mysql:
       restart: always
@@ -78,7 +52,6 @@ services:
         - TZ=${WORKSPACE_TIMEZONE}
       volumes:
         - ${DATA_PATH_HOST}/mysqlbak:/backup
-        # - ./mysql/my.${MYSQL_VERSION}.cnf:/etc/mysql/conf.d/my.cnf
       networks:
         - backend
         - frontend
