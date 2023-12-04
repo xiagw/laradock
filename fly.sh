@@ -892,7 +892,7 @@ GRANT ALL ON `defaultdb`.* TO 'flyprod'@'%' ;
 EOF
             if [ ! -d "$laradock_path"/../../laradock-data/mysqlbak ]; then
                 $pre_sudo mkdir -p "$laradock_path"/../../laradock-data/mysqlbak
-                $pre_sudo chown 1005 "$laradock_path"/../../laradock-data/mysqlbak
+                $pre_sudo chown 1000 "$laradock_path"/../../laradock-data/mysqlbak
             fi
             url_image="$url_fly_cdn/laradock-mysql.tar.gz"
             _get_image mysql
