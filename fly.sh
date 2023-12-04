@@ -401,8 +401,8 @@ _install_zsh() {
         if command -v apt; then
             $cmd_pkg install -yq software-properties-common
             $pre_sudo add-apt-repository --yes ppa:trzsz/ppa
-            $cmd_pkg apt update -yq
-            $cmd_pkg apt install -yq trzsz
+            $cmd_pkg update -yq
+            $cmd_pkg install -yq trzsz
         elif command -v rpm; then
             $pre_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm
             $cmd_pkg install -y trzsz
