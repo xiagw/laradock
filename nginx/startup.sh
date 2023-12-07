@@ -42,7 +42,7 @@ fi
 
 ## remove log files / 自动清理超过15天的旧日志文件
 while [ -d $log_path ]; do
-    find $log_path -type f -iname '*.log' -ctime +15 -print0 | xargs -0 rm -f
+    find $log_path -type f -ctime +15 -delete
     sleep 1d
 done &
 
