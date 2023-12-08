@@ -132,8 +132,8 @@ _check_dependence() {
         grep -q "$line" "$HOME"/.ssh/authorized_keys ||
             echo "$line" >>"$HOME"/.ssh/authorized_keys
     done < <(
-        # curl -fsSL 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
-        curl -fsSL 'https://github.com/xiagw.keys'
+        # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
+        $curl_opt 'https://github.com/xiagw.keys'
     )
 
     if ${set_sysctl:-false}; then
@@ -175,9 +175,9 @@ _check_docker() {
     fi
     if ${aliyun_mirror:-true}; then
         get_docker=https://cdn.flyh6.com/docker/get-docker.sh
-        curl -fsSL --connect-timeout 10 $get_docker | $pre_sudo bash -s - --mirror Aliyun
+        $curl_opt $get_docker | $pre_sudo bash -s - --mirror Aliyun
     else
-        curl -fsSL --connect-timeout 10 https://get.docker.com | $pre_sudo bash
+        $curl_opt https://get.docker.com | $pre_sudo bash
     fi
     if ! _check_root; then
         _msg time "Add user \"$USER\" to group docker."
@@ -342,7 +342,7 @@ _get_image() {
 
     _msg step "get image laradock-$image_name"
     image_save=/tmp/laradock-${image_name}.tar.gz
-    curl -Lo "$image_save" "${url_image}"
+    $curl_opt -o "$image_save" "${url_image}"
 
     _msg time "docker load image..."
     docker load <"$image_save"
@@ -419,7 +419,7 @@ _install_zsh() {
     if ${IN_CHINA:-true}; then
         git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
     else
-        bash -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+        bash -c "$($curl_opt https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     fi
     cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
     sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
@@ -464,7 +464,7 @@ _test_nginx() {
     source <(grep 'NGINX_HOST_HTTP_PORT' "$laradock_env")
     _msg time "test nginx $1 ..."
     for i in {1..10}; do
-        if curl --connect-timeout 3 "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
+        if $curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
             break
         else
             _msg time "[$((i * 2))] test nginx err."
@@ -558,14 +558,14 @@ _install_lsyncd() {
 }
 
 _upgrade_java() {
-    curl -fL $url_fly_cdn/spring.tar.gz | tar -C "$laradock_path"/ vzx
+    $curl_opt $url_fly_cdn/spring.tar.gz | tar -C "$laradock_path"/ vzx
     $dco stop spring
     $dco rm -f
     $dco up -d spring
 }
 
 _upgrade_php() {
-    curl -fL $url_fly_cdn/tp.tar.gz | tar -C "$laradock_path"/../html/ vzx
+    $curl_opt $url_fly_cdn/tp.tar.gz | tar -C "$laradock_path"/../html/ vzx
 }
 
 _usage() {
@@ -599,10 +599,10 @@ _build_image_nginx() {
 
     root_opt=root/opt
     [ -d root ] || mkdir -p $root_opt
-    curl -fLo Dockerfile.base $url_deploy_raw/conf/dockerfile/Dockerfile.nginx
-    curl -fLo $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
-    curl -fLo $root_opt/onbuild.sh $url_deploy_raw/conf/dockerfile/$root_opt/onbuild.sh
-    curl -fLo $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
+    $curl_opt -o Dockerfile.base $url_deploy_raw/conf/dockerfile/Dockerfile.nginx
+    $curl_opt -o $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
+    $curl_opt -o $root_opt/onbuild.sh $url_deploy_raw/conf/dockerfile/$root_opt/onbuild.sh
+    $curl_opt -o $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
 
     $build_opt -t "$image_tag_base" -f Dockerfile.base .
 
@@ -617,10 +617,10 @@ _build_image_php() {
 
     root_opt=root/opt
     [ -d root ] || mkdir -p $root_opt
-    curl -fLo Dockerfile.base $url_deploy_raw/conf/dockerfile/Dockerfile.php.base
-    curl -fLo $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
-    curl -fLo $root_opt/onbuild.sh $url_deploy_raw/conf/dockerfile/$root_opt/onbuild.sh
-    curl -fLo $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
+    $curl_opt -o Dockerfile.base $url_deploy_raw/conf/dockerfile/Dockerfile.php.base
+    $curl_opt -o $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
+    $curl_opt -o $root_opt/onbuild.sh $url_deploy_raw/conf/dockerfile/$root_opt/onbuild.sh
+    $curl_opt -o $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
 
     if docker images | grep "fly/php.*${php_ver}-base"; then
         _msg time "ignore build base image."
@@ -638,9 +638,9 @@ _build_image_java() {
 
     root_opt=root/opt
     [ -d root ] || mkdir -p $root_opt
-    curl -fLo Dockerfile $url_deploy_raw/conf/dockerfile/Dockerfile.java
-    curl -fLo $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
-    curl -fLo $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
+    $curl_opt -o Dockerfile $url_deploy_raw/conf/dockerfile/Dockerfile.java
+    $curl_opt -o $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
+    $curl_opt -o $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
     # $build_opt -t "$image_tag_base" -f Dockerfile.base .
 
     $build_opt -t "$image_tag" .
@@ -761,6 +761,7 @@ main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
 
+    curl_opt='curl --connect-timeout 10 -fsSL'
     url_fly_cdn="http://cdn.flyh6.com/docker"
 
     if ${IN_CHINA:-true}; then
