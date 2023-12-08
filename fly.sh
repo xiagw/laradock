@@ -404,7 +404,7 @@ _install_zsh() {
             $cmd_pkg update -yq
             $cmd_pkg install -yq trzsz
         elif command -v rpm; then
-            $pre_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm
+            $pre_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm || true
             $cmd_pkg install -y trzsz
         else
             _msg warn "not support install trzsz"
