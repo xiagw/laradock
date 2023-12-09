@@ -61,7 +61,7 @@ services:
 
 ### MySQL backup ################################################
     mysqlbak:
-      restart: always
+      # restart: always
       # image: databack/mysql-backup
       build:
         context: ./mysqlbak
