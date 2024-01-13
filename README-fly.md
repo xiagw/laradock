@@ -47,15 +47,15 @@
 ## 3. 默认下载并导入 php-fpm 镜像，其他镜像自动使用 docker build 创建
 ## 4. 访问不到 hub.docker.com 等网络问题，后面加跟参数 "get-image-cdn"
 ## PHP 单实例(不包含cache/db)： nginx/php 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
 ## PHP 套装(包含cache/db)： nginx/php/redis/mysql 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx php redis mysql
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php redis mysql nginx
 ## Java 单实例(不包含cache/db)： nginx/java 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java nginx
 ## Java 套装(包含cache/db)： nginx/java/redis/mysql 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java redis mysql
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java redis mysql nginx
 ## 所有套装 nginx/php/java/redis/mysql 请执行
-# curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx java php-fpm redis mysql
+# curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php-fpm redis mysql nginx
 
 ```
 
@@ -81,24 +81,18 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nginx ja
 
 ### 操作docker容器简要方式
 ```sh
-## !!! 必须进入此目录 !!! 操作容器
-cd $HOME/docker/laradock
+cd $HOME/docker/laradock      ## !!! 必须进入此目录 !!! 操作容器
 ## cd $PWD/docker/laradock
 
-## 启动服务 php-fpm
-docker compose up -d nginx redis mysql php-fpm
-## 启动服务 java (spring)
-docker compose up -d nginx redis mysql spring
+docker compose up -d nginx redis mysql php-fpm      ## 启动服务 php-fpm
+docker compose up -d nginx redis mysql spring       ## 启动服务 java (spring)
 
-## 恢复文件权限
-sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp
-## PHP 容器内 uid=33
-sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime
-## Java 容器内 uid=1000
-sudo chown -R 1000:1000 $HOME/docker/laradock/spring
+sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
+sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
+sudo chown -R 1000:1000 $HOME/docker/laradock/spring    ## Java 容器内 uid=1000
 
-## 如果有负载均衡，单台/多台服务器
-1. 设置服务器组（单台/多台）
+## 如果有负载均衡，单台或多台服务器
+1. 设置负载均衡服务器组（单台/多台）
 1. 设置负载均衡监听端口 80/443，指向服务器组
 1. 若有安全组则需设置安全组开放 80/443
 
@@ -161,10 +155,14 @@ exec run.sh start
 ## 不推荐部署于Windows服务器
 1. Download URL: http://cdn.flyh6.com/docker/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
-1. 文件存放一般位于 C:\xampp\htdocs\ （此目录对应站点根目录，例如 http://xxx.yyy.com/）
-1. C:\xampp\htdocs\tp\ (PHP 代码文件)（此目录对应站点目录，例如 http://xxx.yyy.com/tp/）
-1. C:\xampp\htdocs\s\ (前端静态资源文件)（此目录对应站点目录，例如 http://xxx.yyy.com/s/）
-1. C:\xampp\spring\ 安装 JDK， 部署 jar 文件
+
+| 站点 URL 目录                     | 对应服务器文件系统目录                        |
+|:---------------------------------|:------------------------------------------|
+| http://xxx.yyy.com/ | C:\xampp\htdocs\ |
+| http://xxx.yyy.com/tp/ | C:\xampp\htdocs\tp\ (PHP 代码文件) |
+| http://xxx.yyy.com/s/ | C:\xampp\htdocs\s\ (前端静态资源文件) |
+| http://xxx.yyy.com/spring-xxx/ | C:\xampp\spring\ （安装 JDK， 部署 jar 文件） |
+
 ```sh
 cd .\Downloads
 
@@ -185,15 +183,12 @@ Start-Process .\amazon-corretto-8-x64-windows-jdk.msi
 
 
 ## 公网传送临时文件-非加密传输
-- 文件非机密内容，可以公开传送
-- 文件敏感性低的可以压缩文件并加复杂密码
-- 禁止传递敏感性高的文件
+1. 文件非机密内容，可以公开传送
+1. 文件敏感性低的可以压缩文件并加复杂密码
+1. 禁止传递敏感性高的文件
 
-奶牛快传｜免费大文件传输工具上传下载不限速 CowTransfer
-https://cowtransfer.com/
-
-Wormhole - 简单、私密的文件共享
-https://wormhole.app/1PZKN#ti-XEHaU2ZpXi6MHctjVxg
-
-文叔叔 - 传文件，找文叔叔（大文件、永不限速）
-https://www.wenshushu.cn/
+| 站点                       | 网址                      |
+|:---------------------------|:--------------------------|
+| 奶牛快传免费               | https://cowtransfer.com/  |
+| Wormhole简单私密的文件共享 | https://wormhole.app/     |
+| 文叔叔                     | https://www.wenshushu.cn/ |

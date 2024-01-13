@@ -513,6 +513,8 @@ services:
     zentao:
       image: hub.zentao.net/app/zentao
       # container_name: zentao
+      # build:
+        # context: ./zentao
       ports:
         - 8080:80
       volumes:
