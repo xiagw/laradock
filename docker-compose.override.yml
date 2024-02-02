@@ -22,7 +22,6 @@ services:
         - ./php-fpm/lsyncd:/etc/lsyncd
         - ${NGINX_SITES_PATH}:/nginx_sites
       extra_hosts:
-        - "dockerhost:${DOCKER_HOST_IP}"
         - "api1.xxx.com:${DOCKER_HOST_IP}"
         - "dbhost:${DOCKER_HOST_IP}"
       networks:
@@ -511,7 +510,7 @@ services:
         - backend
 
     zentao:
-      image: hub.zentao.net/app/zentao
+      image: hub.zentao.net/app/zentao:18.10
       # container_name: zentao
       # build:
         # context: ./zentao
