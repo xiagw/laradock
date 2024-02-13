@@ -71,12 +71,15 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java red
 | https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01            |
 | https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02            |
 | https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03            |
-| 后端：(Jar 文件存放目录)            | （可多个jar文件）                           |
+| 后端：(Jar 文件存放目录)            | （可存放多个jar文件/log文件也在此）               |
 | https://www.xxx.com/uri/         | $HOME/docker/laradock/spring/             |
 | https://www.xxx.com/uri2/        | $HOME/docker/laradock/spring2/            |
 | Nginx：目录配置和日志               | （可多个站点配置）                           |
 | nginx conf 配置文件路径            | $HOME/docker/laradock/nginx/sites/        |
 | nginx 日志文件存放路径              | $HOME/docker/laradock/logs/nginx/         |
+| redis 数据存放路径                     | $HOME/laradock-data/redis/                |
+| mysql 数据存放路径                     | $HOME/laradock-data/mysql/                |
+| mysql 数据备份路径                 | $HOME/laradock-data/mysqlbak/              |
 
 
 ### 操作docker容器简要方式
@@ -86,6 +89,8 @@ cd $HOME/docker/laradock      ## !!! 必须进入此目录 !!! 操作容器
 
 docker compose up -d nginx redis mysql php-fpm      ## 启动服务 php-fpm
 docker compose up -d nginx redis mysql spring       ## 启动服务 java (spring)
+docker compose stop nginx redis mysql php-fpm      ## 停止服务 php-fpm
+docker compose stop nginx redis mysql spring       ## 启动服务 java (spring)
 
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
