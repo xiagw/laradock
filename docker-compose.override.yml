@@ -117,8 +117,13 @@ services:
         - backend
         - frontend
 
+### Redis restart always ################################################
+    redis:
+      restart: always
+
 ### Redis nopass ################################################
     redis2:
+      restart: always
       build:
         context: ./redis
       volumes:
@@ -127,7 +132,7 @@ services:
       ports:
         - "${REDIS_PORT2:-6380}:6379"
       networks:
-        # - frontend
+        - frontend
         - backend
 
 ### Redis PHP admin ################################################

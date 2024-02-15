@@ -786,7 +786,7 @@ services:
       ports:
         - "${REDIS_PORT}:6379"
       networks:
-        # - frontend
+        - frontend
         - backend
 
 ### Redis Cluster ##########################################
@@ -1525,8 +1525,8 @@ services:
           # /opt/gitlab/embedded/sbin/nginx -c /var/opt/gitlab/nginx/conf/nginx.conf -t
           nginx['custom_gitlab_server_config'] = "location /jmeter/ {\n  root /var/opt/gitlab/;\n  autoindex on;\n}\n"
           nginx['custom_nginx_config'] = "include /var/opt/gitlab/nginx/conf/svn*.conf;"
-          # prometheus_monitoring['enable'] = false
-          # prometheus['flags'] = { 'storage.tsdb.retention.time' => "15d"}
+          prometheus_monitoring['enable'] = false
+          prometheus['flags'] = { 'storage.tsdb.retention.time' => "15d"}
       volumes:
         - ${DATA_PATH_HOST}/gitlab/config:/etc/gitlab
         - ${DATA_PATH_HOST}/gitlab/data:/var/opt/gitlab
