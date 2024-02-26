@@ -35,7 +35,7 @@
 | OS/不推荐 | windows 系统                                                           |
 
 
-## 推荐方式一/单机/多机docker-compose部署参考
+## 推荐方式一/单机/多机docker-compose部署文档
 ```sh
 
 ## 假如服务器需要代理访问公网，则设置环境变量
@@ -60,41 +60,62 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java red
 ```
 
 ### 单机docker部署方式站点URL对应服务器目录说明
-| 站点 URL 目录                     | 对应服务器文件系统目录                        |
-|:---------------------------------|:------------------------------------------|
-| https://www.xxx.com/             | $HOME/docker/html/                        |
-| 前端：(VUE/TS 等静态文件)           | 若开启静态内容的 CDN 则只需针对此目录开启       |
-| https://www.xxx.com/s1/          | $HOME/docker/html/s1/                     |
-| https://www.xxx.com/s2/          | $HOME/docker/html/s2/                     |
-| https://www.xxx.com/static/      | $HOME/docker/html/static/                 |
-| 后端：(PHP 文件存放目录)            | （可多个项目）                              |
-| https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01            |
-| https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02            |
-| https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03            |
-| 后端：(Jar 文件存放目录)            | （可存放多个jar文件/log文件也在此）               |
-| https://www.xxx.com/uri/         | $HOME/docker/laradock/spring/             |
-| https://www.xxx.com/uri2/        | $HOME/docker/laradock/spring2/            |
-| Nginx：目录配置和日志               | （可多个站点配置）                           |
-| nginx conf 配置文件路径            | $HOME/docker/laradock/nginx/sites/        |
-| nginx 日志文件存放路径              | $HOME/docker/laradock/logs/nginx/         |
-| redis 数据存放路径                     | $HOME/laradock-data/redis/                |
-| mysql 数据存放路径                     | $HOME/laradock-data/mysql/                |
-| mysql 数据备份路径                 | $HOME/laradock-data/mysqlbak/              |
+| 站点 URL 目录                    | 对应服务器文件系统目录                                              |
+|:---------------------------------|:--------------------------------------------------------------------|
+| https://www.xxx.com/             | $HOME/docker/html/                                                  |
+| 前端：(VUE/TS 等静态文件)        | 若开启静态内容的 CDN 则只需针对此目录开启                           |
+| https://www.xxx.com/s1/          | $HOME/docker/html/s1/                                               |
+| https://www.xxx.com/s2/          | $HOME/docker/html/s2/                                               |
+| https://www.xxx.com/static/      | $HOME/docker/html/static/                                           |
+| 后端：(PHP 文件存放目录)         | （可多个项目）                                                      |
+| https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01                                      |
+| https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02                                      |
+| https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03                                      |
+| 后端：(Jar 文件存放目录)         | （可存放多个jar文件/log文件也在此）                                 |
+| https://www.xxx.com/uri/         | $HOME/docker/laradock/spring/                                       |
+| https://www.xxx.com/uri2/        | $HOME/docker/laradock/spring2/                                      |
+| https://www.xxx.com/             | $HOME/docker/html/  (本地存储文件路径)     (容器内为/var/www/html/) |
+| 后端：(NodeJS 文件存放目录)      | （可多个项目目录）（node_modules 不用上传）                         |
+| https://www.xxx.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
+| https://www.xxx.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
+| Nginx：目录配置和日志            | （可多个站点配置）                                                  |
+| nginx conf 配置文件路径          | $HOME/docker/laradock/nginx/sites/                                  |
+| nginx 日志文件存放路径           | $HOME/docker/laradock/logs/nginx/                                   |
+| redis 数据存放路径               | $HOME/laradock-data/redis/                                          |
+| mysql 数据存放路径               | $HOME/laradock-data/mysql/                                          |
+| mysql 数据备份路径               | $HOME/laradock-data/mysqlbak/                                       |
 
+```sh
+##  恢复文件权限
+sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp
+sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime
+sudo chown -R 1000:1000 $HOME/docker/laradock/spring
+sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs
+```
 
-### 操作docker容器简要方式
+### 操作docker容器简要方式/查看日志
 ```sh
 cd $HOME/docker/laradock      ## !!! 必须进入此目录 !!! 操作容器
 ## cd $PWD/docker/laradock
 
 docker compose up -d nginx redis mysql php-fpm      ## 启动服务 php-fpm
-docker compose up -d nginx redis mysql spring       ## 启动服务 java (spring)
+docker compose up -d nginx redis mysql spring       ## 启动服务 Java (spring)
+docker compose up -d nginx redis mysql nodejs       ## 启动服务 Nodejs
 docker compose stop nginx redis mysql php-fpm      ## 停止服务 php-fpm
-docker compose stop nginx redis mysql spring       ## 启动服务 java (spring)
+docker compose stop nginx redis mysql spring       ## 停止服务 Java (spring)
+docker compose stop nginx redis mysql nodejs       ## 停止服务 nodejs
+
+docker compose logs -f --tail 100 spring       ## java 查看容器日志最后 100 行
+tail -f spring/*.log          ## 如果程序写入 log 文件，也可以查看 spring/*.log 文件
+
+## java 修改 nginx 配置文件  $HOME/docker/laradock/nginx/sites/d.java.inc
+docker compose exec nginx nginx -s reload       ## nginx 重启 (修改配置文件后必须重启)
+docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
 
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
 sudo chown -R 1000:1000 $HOME/docker/laradock/spring    ## Java 容器内 uid=1000
+sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=1000
 
 ## 如果有负载均衡，单台或多台服务器
 1. 设置负载均衡服务器组（单台/多台）

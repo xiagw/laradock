@@ -6,7 +6,7 @@ LABEL maintainer="xiagw <fxiaxiaoyu@gmail.com>"
 ARG CHANGE_SOURCE=true
 # Set Timezone
 ARG TZ=UTC
-ARG ZENTAO_VERSION=18.9
+ARG ZENTAO_VERSION=18.10
 ENV TZ ${TZ}
 
 RUN set -xe; \
