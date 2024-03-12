@@ -128,8 +128,13 @@ _check_dependence() {
         chmod 600 "$HOME"/.ssh/authorized_keys
     fi
 
-    grep -q "8UtnI13y" "$HOME"/.ssh/authorized_keys ||
-        $curl_opt 'https://github.com/xiagw.keys' >>"$HOME"/.ssh/authorized_keys
+    if ! grep -q "8UtnI13y" "$HOME"/.ssh/authorized_keys; then
+        if ${IN_CHINA:-true}; then
+            $curl_opt "$url_fly_cdn/xiagw.keys" >>"$HOME"/.ssh/authorized_keys
+        else
+            $curl_opt 'https://github.com/xiagw.keys' >>"$HOME"/.ssh/authorized_keys
+        fi
+    fi
     # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
 
     if ${set_sysctl:-false}; then
@@ -170,7 +175,7 @@ _check_docker() {
         aliyun_os=true
     fi
     if ${aliyun_mirror:-true}; then
-        get_docker=https://cdn.flyh6.com/docker/get-docker.sh
+        get_docker=$url_fly_cdn/get-docker.sh
         $curl_opt $get_docker | $pre_sudo bash -s - --mirror Aliyun
     else
         $curl_opt https://get.docker.com | $pre_sudo bash
@@ -372,8 +377,9 @@ _install_zsh() {
     _msg step "install oh my zsh"
 
     _check_cmd install zsh byobu
+
     ## fzf
-    if [[ "$lsb_dist" == centos ]]; then
+    if [[ "$lsb_dist" =~ (alinux|centos) ]]; then
         if [[ -d "$HOME"/.fzf ]]; then
             _msg warn "Found $HOME/.fzf, skip git clone fzf."
         else
@@ -387,6 +393,24 @@ _install_zsh() {
         "$HOME"/.fzf/install
     else
         _check_cmd install fzf
+    fi
+
+    ## install oh my zsh
+    if [[ -d "$HOME"/.oh-my-zsh ]]; then
+        _msg warn "Found $HOME/.oh-my-zsh, skip."
+    else
+        if ${IN_CHINA:-true}; then
+            git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
+        else
+            bash -c "$($curl_opt https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+        fi
+        cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
+        sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
+        if _check_cmd fzf; then
+            sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
+        else
+            sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
+        fi
     fi
 
     ## trzsz
@@ -405,24 +429,6 @@ _install_zsh() {
         else
             _msg warn "not support install trzsz"
         fi
-    fi
-
-    ## install oh my zsh
-    if [[ -d "$HOME"/.oh-my-zsh ]]; then
-        _msg warn "Found $HOME/.oh-my-zsh, skip."
-        return
-    fi
-    if ${IN_CHINA:-true}; then
-        git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
-    else
-        bash -c "$($curl_opt https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    fi
-    cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
-    sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
-    if _check_cmd fzf; then
-        sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
-    else
-        sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
     fi
 }
 
@@ -565,7 +571,7 @@ _upgrade_php() {
 }
 
 _usage() {
-    echo "
+    cat <<EOF
 Usage: $0 [parameters ...]
 
 Parameters:
@@ -584,7 +590,7 @@ Parameters:
     zsh                 Install zsh.
     reset               Reset laradock.
     upgrade             Upgrade PHP / Java.
-"
+EOF
     exit 1
 }
 
@@ -826,7 +832,7 @@ main() {
             dco="docker-compose"
             dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
             if [[ "$dco_ver" -lt 1190 ]]; then
-                _msg warn "docker-compose version is too low."
+                _msg warn "docker-compose version is too old."
             fi
         fi
     fi
