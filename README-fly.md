@@ -46,16 +46,16 @@
 ## 2. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 3. 默认下载并导入 php-fpm 镜像，其他镜像自动使用 docker build 创建
 ## 4. 访问不到 hub.docker.com 等网络问题，后面加跟参数 "get-image-cdn"
-## PHP 单实例(不包含cache/db)： nginx/php 请执行
+## 单例 nginx/php 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
-## PHP 套装(包含cache/db)： nginx/php/redis/mysql 请执行
+## 套装 nginx/php/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php redis mysql nginx
-## Java 单实例(不包含cache/db)： nginx/java 请执行
+## 单例 nginx/java 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java nginx
-## Java 套装(包含cache/db)： nginx/java/redis/mysql 请执行
+## 套装 nginx/java/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java redis mysql nginx
-## 所有套装 nginx/php/java/redis/mysql 请执行
-# curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php-fpm redis mysql nginx
+## 套装 nginx/php/java/redis/mysql 请执行
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php-fpm redis mysql nginx
 
 ```
 
@@ -78,12 +78,13 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java red
 | 后端：(NodeJS 文件存放目录)      | （可多个项目目录）（node_modules 不用上传）                         |
 | https://www.xxx.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
 | https://www.xxx.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
-| Nginx：目录配置和日志            | （可多个站点配置）                                                  |
-| nginx conf 配置文件路径          | $HOME/docker/laradock/nginx/sites/                                  |
-| nginx 日志文件存放路径           | $HOME/docker/laradock/logs/nginx/                                   |
-| redis 数据存放路径               | $HOME/laradock-data/redis/                                          |
-| mysql 数据存放路径               | $HOME/laradock-data/mysql/                                          |
-| mysql 数据备份路径               | $HOME/laradock-data/mysqlbak/                                       |
+| Nginx：目录配置和日志               | （可多个站点配置）                                                    |
+| nginx conf 配置文件路径            | $HOME/docker/laradock/nginx/sites/                                  |
+| nginx SSL 证书文件路径             | $HOME/docker/laradock/nginx/sites/ssl                               |
+| nginx 日志文件存放路径              | $HOME/docker/laradock/logs/nginx/                                   |
+| redis 数据存放路径                 | $HOME/laradock-data/redis/                                          |
+| mysql 数据存放路径                 | $HOME/laradock-data/mysql/                                          |
+| mysql 数据备份路径                 | $HOME/laradock-data/mysqlbak/                                       |
 
 ```sh
 ##  恢复文件权限
@@ -112,6 +113,11 @@ tail -f spring/*.log          ## 如果程序写入 log 文件，也可以查看
 docker compose exec nginx nginx -s reload       ## nginx 重启 (修改配置文件后必须重启)
 docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
 
+## 替换 Nginx SSL 证书 key 文件 $HOME/docker/laradock/nginx/sites/ssl/default.key
+## 替换 Nginx SSL 证书 pem 文件 $HOME/docker/laradock/nginx/sites/ssl/default.pem
+
+
+## 文件权限
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
 sudo chown -R 1000:1000 $HOME/docker/laradock/spring    ## Java 容器内 uid=1000
