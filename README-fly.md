@@ -151,38 +151,6 @@ helm -n dev list
 kubectl -n dev get all
 ```
 
-## 不推荐方式三/单机/多机传统方式部署参考
-```sh
-### 安装 jdk (参考)
-# yum install -y java-1.8.0-openjdk
-apt install -y openjdk-18-jdk
-### 安装 nginx (参考)
-# yum install -y epel-release; yum install -y nginx
-apt install -y nginx
-### 安装 php71 (参考)
-## 安装yum仓库
-yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-## 安装php71
-yum -y install php71 php71-php php71-php-fpm php71-php-gd php71-php-json php71-php-mbstring php71-php-mysqlnd php71-php-xml php71-php-xmlrpc php71-php-redis php71-php-pecl-mongodb php71-php-pecl-imagick php71-php-mcrypt php71-php-bcmath php71-php-gmp php71-php-pecl-mysql php71-php-pecl-zip php71-php-soap php71-php-process php71-php-gnupg php71-php-amqp php71-php-opcache
-## 启动 php-fpm
-systemctl start php71-php-fpm
-### 安装 Mysql-5.7 (参考)
-## 下载 yum 源
-wget -i -c http://dev.mysql.com/get/mysql57-community-release-el7-10.noarch.rpm
-## 安装 yum 源
-yum -y install mysql57-community-release-el7-10.noarch.rpm
-## 安装 mysql-5.7
-yum -y install mysql-community-client mysql-community-devel mysql-community-libs mysql-community-server
-## 启动 mysql
-systemctl start mysqld
-### 安装 Redis-4.0 (参考)
-yum -y install redis
-## 启动 redis
-systemctl start redis
-### java 程序启动 (参考)
-# 启动 jar
-exec run.sh start
-```
 
 ## 不推荐部署于Windows服务器
 1. Download URL: http://cdn.flyh6.com/docker/xampp.zip
@@ -224,3 +192,7 @@ Start-Process .\amazon-corretto-8-x64-windows-jdk.msi
 | 奶牛快传免费               | https://cowtransfer.com/  |
 | Wormhole简单私密的文件共享 | https://wormhole.app/     |
 | 文叔叔                     | https://www.wenshushu.cn/ |
+
+
+## 查询域名备案
+1. https://beian.miit.gov.cn/#/Integrated/recordQuery
