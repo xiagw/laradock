@@ -2,11 +2,6 @@ version: '3.5'
 
 services:
 
-# docker tag laradock_php-fpm registry-intl.cn-hongkong.aliyuncs.com/9u/prod:php-fpm
-# docker login
-# docker push registry-intl.cn-hongkong.aliyuncs.com/9u/prod:php-fpm
-# docker pull registry-intl.cn-hongkong.aliyuncs.com/9u/prod:php-fpm
-# docker tag registry-intl.cn-hongkong.aliyuncs.com/9u/prod:php-fpm laradock_php-fpm
 ### PHP-FPM ##############################################
     php-fpm:
       restart: always
@@ -207,6 +202,7 @@ services:
       networks:
         - backend
         - frontend
+
 ### acme.sh ################################################
     acme.sh:
       image: neilpang/acme.sh
@@ -333,6 +329,7 @@ services:
       networks:
         - backend
         - frontend
+
 # 日志收集器
     promtail:
       image: grafana/promtail
@@ -360,6 +357,7 @@ services:
       networks:
         - backend
         - frontend
+
 ##  drone
     drone:
       image: drone/drone
@@ -379,6 +377,7 @@ services:
       networks:
         - backend
         - frontend
+
 ##  drone-runner
     drone-runner:
       image: drone/drone-runner-docker
@@ -400,10 +399,10 @@ services:
         - backend
         - frontend
 
+# mkdir -p ~/laradock-data/apisix/
 # git clone --depth 1 https://github.com/apache/apisix-docker.git ~/apisix-docker.git
 # rsync -av ~/apisix-docker.git/example/ ~/laradock-data/apisix/
-# mkdir -p ~/laradock-data/apisix/etcd_data/data
-# chmod 700 ~/laradock-data/apisix/etcd_data/data
+# mkdir -m 700 -p ~/laradock-data/apisix/etcd_data/data
 # chown -R 1000:1000 ~/laradock-data/apisix
 ## apisix
     apisix-dashboard:
@@ -432,6 +431,7 @@ services:
       networks:
         - backend
         - frontend
+
 ## etcd
     etcd:
       image: bitnami/etcd:3
@@ -515,7 +515,7 @@ services:
         - backend
 
     zentao:
-      image: hub.zentao.net/app/zentao:18.10
+      image: hub.zentao.net/app/zentao:18.11
       # container_name: zentao
       # build:
         # context: ./zentao
