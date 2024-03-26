@@ -515,7 +515,7 @@ services:
         - backend
 
     zentao:
-      image: hub.zentao.net/app/zentao:18.11
+      image: hub.zentao.net/app/zentao:${ZT_VERSION}
       # container_name: zentao
       # build:
         # context: ./zentao
