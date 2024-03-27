@@ -536,7 +536,7 @@ _get_redis_mysql_info() {
     grep '^REDIS_' "$laradock_env" | sed -n '1,3p'
     echo
     # grep -E '^DB_HOST|^MYSQL_|^JDK_VERSION' "$laradock_env" | grep -v MYSQL_ROOT_PASSWORD | sed -n '1,7 p'
-    grep -E '^DB_HOST|^MYSQL_|^JDK_VERSION|^JDK_IMAGE' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
+    grep -E '^DB_HOST|^MYSQL_|^JDK_VERSION|^JDK_IMAGE|^PHP_VERSION' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
 }
 
 _install_lsyncd() {
