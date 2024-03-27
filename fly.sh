@@ -485,7 +485,8 @@ _pull_image() {
             ;;
         esac
     done
-
+    ## remove image
+    docker image ls | awk '/'"$image_repo"'/ {print $1":"$2}' | xargs docker rmi -f
 }
 
 _test_nginx() {
