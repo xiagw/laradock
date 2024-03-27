@@ -492,6 +492,8 @@ _pull_image() {
 _test_nginx() {
     _reload_nginx
     source <(grep 'NGINX_HOST_HTTP_PORT' "$laradock_env")
+    $dco stop nginx
+    $dco up -d nginx
     _msg time "test nginx $1 ..."
     for i in {1..10}; do
         if $curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
