@@ -535,7 +535,8 @@ _get_redis_mysql_info() {
     echo
     grep '^REDIS_' "$laradock_env" | sed -n '1,3p'
     echo
-    grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -v MYSQL_ROOT_PASSWORD | sed -n '1,6 p'
+    # grep -E '^DB_HOST|^MYSQL_|^JDK_VERSION' "$laradock_env" | grep -v MYSQL_ROOT_PASSWORD | sed -n '1,7 p'
+    grep -E '^DB_HOST|^MYSQL_|^JDK_VERSION|^JDK_IMAGE' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
 }
 
 _mysql_cli() {
@@ -635,7 +636,6 @@ _set_args() {
         redis)
             args+=(redis)
             set_sysctl=true
-            exec_check_dependence=true
             exec_check_docker=true
             exec_check_laradock=true
             exec_check_laradock_env=true
@@ -643,7 +643,6 @@ _set_args() {
             ;;
         mysql)
             args+=(mysql)
-            exec_check_dependence=true
             exec_check_docker=true
             exec_check_laradock=true
             exec_check_laradock_env=true
@@ -651,7 +650,6 @@ _set_args() {
             ;;
         java | spring)
             args+=(spring)
-            exec_check_dependence=true
             exec_check_docker=true
             exec_check_laradock=true
             exec_check_laradock_env=true
@@ -659,9 +657,8 @@ _set_args() {
             ;;
         php | php-fpm | fpm)
             args+=(php-fpm)
-            exec_check_dependence=true
             exec_check_docker=true
-            exec_pull_image=true
+            exec_pull_image_php=true
             exec_check_laradock=true
             exec_check_laradock_env=true
             php_ver=${2:-7.1}
@@ -670,7 +667,6 @@ _set_args() {
             ;;
         nginx)
             args+=(nginx)
-            exec_check_dependence=true
             exec_check_docker=true
             exec_check_laradock=true
             exec_check_laradock_env=true
@@ -678,7 +674,6 @@ _set_args() {
             ;;
         gitlab | git)
             args+=(gitlab)
-            exec_check_dependence=true
             exec_check_docker=true
             exec_check_laradock=true
             exec_check_laradock_env=true
@@ -686,7 +681,6 @@ _set_args() {
             ;;
         svn | usvn)
             args+=(usvn)
-            exec_check_dependence=true
             exec_check_docker=true
             exec_check_laradock=true
             exec_check_laradock_env=true
@@ -694,11 +688,11 @@ _set_args() {
             ;;
         pull-image-all)
             exec_pull_image_all=true
+            exec_pull_image_php=true
             ;;
         upgrade)
             [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=true
             [[ "${args[*]}" == *spring* ]] && exec_upgrade_java=true
-            exec_check_dependence=true
             ;;
         not-china | not-cn | ncn)
             IN_CHINA=false
@@ -748,7 +742,7 @@ main() {
     _set_args "$@"
 
     set -e
-    cmd_readlink="$(command -v greadlink)"
+    cmd_readlink="$(command -v greadlink || true)"
     me_path="$(dirname "$(${cmd_readlink:-readlink} -f "$0")")"
     me_name="$(basename "$0")"
     me_path_data="$me_path/../data"
@@ -796,7 +790,7 @@ main() {
         return
     fi
 
-    ${exec_check_dependence:-false} && _check_dependence
+    ${exec_check_dependence:-true} && _check_dependence
 
     if ${exec_install_zsh:-false}; then
         _install_zsh
@@ -811,7 +805,7 @@ main() {
         return
     fi
 
-    ${exec_check_docker:-false} && _check_docker
+    ${exec_check_docker:-true} && _check_docker
     ## if install docker and add normal user (not root) to group "docker"
     ${need_logout:-false} && return
 
@@ -842,7 +836,7 @@ main() {
 
     ${exec_check_laradock_env:-false} && _check_laradock_env
 
-    ${exec_pull_image:-false} && _pull_image
+    ${exec_pull_image_php:-false} && _pull_image
 
     ${exec_start_docker_service:-false} && _start_docker_service
 
