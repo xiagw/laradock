@@ -539,20 +539,6 @@ _get_redis_mysql_info() {
     grep -E '^DB_HOST|^MYSQL_|^JDK_VERSION|^JDK_IMAGE' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
 }
 
-_mysql_cli() {
-    _msg time "exec mysql"
-    cd "$laradock_path"
-    source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=' "$laradock_env")
-    $dco exec -T mysql bash -c "LANG=C.UTF-8 mysql $MYSQL_DATABASE -u $MYSQL_USER -p$MYSQL_PASSWORD"
-}
-
-_redis_cli() {
-    _msg time "exec redis"
-    cd "$laradock_path"
-    source <(grep '^REDIS_PASSWORD=' "$laradock_env")
-    $dco exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
-}
-
 _install_lsyncd() {
     _msg time "install lsyncd"
     _check_cmd install lsyncd
@@ -661,9 +647,10 @@ _set_args() {
             exec_pull_image_php=true
             exec_check_laradock=true
             exec_check_laradock_env=true
-            php_ver=${2:-7.1}
             exec_start_docker_service=true
-            shift
+            ;;
+        [0-9].[0-9])
+            php_ver=${1:-7.1}
             ;;
         nginx)
             args+=(nginx)
@@ -714,12 +701,6 @@ _set_args() {
             ;;
         info)
             exec_get_redis_mysql_info=true
-            ;;
-        mysql-cli)
-            exec_mysql_cli=true
-            ;;
-        redis-cli)
-            exec_redis_cli=true
             ;;
         test)
             exec_test_nginx=true
@@ -817,16 +798,6 @@ main() {
             $dco rm -f
         )
         $use_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
-        return
-    fi
-
-    if ${exec_mysql_cli:-false}; then
-        _mysql_cli
-        return
-    fi
-
-    if ${exec_redis_cli:-false}; then
-        _redis_cli
         return
     fi
 

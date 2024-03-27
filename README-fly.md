@@ -116,6 +116,15 @@ docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 
 ## 替换 Nginx SSL 证书 key 文件 $HOME/docker/laradock/nginx/sites/ssl/default.key
 ## 替换 Nginx SSL 证书 pem 文件 $HOME/docker/laradock/nginx/sites/ssl/default.pem
 
+## 把sql文件存放到目录 / 文件名: $HOME/laradock-data/mysqlbak/db.sql
+## 导入数据库文件（使用本服务器的db/redis）（独立mysql redis 不从此操作）
+docker compose exec mysql bash -c  'mysql -udefaultdb -p defaultdb </backup/db.sql'
+
+## mysql 操作命令
+docker compose exec mysql bash -c "LANG=C.UTF8 mysql defaultdb"
+
+## redis 操作命令
+docker compose exec redis redis-cli
 
 ## 文件权限
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
