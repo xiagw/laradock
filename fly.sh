@@ -185,6 +185,8 @@ _check_docker() {
         $use_sudo usermod -aG docker "$USER"
         echo '############################################'
         _msg red "!!!! Please logout $USER, and login again. !!!!"
+        _msg red "!!!! Please logout $USER, and login again. !!!!"
+        _msg red "!!!! Please logout $USER, and login again. !!!!"
         _msg red "And re-execute the above command."
         echo '############################################'
         need_logout=true
