@@ -3,8 +3,7 @@
 _msg() {
     local color_on
     local color_off='\033[0m' # Text Reset
-    duration=$SECONDS
-    h_m_s="$((duration / 3600))h$(((duration / 60) % 60))m$((duration % 60))s"
+    h_m_s="$((SECONDS / 3600))h$(((SECONDS / 60) % 60))m$((SECONDS % 60))s"
     time_now="$(date +%Y%m%d-%u-%T.%3N)"
 
     case "${1:-none}" in
@@ -33,6 +32,7 @@ _msg() {
         unset color_on color_off
         ;;
     esac
+
     [ "$#" -gt 1 ] && shift
     echo -e "${color_on}$*${color_off}"
 }
@@ -81,20 +81,19 @@ _check_distribution() {
 
 _check_root() {
     if [ "$(id -u)" -eq 0 ]; then
-        unset pre_sudo
-        _msg time "You are (root), continue..."
+        unset use_sudo
         return 0
     else
-        pre_sudo=sudo
-        _msg time "You are not (root), run with sudo..."
+        use_sudo=sudo
         return 1
     fi
 }
 
 _check_sudo() {
     ${already_check_sudo:-false} && return 0
+
     if ! _check_root; then
-        if $pre_sudo -l -U "$USER"; then
+        if $use_sudo -l -U "$USER"; then
             _msg time "User $USER has permission to execute this script!"
         else
             _msg time "User $USER has no permission to execute this script!"
@@ -103,12 +102,12 @@ _check_sudo() {
         fi
     fi
     if _check_cmd apt; then
-        cmd_pkg="$pre_sudo apt-get"
+        cmd_pkg="$use_sudo apt-get"
         apt_update=1
     elif _check_cmd yum; then
-        cmd_pkg="$pre_sudo yum"
+        cmd_pkg="$use_sudo yum"
     elif _check_cmd dnf; then
-        cmd_pkg="$pre_sudo dnf"
+        cmd_pkg="$use_sudo dnf"
     else
         _msg time "not found apt/yum/dnf, exit 1"
         return 1
@@ -140,49 +139,50 @@ _check_dependence() {
     if ${set_sysctl:-false}; then
         ## redis-server 安装在服务器本机，非docker
         # grep -q 'transparent_hugepage/enabled' /etc/rc.local ||
-        #     echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' | $pre_sudo tee -a /etc/rc.local
-        # $pre_sudo source /etc/rc.local
+        #     echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' | $use_sudo tee -a /etc/rc.local
+        # $use_sudo source /etc/rc.local
         grep -q 'net.core.somaxconn' /etc/sysctl.conf ||
-            echo 'net.core.somaxconn = 1024' | $pre_sudo tee -a /etc/sysctl.conf
+            echo 'net.core.somaxconn = 1024' | $use_sudo tee -a /etc/sysctl.conf
         grep -q 'vm.overcommit_memory' /etc/sysctl.conf ||
-            echo 'vm.overcommit_memory = 1' | $pre_sudo tee -a /etc/sysctl.conf
-        $pre_sudo sysctl -p
+            echo 'vm.overcommit_memory = 1' | $use_sudo tee -a /etc/sysctl.conf
+        $use_sudo sysctl -p
     fi
     _msg time "dependence check done."
 }
 
 _install_wg() {
     if [[ "$lsb_dist" == centos ]]; then
-        $pre_sudo yum install -y epel-release elrepo-release
-        $pre_sudo yum install -y yum-plugin-elrepo
-        $pre_sudo yum install -y kmod-wireguard wireguard-tools
+        $use_sudo yum install -y epel-release elrepo-release
+        $use_sudo yum install -y yum-plugin-elrepo
+        $use_sudo yum install -y kmod-wireguard wireguard-tools
     else
-        $pre_sudo apt install -yqq wireguard wireguard-tools
+        $use_sudo apt install -yqq wireguard wireguard-tools
     fi
-    $pre_sudo modprobe wireguard
+    $use_sudo modprobe wireguard
 }
 
 _check_docker() {
     _msg step "check docker"
     if _check_cmd docker; then
+        _check_docker_compose
         _msg time "docker is already installed."
         return
     fi
 
     ## aliyun linux fake centos
     if grep -q '^ID=.*alinux.*' /etc/os-release; then
-        $pre_sudo sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
+        $use_sudo sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
         aliyun_os=true
     fi
     if ${aliyun_mirror:-true}; then
         get_docker=$url_fly_cdn/get-docker.sh
-        $curl_opt $get_docker | $pre_sudo bash -s - --mirror Aliyun
+        $curl_opt $get_docker | $use_sudo bash -s - --mirror Aliyun
     else
-        $curl_opt https://get.docker.com | $pre_sudo bash
+        $curl_opt https://get.docker.com | $use_sudo bash
     fi
     if ! _check_root; then
         _msg time "Add user \"$USER\" to group docker."
-        $pre_sudo usermod -aG docker "$USER"
+        $use_sudo usermod -aG docker "$USER"
         echo '############################################'
         _msg red "!!!! Please logout $USER, and login again. !!!!"
         _msg red "And re-execute the above command."
@@ -190,20 +190,36 @@ _check_docker() {
         need_logout=true
     fi
     if [[ "$USER" != ubuntu ]] && id ubuntu; then
-        $pre_sudo usermod -aG docker ubuntu
+        $use_sudo usermod -aG docker ubuntu
     fi
     if [[ "$USER" != centos ]] && id centos; then
-        $pre_sudo usermod -aG docker centos
+        $use_sudo usermod -aG docker centos
     fi
     if [[ "$USER" != ops ]] && id ops; then
-        $pre_sudo usermod -aG docker ops
+        $use_sudo usermod -aG docker ops
     fi
     ## revert aliyun linux fake centos
     if ${aliyun_os:-false}; then
-        $pre_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
+        $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     fi
-    $pre_sudo systemctl enable docker
-    $pre_sudo systemctl start docker
+    $use_sudo systemctl enable docker
+    $use_sudo systemctl start docker
+    _check_docker_compose
+}
+
+_check_docker_compose() {
+    dco="docker compose"
+    if $dco version; then
+        _msg info "$dco ready."
+    else
+        if _check_cmd docker-compose; then
+            dco="docker-compose"
+            dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
+            if [[ "$dco_ver" -lt 1190 ]]; then
+                _msg warn "docker-compose version is too old."
+            fi
+        fi
+    fi
 }
 
 _check_timezone() {
@@ -214,7 +230,7 @@ _check_timezone() {
         _msg time "Timezone is already set to $time_zone."
     else
         _msg time "Set timezone to $time_zone."
-        $pre_sudo timedatectl set-timezone $time_zone
+        $use_sudo timedatectl set-timezone $time_zone
     fi
 }
 
@@ -232,7 +248,7 @@ _check_laradock() {
 
     ## jdk image, uid is 1000.(see spring/Dockerfile)
     if [[ "$(stat -c %u "$laradock_path/spring")" != 1000 ]]; then
-        if $pre_sudo chown 1000:1000 "$laradock_path/spring"; then
+        if $use_sudo chown 1000:1000 "$laradock_path/spring"; then
             _msg time "OK: chown 1000:1000 $laradock_path/spring"
         else
             _msg red "FAIL: chown 1000:1000 $laradock_path/spring"
@@ -311,11 +327,6 @@ _set_nginx_php() {
     sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$laradock_path/nginx/sites/d.php.inc"
 }
 
-_set_nginx_java() {
-    ## setup java upstream
-    sed -i -e 's/127\.0\.0\.1/spring/g' "$laradock_path/nginx/sites/d.java.inc"
-}
-
 _set_env_php_ver() {
     sed -i \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
@@ -323,51 +334,15 @@ _set_env_php_ver() {
         "$laradock_env"
 }
 
-_get_image() {
-    image_name=$1
-    if ${is_php:-false}; then
-        if docker images | grep -E "laradock[-_]${image_name}\s+"; then
-            if [[ ${overwrite_php_image:-false} == true ]]; then
-                echo "download php image..."
-            else
-                return 0
-            fi
-        fi
-    else
-        if ${get_image_cdn:-false}; then
-            echo "get image from cdn ..."
-        else
-            return 0
-        fi
-    fi
-
-    _msg step "get image laradock-$image_name"
-    image_save=/tmp/laradock-${image_name}.tar.gz
-    $curl_opt -o "$image_save" "${url_image}"
-
-    _msg time "docker load image..."
-    docker load <"$image_save"
-
-    local dk_ver
-    dk_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
-    if ((dk_ver <= 19)); then
-        docker tag "laradock-$image_name" "laradock_$image_name"
-    else
-        if docker images | grep "laradock_$image_name"; then
-            docker tag "laradock_$image_name" "laradock-$image_name"
-        fi
-    fi
-}
-
 _set_file_mode() {
     for d in "$laradock_path"/../*/; do
         [[ "$d" == *laradock/ ]] && continue
         find "$d" | while read -r line; do
             if [[ "$line" == *config/app.php ]]; then
-                grep -q 'app_debug.*true' "$line" && $pre_sudo sed -i -e '/app_debug/s/true/false/' "$line"
+                grep -q 'app_debug.*true' "$line" && $use_sudo sed -i -e '/app_debug/s/true/false/' "$line"
             fi
             if [[ "$line" == *config/log.php ]]; then
-                grep -q "'level'.*\[\]\," "$line" && $pre_sudo sed -i -e "/'level'/s/\[/\['warning'/" "$line"
+                grep -q "'level'.*\[\]\," "$line" && $use_sudo sed -i -e "/'level'/s/\[/\['warning'/" "$line"
             fi
         done
     done
@@ -395,7 +370,7 @@ _install_zsh() {
         _check_cmd install fzf
     fi
 
-    ## install oh my zsh
+    ## install oh-my-zsh
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
         _msg warn "Found $HOME/.oh-my-zsh, skip."
     else
@@ -420,11 +395,11 @@ _install_zsh() {
         _msg step "install trzsz"
         if command -v apt; then
             $cmd_pkg install -yq software-properties-common
-            $pre_sudo add-apt-repository --yes ppa:trzsz/ppa
+            $use_sudo add-apt-repository --yes ppa:trzsz/ppa
             $cmd_pkg update -yq
             $cmd_pkg install -yq trzsz
         elif command -v rpm; then
-            $pre_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm || true
+            $use_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm || true
             $cmd_pkg install -y trzsz
         else
             _msg warn "not support install trzsz"
@@ -432,15 +407,7 @@ _install_zsh() {
     fi
 }
 
-_start_manual() {
-    _msg step "Start docker service manually..."
-    _msg info '#########################################'
-    _msg info "\n cd $laradock_path && $dco up -d $args \n"
-    _msg info '#########################################'
-    _msg "END"
-}
-
-_start_auto() {
+_start_docker_service() {
     if [ "${#args[@]}" -gt 0 ]; then
         _msg step "Start docker service automatically..."
     else
@@ -461,6 +428,66 @@ _start_auto() {
     done
 }
 
+_pull_image() {
+    _msg step "check docker image..."
+    local image_repo=registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5
+    local dk_ver
+    dk_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
+    if ((dk_ver <= 19)); then
+        local image_prefix="laradock_"
+    else
+        local image_prefix="laradock-"
+    fi
+    for i in "${args[@]}"; do
+        case $i in
+        nginx)
+            exec_test_nginx=true
+            if ${exec_pull_image_all:-false}; then
+                docker pull "$image_repo:$i"
+                docker tag "$image_repo:$i" "$image_prefix$i"
+            fi
+            ;;
+        mysql)
+            if [ ! -d "$laradock_path"/../../laradock-data/mysqlbak ]; then
+                $use_sudo mkdir -p "$laradock_path"/../../laradock-data/mysqlbak
+            fi
+            $use_sudo chown 1000 "$laradock_path"/../../laradock-data/mysqlbak
+            if ${exec_pull_image_all:-false}; then
+                if grep 'MYSQL_VERSION.*5\.7' "$laradock_env"; then
+                    docker pull "$image_repo:$i"-5.7
+                    docker tag "$image_repo:$i"-5.7 "$image_prefix$i"
+                else
+                    docker pull "$image_repo:$i"
+                    docker tag "$image_repo:$i" "$image_prefix$i"
+                fi
+            fi
+            ;;
+        redis)
+            if ${exec_pull_image_all:-false}; then
+                docker pull "$image_repo:$i"
+                docker tag "$image_repo:$i" "$image_prefix$i"
+            fi
+            ;;
+        spring)
+            # _set_file_mode
+            exec_test_java=true
+            if ${exec_pull_image_all:-false}; then
+                docker pull "$image_repo:$i"
+                docker tag "$image_repo:$i" "$image_prefix$i"
+            fi
+            ;;
+        php*)
+            _set_env_php_ver
+            # _set_file_mode
+            exec_test_php=true
+            docker pull $image_repo:php-"${php_ver}"
+            docker tag $image_repo:php-"${php_ver}" ${image_prefix}php-fpm
+            ;;
+        esac
+    done
+
+}
+
 _test_nginx() {
     _reload_nginx
     source <(grep 'NGINX_HOST_HTTP_PORT' "$laradock_env")
@@ -477,10 +504,10 @@ _test_nginx() {
 
 _test_php() {
     path_nginx_root="$laradock_path/../html"
-    $pre_sudo chown "$USER:$USER" "$path_nginx_root"
+    $use_sudo chown "$USER:$USER" "$path_nginx_root"
     if [[ ! -f "$path_nginx_root/test.php" ]]; then
         _msg time "Create test.php"
-        $pre_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
+        $use_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
         # shellcheck disable=1090
         source "$laradock_env" 2>/dev/null
         sed -i \
@@ -530,14 +557,14 @@ _install_lsyncd() {
     _check_cmd install lsyncd
 
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
-    [ -d /etc/lsyncd/ ] || $pre_sudo mkdir /etc/lsyncd
+    [ -d /etc/lsyncd/ ] || $use_sudo mkdir /etc/lsyncd
     if [ -f $lsyncd_conf ]; then
         _msg time "found $lsyncd_conf"
     else
         _msg time "new lsyncd.conf.lua"
-        $pre_sudo cp -vf "$laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
+        $use_sudo cp -vf "$laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
     fi
-    [[ "$USER" == "root" ]] || $pre_sudo sed -i "s/\/root\/docker/$HOME\/docker/g" $lsyncd_conf
+    [[ "$USER" == "root" ]] || $use_sudo sed -i "s/\/root\/docker/$HOME\/docker/g" $lsyncd_conf
 
     id_file="$HOME/.ssh/id_ed25519"
     if [ -f "$id_file" ]; then
@@ -554,7 +581,7 @@ _install_lsyncd() {
         ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
         _msg time "add $ssh_host_ip to $lsyncd_conf"
         line_num=$(grep -n '^targets' $lsyncd_conf | awk -F: '{print $1}')
-        $pre_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
+        $use_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
         echo
     done
 }
@@ -594,60 +621,6 @@ EOF
     exit 1
 }
 
-_build_image_nginx() {
-    build_opt="$build_opt --build-arg CHANGE_SOURCE=${CHANGE_SOURCE} --build-arg IN_CHINA=${IN_CHINA}"
-    image_tag_base=fly/nginx:base
-    image_tag=fly/nginx
-
-    root_opt=root/opt
-    [ -d root ] || mkdir -p $root_opt
-    $curl_opt -o Dockerfile.base $url_deploy_raw/conf/dockerfile/Dockerfile.nginx
-    $curl_opt -o $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
-    $curl_opt -o $root_opt/onbuild.sh $url_deploy_raw/conf/dockerfile/$root_opt/onbuild.sh
-    $curl_opt -o $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
-
-    $build_opt -t "$image_tag_base" -f Dockerfile.base .
-
-    echo "FROM $image_tag_base" >Dockerfile
-    $build_opt -t "$image_tag" .
-}
-
-_build_image_php() {
-    build_opt="$build_opt --build-arg CHANGE_SOURCE=${CHANGE_SOURCE} --build-arg IN_CHINA=${IN_CHINA} --build-arg LARADOCK_PHP_VERSION=$php_ver"
-    image_tag_base=fly/php:${php_ver}-base
-    image_tag=fly/php:${php_ver}
-
-    root_opt=root/opt
-    [ -d root ] || mkdir -p $root_opt
-    $curl_opt -o Dockerfile.base $url_deploy_raw/conf/dockerfile/Dockerfile.php.base
-    $curl_opt -o $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
-    $curl_opt -o $root_opt/onbuild.sh $url_deploy_raw/conf/dockerfile/$root_opt/onbuild.sh
-    $curl_opt -o $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
-
-    if docker images | grep "fly/php.*${php_ver}-base"; then
-        _msg time "ignore build base image."
-    else
-        $build_opt -t "$image_tag_base" -f Dockerfile.base .
-    fi
-    echo "FROM $image_tag_base" >Dockerfile
-    $build_opt -t "$image_tag" .
-}
-
-_build_image_java() {
-    build_opt="$build_opt --build-arg CHANGE_SOURCE=${CHANGE_SOURCE} --build-arg IN_CHINA=${IN_CHINA}"
-    # image_tag_base=fly/spring:base
-    image_tag=fly/spring
-
-    root_opt=root/opt
-    [ -d root ] || mkdir -p $root_opt
-    $curl_opt -o Dockerfile $url_deploy_raw/conf/dockerfile/Dockerfile.java
-    $curl_opt -o $root_opt/build.sh $url_deploy_raw/conf/dockerfile/$root_opt/build.sh
-    $curl_opt -o $root_opt/run.sh $url_deploy_raw/conf/dockerfile/$root_opt/run.sh
-    # $build_opt -t "$image_tag_base" -f Dockerfile.base .
-
-    $build_opt -t "$image_tag" .
-}
-
 _set_args() {
     IN_CHINA=true
     php_ver=7.1
@@ -659,93 +632,107 @@ _set_args() {
     fi
     while [ "$#" -gt 0 ]; do
         case "${1}" in
-        mysql)
-            args+=(mysql)
-            ;;
         redis)
             args+=(redis)
             set_sysctl=true
+            exec_check_dependence=true
+            exec_check_docker=true
+            exec_check_laradock=true
+            exec_check_laradock_env=true
+            exec_start_docker_service=true
             ;;
-        nginx)
-            args+=(nginx)
+        mysql)
+            args+=(mysql)
+            exec_check_dependence=true
+            exec_check_docker=true
+            exec_check_laradock=true
+            exec_check_laradock_env=true
+            exec_start_docker_service=true
             ;;
         java | spring)
             args+=(spring)
+            exec_check_dependence=true
+            exec_check_docker=true
+            exec_check_laradock=true
+            exec_check_laradock_env=true
+            exec_start_docker_service=true
             ;;
         php | php-fpm | fpm)
             args+=(php-fpm)
+            exec_check_dependence=true
+            exec_check_docker=true
+            exec_pull_image=true
+            exec_check_laradock=true
+            exec_check_laradock_env=true
+            php_ver=${2:-7.1}
+            exec_start_docker_service=true
+            shift
             ;;
-        [0-9].[0-9])
-            php_ver=${1:-7.1}
+        nginx)
+            args+=(nginx)
+            exec_check_dependence=true
+            exec_check_docker=true
+            exec_check_laradock=true
+            exec_check_laradock_env=true
+            exec_start_docker_service=true
+            ;;
+        gitlab | git)
+            args+=(gitlab)
+            exec_check_dependence=true
+            exec_check_docker=true
+            exec_check_laradock=true
+            exec_check_laradock_env=true
+            exec_start_docker_service=true
+            ;;
+        svn | usvn)
+            args+=(usvn)
+            exec_check_dependence=true
+            exec_check_docker=true
+            exec_check_laradock=true
+            exec_check_laradock_env=true
+            exec_start_docker_service=true
+            ;;
+        pull-image-all)
+            exec_pull_image_all=true
             ;;
         upgrade)
             [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=true
             [[ "${args[*]}" == *spring* ]] && exec_upgrade_java=true
-            enable_check=false
+            exec_check_dependence=true
             ;;
-        github | not-china | not-cn | ncn)
+        not-china | not-cn | ncn)
             IN_CHINA=false
             aliyun_mirror=false
             ;;
-        build)
-            exec_build_image=true
-            ;;
-        build-remote)
-            build_remote=true
-            ;;
-        build-nocache | nocache)
-            build_opt="docker build --no-cache"
-            ;;
         install-docker-without-aliyun)
             aliyun_mirror=false
-            ;;
-        get-image-cdn)
-            get_image_cdn=true
-            ;;
-        overwrite-php-image)
-            overwrite_php_image=true
-            ;;
-        man | manual)
-            manual_start=true
-            ;;
-        gitlab | git)
-            args+=(gitlab)
-            ;;
-        svn | usvn)
-            args+=(usvn)
+            exec_check_docker=true
             ;;
         install-zsh | zsh)
             exec_install_zsh=true
-            enable_check=true
+            exec_check_timezone=true
             ;;
         install-lsyncd | lsync | lsyncd)
             exec_install_lsyncd=true
-            enable_check=false
             ;;
         install-wg | wg | wireguard)
             exec_install_wg=true
-            enable_check=true
             ;;
         info)
             exec_get_redis_mysql_info=true
-            enable_check=false
             ;;
         mysql-cli)
             exec_mysql_cli=true
-            enable_check=false
             ;;
         redis-cli)
             exec_redis_cli=true
-            enable_check=false
             ;;
         test)
             exec_test_nginx=true
             exec_test_php=true
-            enable_check=false
             ;;
         reset | clean | clear)
-            exec_reset=true
-            enable_check=false
+            exec_reset_laradock=true
             ;;
         *)
             _usage
@@ -757,11 +744,16 @@ _set_args() {
 
 main() {
     SECONDS=0
+
     _set_args "$@"
+
     set -e
+    cmd_readlink="$(command -v greadlink)"
+    me_path="$(dirname "$(${cmd_readlink:-readlink} -f "$0")")"
     me_name="$(basename "$0")"
-    me_path="$(dirname "$(readlink -f "$0")")"
-    me_log="${me_path}/${me_name}.log"
+    me_path_data="$me_path/../data"
+    me_env="$me_path_data/$me_name.env"
+    me_log="$me_path_data/$me_name.log"
 
     curl_opt='curl --connect-timeout 10 -fL'
     url_fly_cdn="http://cdn.flyh6.com/docker"
@@ -775,6 +767,7 @@ main() {
         url_laradock_raw=https://github.com/xiagw/laradock/raw/main
         url_deploy_raw=https://github.com/xiagw/deploy.sh/raw/main
     fi
+    echo "$me_env $url_laradock_raw $url_deploy_raw" >/dev/null 2>&1
 
     laradock_home="$HOME"/docker/laradock
     laradock_current="$me_path"
@@ -803,7 +796,7 @@ main() {
         return
     fi
 
-    _check_dependence
+    ${exec_check_dependence:-false} && _check_dependence
 
     if ${exec_install_zsh:-false}; then
         _install_zsh
@@ -818,49 +811,18 @@ main() {
         return
     fi
 
-    _check_docker
+    ${exec_check_docker:-false} && _check_docker
     ## if install docker and add normal user (not root) to group "docker"
-    if ${need_logout:-false}; then
-        return
-    fi
+    ${need_logout:-false} && return
 
-    dco="docker compose"
-    if $dco version; then
-        _msg info "$dco ready."
-    else
-        if _check_cmd docker-compose; then
-            dco="docker-compose"
-            dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
-            if [[ "$dco_ver" -lt 1190 ]]; then
-                _msg warn "docker-compose version is too old."
-            fi
-        fi
-    fi
-
-    if ${exec_reset:-false}; then
-        _msg step "reset docker"
+    if ${exec_reset_laradock:-false}; then
+        _msg step "reset laradock service"
         (
             cd "$laradock_path"
             $dco stop
             $dco rm -f
         )
-        $pre_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
-        return
-    fi
-    if ${exec_build_image:-false}; then
-        build_opt="${build_opt:-docker build}"
-        if [[ "${args[*]}" == *nginx* ]]; then
-            _build_image_nginx
-        fi
-        if [[ "${args[*]}" == *php* ]]; then
-            _build_image_php
-        fi
-        if [[ "${args[*]}" == *spring* ]]; then
-            _build_image_java
-        fi
-        if ${build_remote:-false}; then
-            _msg warn "safe remove \"rm -rf root/ Dockerfile\"."
-        fi
+        $use_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
         return
     fi
 
@@ -874,86 +836,21 @@ main() {
         return
     fi
 
-    if ${enable_check:-true}; then
-        _check_timezone
-        _check_laradock
-        _check_laradock_env
-    fi
+    ${exec_check_timezone:-false} && _check_timezone
 
-    _msg step "check docker image..."
-    for i in "${args[@]}"; do
-        case $i in
-        nginx)
-            url_image="$url_fly_cdn/laradock-nginx.tar.gz"
-            _get_image nginx
-            exec_test_nginx=true
-            ;;
-        mysql)
-            cat >"$laradock_path"/mysql/docker-entrypoint-initdb.d/create.defautldb.sql <<'EOF'
-CREATE DATABASE IF NOT EXISTS `defaultdb` COLLATE 'utf8mb4_general_ci' ;
-GRANT ALL ON `defaultdb`.* TO 'defaultdb'@'%' ;
-CREATE DATABASE IF NOT EXISTS `flydev` COLLATE 'utf8mb4_general_ci' ;
-GRANT ALL ON `flydev`.* TO 'flydev'@'%' ;
-GRANT ALL ON `defaultdb`.* TO 'flydev'@'%' ;
-CREATE DATABASE IF NOT EXISTS `flytest` COLLATE 'utf8mb4_general_ci' ;
-GRANT ALL ON `flytest`.* TO 'flytest'@'%' ;
-GRANT ALL ON `defaultdb`.* TO 'flytest'@'%' ;
-CREATE DATABASE IF NOT EXISTS `flyprod` COLLATE 'utf8mb4_general_ci' ;
-GRANT ALL ON `flyprod`.* TO 'flyprod'@'%' ;
-GRANT ALL ON `defaultdb`.* TO 'flyprod'@'%' ;
-EOF
-            if [ ! -d "$laradock_path"/../../laradock-data/mysqlbak ]; then
-                $pre_sudo mkdir -p "$laradock_path"/../../laradock-data/mysqlbak
-                $pre_sudo chown 1000 "$laradock_path"/../../laradock-data/mysqlbak
-            fi
-            url_image="$url_fly_cdn/laradock-mysql.tar.gz"
-            _get_image mysql
-            url_image="$url_fly_cdn/laradock-mysqlbak.tar.gz"
-            _get_image mysqlbak
-            ;;
-        redis)
-            url_image="$url_fly_cdn/laradock-redis.tar.gz"
-            _get_image redis
-            ;;
-        spring)
-            url_image="$url_fly_cdn/laradock-spring.tar.gz"
-            _get_image spring
-            # _set_file_mode
-            _set_nginx_java
-            exec_test_java=true
-            ;;
-        php*)
-            url_image="$url_fly_cdn/laradock-php-fpm.${php_ver}.tar.gz"
-            _set_env_php_ver
-            # _set_file_mode
-            is_php=true
-            _get_image php-fpm
-            unset is_php
-            exec_test_php=true
-            ;;
-        esac
-    done
+    ${exec_check_laradock:-false} && _check_laradock
 
-    if ${manual_start:-false}; then
-        _start_manual
-        return
-    else
-        _start_auto
-    fi
+    ${exec_check_laradock_env:-false} && _check_laradock_env
 
-    _msg step "check service..."
+    ${exec_pull_image:-false} && _pull_image
 
-    if ${exec_test_nginx:-false}; then
-        _test_nginx
-    fi
+    ${exec_start_docker_service:-false} && _start_docker_service
 
-    if ${exec_test_php:-false}; then
-        _test_php
-    fi
+    ${exec_test_nginx:-false} && _test_nginx
 
-    if ${exec_test_java:-false}; then
-        _test_java
-    fi
+    ${exec_test_php:-false} && _test_php
+
+    ${exec_test_java:-false} && _test_java
 }
 
 main "$@"
