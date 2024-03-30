@@ -389,7 +389,9 @@ _install_zsh() {
             sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
         fi
     fi
+}
 
+_install_trzsz() {
     ## trzsz
     if _check_cmd trz; then
         _msg "skip trzsz install"
@@ -707,6 +709,10 @@ _set_args() {
             exec_install_zsh=true
             exec_check_timezone=true
             ;;
+        install-trzsz | trzsz)
+            exec_install_trzsz=true
+            exec_check_timezone=true
+            ;;
         install-lsyncd | lsync | lsyncd)
             exec_install_lsyncd=true
             ;;
@@ -786,6 +792,7 @@ main() {
 
     ${exec_check_dependence:-true} && _check_dependence
 
+    ${exec_install_trzsz:-false} && _install_trzsz
     if ${exec_install_zsh:-false}; then
         _install_zsh
         return
