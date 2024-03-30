@@ -592,6 +592,12 @@ _upgrade_php() {
     $curl_opt $url_fly_cdn/tp.tar.gz | tar -C "$laradock_path"/../html/ vzx
 }
 
+_reset_laradock() {
+    _msg step "reset laradock service"
+    cd "$laradock_path" && $dco stop && $dco rm -f
+    $use_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
+}
+
 _usage() {
     cat <<EOF
 Usage: $0 [parameters ...]
@@ -731,8 +737,7 @@ main() {
     _set_args "$@"
 
     set -e
-    cmd_readlink="$(command -v greadlink || true)"
-    me_path="$(dirname "$(${cmd_readlink:-readlink} -f "$0")")"
+    me_path="$(dirname "$(readlink -f "$0")")"
     me_name="$(basename "$0")"
     me_path_data="$me_path/../data"
     me_env="$me_path_data/$me_name.env"
@@ -799,13 +804,7 @@ main() {
     ${need_logout:-false} && return
 
     if ${exec_reset_laradock:-false}; then
-        _msg step "reset laradock service"
-        (
-            cd "$laradock_path"
-            $dco stop
-            $dco rm -f
-        )
-        $use_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
+        _reset_laradock
         return
     fi
 
