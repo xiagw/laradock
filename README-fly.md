@@ -144,6 +144,7 @@ sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
 sudo chown -R 1000:1000 $HOME/docker/laradock/spring    ## Java 容器内 uid=1000
+sudo chown -R 1000:1000 $HOME/docker/html/uploads       ## Java 容器内 uid=1000 对应容器内目录 /var/www/html/uploads
 sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=1000
 
 ## 如果有负载均衡，单台或多台服务器
