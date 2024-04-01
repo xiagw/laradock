@@ -45,7 +45,7 @@
 ## 1. 默认部署环境， docker/nginx/redis/mysql/php-7.1/jdk-1.8
 ## 2. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 3. 默认下载并导入 php-fpm 镜像，其他镜像自动使用 docker build 创建
-## 4. 访问不到 hub.docker.com 等网络问题，后面加跟参数 "get-image-cdn"
+## 4. 访问不到 hub.docker.com 等网络问题，后面加参数 "pull-image-all"
 ## 单例 nginx/php 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
 ## 套装 nginx/php/redis/mysql 请执行
