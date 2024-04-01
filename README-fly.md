@@ -86,13 +86,6 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php
 | mysql 数据存放路径                 | $HOME/laradock-data/mysql/                                          |
 | mysql 数据备份路径                 | $HOME/laradock-data/mysqlbak/                                       |
 
-```sh
-##  恢复文件权限
-sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp
-sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime
-sudo chown -R 1000:1000 $HOME/docker/laradock/spring
-sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs
-```
 
 ### 操作docker容器简要方式/查看日志
 ```sh
