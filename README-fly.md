@@ -89,15 +89,13 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php
 
 ### 操作docker容器简要方式/查看日志
 ```sh
-## !!! 必须进入此目录 !!! 操作容器
-cd $HOME/docker/laradock
-# cd $PWD/docker/laradock
+## 操作容器 !!! 必须进入此目录 !!!
+cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
 
-##  查看 mysql/redis 信息
-## ！！！注意 ！！！
+##  查看 mysql/redis 信息  ！！！注意 ！！！
 ## 1，如果客户没有单独的 db / redis，则使用本服务器的db/redis ，用此方式查看 mysql, redis 的链接/账号/密码/信息
 ## 2，如果客户有独立的 db / redis ，则不需要查看此信息（独立mysql redis 不从此查看）
-bash fly.sh info
+cd $HOME/docker/laradock && bash fly.sh info
 
 cd $HOME/docker/laradock && docker compose up -d nginx redis mysql php-fpm      ## 启动服务 php-fpm
 cd $HOME/docker/laradock && docker compose up -d nginx redis mysql spring       ## 启动服务 Java (spring)
@@ -107,7 +105,7 @@ cd $HOME/docker/laradock && docker compose stop nginx redis mysql spring       #
 cd $HOME/docker/laradock && docker compose stop nginx redis mysql nodejs       ## 停止服务 nodejs
 
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring       ## java 查看容器日志最后 100 行
-tail -f spring/*.log          ## 如果程序写入 log 文件，也可以查看 spring/*.log 文件
+cd $HOME/docker/laradock && tail -f spring/*.log          ## 如果程序写入 log 文件，也可以查看 spring/*.log 文件
 
 ## java 修改 nginx 配置文件  $HOME/docker/laradock/nginx/sites/d.java.inc
 cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload       ## nginx 重启 (修改配置文件后必须重启)
@@ -116,21 +114,17 @@ cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## ngi
 ## 替换 Nginx SSL 证书 key 文件 $HOME/docker/laradock/nginx/sites/ssl/default.key
 ## 替换 Nginx SSL 证书 pem 文件 $HOME/docker/laradock/nginx/sites/ssl/default.pem
 
-## 把sql文件存放到目录 / 文件名: $HOME/laradock-data/mysqlbak/db.sql
+## mysql 导入文件，把sql文件存放到目录 / 文件名: $HOME/laradock-data/mysqlbak/db.sql
 ## 导入数据库文件（使用本服务器的db/redis）（独立mysql redis 不从此操作）
 cd $HOME/docker/laradock && docker compose exec mysql bash -c  'mysql -udefaultdb -p defaultdb </backup/db.sql'
 
-## mysql 操作命令
+## mysql 进入命令行操作
 cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql defaultdb"
 
-## redis 操作命令
+## redis 进入命令行操作
 cd $HOME/docker/laradock && docker compose exec redis redis-cli
 
-## 把sql文件存放到目录 / 文件名: $HOME/laradock-data/mysqlbak/db.sql
-## 导入数据库文件（使用本服务器的db/redis）（独立mysql redis 不从此操作）
-cd $HOME/docker/laradock && docker compose exec mysql bash -c  'mysql -udefaultdb -p defaultdb </backup/db.sql'
-
-## 如果SSH登陆服务器为非root帐号，先上传文件到 $HOME/xxx.jar
+## 如果SSH登陆服务器为非root帐号，先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/laradock/spring
 sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
 
 ## 文件权限
