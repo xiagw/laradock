@@ -668,6 +668,9 @@ _set_args() {
         [0-9].[0-9])
             php_ver=${1:-7.1}
             ;;
+        node | nodejs | node.js)
+            args+=(nodejs)
+            ;;
         nginx)
             args+=(nginx)
             exec_check_docker=true

@@ -728,3 +728,28 @@ services:
       networks:
         - frontend
         - backend
+
+## https://jellyfin.org/docs/general/installation/container
+    jellyfin:
+      image: jellyfin/jellyfin:latest
+      user: 1000:1000
+      volumes:
+        - ${DATA_PATH_HOST}/jellyfin/config:/config
+        - ${DATA_PATH_HOST}/jellyfin/cache:/cache
+        - type: bind
+          source: ${DATA_PATH_HOST}/jellyfin/media
+          target: /media
+        - type: bind
+          source: ${DATA_PATH_HOST}/jellyfin/media2
+          target: /media2
+          # read_only: true
+      restart: unless-stopped
+      # environment:
+      #   - JELLYFIN_PublishedServerUrl=http://example.com
+      # extra_hosts:
+      #   - "host.docker.internal:host-gateway"
+      ports:
+        - 8096:8096
+      networks:
+        - frontend
+        - backend
