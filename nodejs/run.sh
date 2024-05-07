@@ -42,14 +42,15 @@ if [ -f package.json ]; then
 
     if [ -d ./src ]; then
         echo "found ./src"
-        start_cmd=$(awk '/"start".*\.[js|ts]/ {gsub(/"/,""); gsub(/start:/,""); gsub(/^\s+/,""); print $0}' package.json)
-        if [ -z "$start_cmd" ]; then
-            echo "not found start cmd from package.json"
-            tail -f package.json &
-        else
-            echo "get start cmd: $start_cmd"
-            eval $start_cmd &
-        fi
+        npm run start
+        # start_cmd=$(awk '/"start".*\.[js|ts]/ {gsub(/"/,""); gsub(/start:/,""); gsub(/^\s+/,""); print $0}' package.json)
+        # if [ -z "$start_cmd" ]; then
+        #     echo "not found start cmd from package.json"
+        #     tail -f package.json &
+        # else
+        #     echo "get start cmd: $start_cmd"
+        #     eval $start_cmd &
+        # fi
     else
         echo "not found ./src"
         tail -f package.json &
