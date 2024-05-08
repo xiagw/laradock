@@ -107,7 +107,7 @@ cd $HOME/docker/laradock && docker compose stop nginx redis mysql nodejs       #
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring       ## java 查看容器日志最后 100 行
 cd $HOME/docker/laradock && tail -f spring/*.log          ## 如果程序写入 log 文件，也可以查看 spring/*.log 文件
 
-## java 修改 nginx 配置文件  $HOME/docker/laradock/nginx/sites/d.java.inc
+## java / nodejs 修改 nginx 配置文件  $HOME/docker/laradock/nginx/sites/router.inc
 cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload       ## nginx 重启 (修改配置文件后必须重启)
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
 
