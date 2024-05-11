@@ -207,3 +207,20 @@ Start-Process .\amazon-corretto-8-x64-windows-jdk.msi
 
 ## 查询域名备案
 1. https://beian.miit.gov.cn/#/Integrated/recordQuery
+
+# Bitvise教程/下载/安装软件
+1. 下载方式一， [BvSshClient http://oss.flyh6.com/d/BvSshClient-Inst.zip](http://oss.flyh6.com/d/BvSshClient-Inst.zip)
+1. 下载方式二， [BvSshClient https://www.putty.org/](https://www.putty.org/)
+
+# Bitvise密码/登录服务器
+1.  `假如无法使用密码，则需用SSH Key登录`
+1. 从管理员/客户处获取服务器IP/帐号/密码，
+1. 输入 `Host:` IP
+1. 输入 `Username:`  帐号
+1. 点左下角 `login` , （点击 `Accept and Save`），`输入密码`登录
+1. 点击左侧 `New Terminal console` 进入命令行界面
+1. 点击左侧 `New SFTP window` 进入文件夹管理界面，可以直接上传/下载文件
+
+# Bitvise拷贝文件到服务器目录
+1. 使用以上 `Bitvise SSH Client` 可以拷贝文件到服务器端 目录。
+1. 网址对应服务器目录关系，参考本页上方的“### 单机docker部署方式站点URL对应服务器目录说明”
