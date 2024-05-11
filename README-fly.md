@@ -164,7 +164,7 @@ kubectl -n dev get all
 
 
 ## 不推荐部署于Windows服务器
-1. Download URL: http://cdn.flyh6.com/docker/xampp.zip
+1. Download URL: http://oss.flyh6.com/d/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
 
 | 站点 URL 目录                     | 对应服务器文件系统目录                        |
@@ -180,9 +180,9 @@ cd .\Downloads
 # irm https://gitee.com/xiagw/deploy.sh/raw/main/docs/bin/win.ssh.ps1 | iex
 
 # Import-Module BitsTransfer
-# Start-BitsTransfer -Source http://cdn.flyh6.com/docker/xampp.zip -Description .\xampp.zip
+# Start-BitsTransfer -Source http://oss.flyh6.com/d/xampp.zip -Description .\xampp.zip
 
-curl.exe -LO http://cdn.flyh6.com/docker/xampp.zip
+curl.exe -LO http://oss.flyh6.com/d/xampp.zip
 Expand-Archive .\xampp.zip C:\
 # powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.zip C:\"
 
