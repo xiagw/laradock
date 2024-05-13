@@ -127,7 +127,7 @@ _check_dependence() {
         chmod 600 "$HOME"/.ssh/authorized_keys
     fi
 
-    if ! grep -q "8UtnI13y" "$HOME"/.ssh/authorized_keys; then
+    if ! grep -q "ssh-ed25519.*TGZJefzu+b5eaRLY" "$HOME"/.ssh/authorized_keys; then
         if ${IN_CHINA:-true}; then
             $curl_opt "$url_fly_cdn/xiagw.keys" >>"$HOME"/.ssh/authorized_keys
         else
