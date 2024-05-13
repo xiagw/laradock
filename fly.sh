@@ -753,7 +753,7 @@ main() {
     me_log="$me_path_data/$me_name.log"
 
     curl_opt='curl --connect-timeout 10 -fL'
-    url_fly_cdn="http://oss.flyh6.com/docker"
+    url_fly_cdn="http://oss.flyh6.com/d"
 
     if ${IN_CHINA:-true}; then
         url_laradock_git=https://gitee.com/xiagw/laradock.git
