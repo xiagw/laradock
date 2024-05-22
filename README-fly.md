@@ -40,8 +40,7 @@
 ```sh
 
 ## 假如服务器需要代理访问公网，则设置环境变量
-# export http_proxy=http://x.x.x.x:1080
-# export https_proxy=http://x.x.x.x:1080
+# export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
 
 ## 1. 默认部署环境， docker/nginx/redis/mysql/php-7.1/jdk-1.8
 ## 2. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
@@ -108,15 +107,15 @@ cd $HOME/docker/laradock && docker compose stop nginx redis mysql nodejs       #
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring       ## java 查看容器日志最后 100 行
 cd $HOME/docker/laradock && tail -f spring/*.log          ## 如果程序写入 log 文件，也可以查看 spring/*.log 文件
 
-## java / nodejs 修改 nginx 配置文件  $HOME/docker/laradock/nginx/sites/router.inc
-cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload       ## nginx 重启 (修改配置文件后必须重启)
-cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
-
 ## 替换 Nginx SSL 证书 key 文件 $HOME/docker/laradock/nginx/sites/ssl/default.key
 ## 替换 Nginx SSL 证书 pem 文件 $HOME/docker/laradock/nginx/sites/ssl/default.pem
 
-## mysql 导入文件，把sql文件存放到目录 / 文件名: $HOME/laradock-data/mysqlbak/db.sql
-## 导入数据库文件（使用本服务器的db/redis）（独立mysql redis 不从此操作）
+## java / nodejs 修改 nginx 配置文件  $HOME/docker/laradock/nginx/sites/router.inc
+cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload     ## nginx 重启 (修改配置文件后必须重启)
+cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
+
+## 1. sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
+## 2. 导入数据库文件（使用本服务器的db/redis）（独立mysql redis 不从此操作）
 cd $HOME/docker/laradock && docker compose exec mysql bash -c  'mysql -udefaultdb -p defaultdb </backup/db.sql'
 
 ## mysql 进入命令行操作
@@ -128,7 +127,6 @@ cd $HOME/docker/laradock && docker compose exec redis redis-cli
 ## 如果SSH登陆服务器为非root帐号，先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/laradock/spring
 sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
 
-## 文件权限
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
 sudo chown -R 1000:1000 $HOME/docker/laradock/spring    ## Java 容器内 uid=1000
@@ -136,9 +134,8 @@ sudo chown -R 1000:1000 $HOME/docker/html/uploads       ## Java 容器内 uid=10
 sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=1000
 
 ## 如果有负载均衡，单台或多台服务器
-1. 设置负载均衡服务器组（单台/多台）
-1. 设置负载均衡监听端口 80/443，指向服务器组
-1. 若有安全组则需设置安全组开放 80/443
+1. 设置负载均衡监听端口 80/443，指向服务器组服务器组（单台/多台）
+2. 若有安全组或防火墙则需设置安全组开放 80/443
 
 ```
 
@@ -168,12 +165,13 @@ kubectl -n dev get all
 1. Download URL: http://oss.flyh6.com/d/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
 
-| 站点 URL 目录                     | 对应服务器文件系统目录                        |
-|:---------------------------------|:------------------------------------------|
-| http://xxx.yyy.com/ | C:\xampp\htdocs\ |
-| http://xxx.yyy.com/tp/ | C:\xampp\htdocs\tp\ (PHP 代码文件) |
-| http://xxx.yyy.com/s/ | C:\xampp\htdocs\s\ (前端静态资源文件) |
+| 站点 URL 目录                  | 对应服务器文件系统目录                        |
+|:-------------------------------|:----------------------------------------------|
+| http://xxx.yyy.com/            | C:\xampp\htdocs\                              |
+| http://xxx.yyy.com/tp/         | C:\xampp\htdocs\tp\ (PHP 代码文件)            |
+| http://xxx.yyy.com/s/          | C:\xampp\htdocs\s\ (前端静态资源文件)         |
 | http://xxx.yyy.com/spring-xxx/ | C:\xampp\spring\ （安装 JDK， 部署 jar 文件） |
+
 
 ```sh
 cd .\Downloads
