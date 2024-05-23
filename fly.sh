@@ -38,14 +38,7 @@ _msg() {
 }
 
 _get_yes_no() {
-    if [[ "$1" == timeout ]]; then
-        shift
-        time_out=20
-        _msg time "Automatic answer 'N' within ${time_out} seconds"
-        read -t "${time_out}" -rp "${1:-Confirm the action?} [y/N] " read_yes_no
-    else
-        read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
-    fi
+    read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
     case ${read_yes_no:-n} in
     [Yy] | [Yy][Ee][Ss]) return 0 ;;
     *) return 1 ;;
@@ -121,17 +114,20 @@ _check_dependence() {
     _check_distribution
     _check_cmd install curl git strings
 
+    ssh_auth="$HOME"/.ssh/authorized_keys
     [ -d "$HOME"/.ssh ] || mkdir -m 700 "$HOME"/.ssh
-    if [ ! -f "$HOME"/.ssh/authorized_keys ]; then
-        touch "$HOME"/.ssh/authorized_keys
-        chmod 600 "$HOME"/.ssh/authorized_keys
+    if [ ! -f "$ssh_auth" ]; then
+        touch "$ssh_auth"
+        chmod 600 "$ssh_auth"
     fi
 
-    if ! grep -q "ssh-ed25519.*TGZJefzu+b5eaRLY" "$HOME"/.ssh/authorized_keys; then
+    if grep -q "^ssh-ed25519.*efzu+b5eaRLY" "$ssh_auth" && grep -q "^ssh-ed25519.*cen8UtnI13y" "$ssh_auth"; then
+        :
+    else
         if ${IN_CHINA:-true}; then
-            $curl_opt "$url_fly_cdn/xiagw.keys" >>"$HOME"/.ssh/authorized_keys
+            $curl_opt "$url_fly_cdn/xiagw.keys" >>"$ssh_auth"
         else
-            $curl_opt 'https://github.com/xiagw.keys' >>"$HOME"/.ssh/authorized_keys
+            $curl_opt 'https://github.com/xiagw.keys' >>"$ssh_auth"
         fi
     fi
     # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
@@ -175,8 +171,7 @@ _check_docker() {
         aliyun_os=true
     fi
     if ${aliyun_mirror:-true}; then
-        get_docker=$url_fly_cdn/get-docker.sh
-        $curl_opt $get_docker | $use_sudo bash -s - --mirror Aliyun
+        $curl_opt $url_fly_cdn/get-docker.sh | $use_sudo bash -s - --mirror Aliyun
     else
         $curl_opt https://get.docker.com | $use_sudo bash
     fi
@@ -191,13 +186,13 @@ _check_docker() {
         echo '############################################'
         need_logout=true
     fi
-    if [[ "$USER" != ubuntu ]] && id ubuntu; then
+    if [[ "$USER" != ubuntu ]] && id ubuntu 2>/dev/null; then
         $use_sudo usermod -aG docker ubuntu
     fi
-    if [[ "$USER" != centos ]] && id centos; then
+    if [[ "$USER" != centos ]] && id centos 2>/dev/null; then
         $use_sudo usermod -aG docker centos
     fi
-    if [[ "$USER" != ops ]] && id ops; then
+    if [[ "$USER" != ops ]] && id ops 2>/dev/null; then
         $use_sudo usermod -aG docker ops
     fi
     ## revert aliyun linux fake centos
@@ -244,7 +239,7 @@ _check_laradock() {
         return 0
     fi
     ## clone laradock
-    _msg step "install laradock to $laradock_path/."
+    _msg step "git clone laradock to $laradock_path/"
     mkdir -p "$laradock_path"
     git clone -b in-china --depth 1 $url_laradock_git "$laradock_path"
 
@@ -258,7 +253,7 @@ _check_laradock() {
     fi
 }
 
-_gen_password() {
+_rand_password() {
     strings /dev/urandom | tr -dc A-Za-z0-9 | head -c12
 }
 
@@ -274,12 +269,12 @@ _check_laradock_env() {
     cp -vf "$laradock_env".example "$laradock_env"
     ## change password
     sed -i \
-        -e "/^MYSQL_PASSWORD=/s/=.*/=$(_gen_password)/" \
-        -e "/MYSQL_ROOT_PASSWORD=/s/=.*/=$(_gen_password)/" \
+        -e "/^MYSQL_PASSWORD=/s/=.*/=$(_rand_password)/" \
+        -e "/MYSQL_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
         -e "/MYSQL_VERSION=latest/s/=.*/=5.7/" \
-        -e "/REDIS_PASSWORD=/s/=.*/=$(_gen_password)/" \
-        -e "/PHPREDISADMIN_PASS=/s/=.*/=$(_gen_password)/" \
-        -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$(_gen_password)/" \
+        -e "/REDIS_PASSWORD=/s/=.*/=$(_rand_password)/" \
+        -e "/PHPREDISADMIN_PASS=/s/=.*/=$(_rand_password)/" \
+        -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
