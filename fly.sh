@@ -321,7 +321,7 @@ _reload_nginx() {
 
 _set_nginx_php() {
     ## setup php upstream
-    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$laradock_path/nginx/sites/d.php.inc"
+    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$laradock_path/nginx/sites/router.inc"
 }
 
 _set_env_php_ver() {
@@ -387,7 +387,6 @@ _install_zsh() {
 }
 
 _install_trzsz() {
-    ## trzsz
     if _check_cmd trz; then
         _msg "skip trzsz install"
     else
@@ -518,9 +517,6 @@ _test_php() {
             -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
             "$path_nginx_root/test.php"
     fi
-
-    # _set_nginx_php
-
     _test_nginx "test.php"
 }
 
