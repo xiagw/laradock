@@ -1,13 +1,12 @@
 ## arch: x86_64
-ARG JDK_IMAGE=${JDK_IMAGE}
-ARG JDK_VERSION=${JDK_VERSION}
-# ARG JDK_IMAGE=amazoncorretto:11
-# ARG JDK_IMAGE=amazoncorretto:17
-
+ARG IMAGE_NAME=openjdk:8
+# ARG IMAGE_NAME=amazoncorretto:8
+# ARG IMAGE_NAME=amazoncorretto:11
+# ARG IMAGE_NAME=amazoncorretto:17
 ## arch: arm64
-# ARG JDK_IMAGE=arm64v8/openjdk:8
+# ARG IMAGE_NAME=arm64v8/openjdk:8
 
-FROM ${JDK_IMAGE}:${JDK_VERSION}
+FROM ${IMAGE_NAME}
 
 ARG IN_CHINA=${CHANGE_SOURCE}
 ARG CHANGE_SOURCE=${CHANGE_SOURCE}
