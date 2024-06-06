@@ -95,6 +95,7 @@ cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
 ##  查看 mysql/redis 信息  ！！！注意 ！！！
 ## 1，如果客户没有单独的 db / redis，则使用本服务器的db/redis ，用此方式查看 mysql, redis 的链接/账号/密码/信息
 ## 2，如果客户有独立的 db / redis ，则不需要查看此信息（独立mysql redis 不从此查看）
+## 3，容器内代码内端口使用标准端口 mysql 3306 和 redis 6379，此端口信息是映射于服务器本机SSH端口转发
 cd $HOME/docker/laradock && bash fly.sh info
 
 cd $HOME/docker/laradock && docker compose up -d nginx redis mysql php-fpm      ## 启动服务 php-fpm

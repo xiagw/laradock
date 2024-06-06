@@ -530,6 +530,7 @@ _test_java() {
 }
 
 _get_redis_mysql_info() {
+    set +e
     echo
     grep -E '^REDIS_' "$laradock_env" | sed -n '1,3p'
     echo
