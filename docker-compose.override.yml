@@ -566,8 +566,7 @@ services:
         context: ./spring
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
-          - JDK_IMAGE=${JDK_IMAGE}
-          - JDK_VERSION=${JDK_VERSION}
+          - JDK_IMAGE_NAME=${JDK_IMAGE_NAME}
       restart: always
       volumes:
         - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
@@ -581,8 +580,7 @@ services:
         context: ./spring2
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
-          - JDK_IMAGE=${JDK_IMAGE}
-          - JDK_VERSION=${JDK_VERSION}
+          - JDK_IMAGE_NAME=${JDK_IMAGE_NAME}
       restart: always
       volumes:
         - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}

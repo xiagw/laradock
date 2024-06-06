@@ -535,7 +535,7 @@ _get_redis_mysql_info() {
     echo
     grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
     echo
-    grep -E '^JDK_VERSION|^JDK_IMAGE|^IMAGE_NAME' "$laradock_env"
+    grep -E '^JDK_VERSION|^JDK_IMAGE|^JDK_IMAGE_NAME' "$laradock_env"
     echo
     grep -E '^PHP_VERSION' "$laradock_env"
 }
