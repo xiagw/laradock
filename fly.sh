@@ -451,12 +451,12 @@ _pull_image() {
             fi
             $use_sudo chown 1000:1000 "$laradock_path"/../../laradock-data/mysqlbak
             if ${exec_pull_image_all:-false}; then
-                if grep 'MYSQL_VERSION.*5\.7' "$laradock_env"; then
+                if grep 'MYSQL_VERSION=5.7' "$laradock_env"; then
                     docker pull "$image_repo:$i"-5.7
-                    docker tag "$image_repo:$i"-5.7 "$image_prefix$i"
+                    docker tag "$image_repo:$i"-5.7 "mysql:5.7"
                 else
                     docker pull "$image_repo:$i"
-                    docker tag "$image_repo:$i" "$image_prefix$i"
+                    docker tag "$image_repo:$i" "mysql:latest"
                 fi
             fi
             ;;
