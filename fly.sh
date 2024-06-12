@@ -441,46 +441,38 @@ _pull_image() {
         case $i in
         nginx)
             exec_test_nginx=true
-            if ${exec_pull_image_all:-false}; then
-                docker pull "$image_repo:$i"
-                docker tag "$image_repo:$i" "$image_prefix$i"
-            fi
+            docker pull "$image_repo:laradock-nginx"
+            docker tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
             ;;
         mysql)
             if [ ! -d "$laradock_path"/../../laradock-data/mysqlbak ]; then
                 $use_sudo mkdir -p "$laradock_path"/../../laradock-data/mysqlbak
             fi
             $use_sudo chown 1000:1000 "$laradock_path"/../../laradock-data/mysqlbak
-            if ${exec_pull_image_all:-false}; then
-                if grep 'MYSQL_VERSION=5.7' "$laradock_env"; then
-                    docker pull "$image_repo:$i"-5.7
-                    docker tag "$image_repo:$i"-5.7 "mysql:5.7"
-                else
-                    docker pull "$image_repo:$i"
-                    docker tag "$image_repo:$i" "mysql:latest"
-                fi
+            if grep 'MYSQL_VERSION=5.7' "$laradock_env"; then
+                docker pull "$image_repo:laradock-mysql-5.7"
+                docker tag "$image_repo:laradock-mysql-5.7" "${image_prefix}mysql"
+            else
+                docker pull "$image_repo:laradock-mysql-8"
+                docker tag "$image_repo:laradock-mysql-8" "${image_prefix}mysql"
             fi
             ;;
         redis)
-            if ${exec_pull_image_all:-false}; then
-                docker pull "$image_repo:$i"
-                docker tag "$image_repo:$i" "$image_prefix$i"
-            fi
+            docker pull "$image_repo:laradock-redis"
+            docker tag "$image_repo:laradock-redis" "${image_prefix}redis"
             ;;
         spring)
             # _set_file_mode
             exec_test_java=true
-            if ${exec_pull_image_all:-false}; then
-                docker pull "$image_repo:$i"
-                docker tag "$image_repo:$i" "$image_prefix$i"
-            fi
+            docker pull "$image_repo:laradock-spring"
+            docker tag "$image_repo:laradock-spring" "${image_prefix}spring"
             ;;
         php*)
             _set_env_php_ver
             # _set_file_mode
             exec_test_php=true
-            docker pull $image_repo:php-"${php_ver}"
-            docker tag $image_repo:php-"${php_ver}" ${image_prefix}php-fpm
+            docker pull "$image_repo:php-${php_ver}-base"
+            docker tag "$image_repo:php-${php_ver}-base" ${image_prefix}php-fpm
             ;;
         esac
     done
@@ -658,7 +650,6 @@ _set_args() {
         php | php-fpm | fpm)
             args+=(php-fpm)
             exec_check_docker=true
-            exec_pull_image_php=true
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
@@ -689,10 +680,6 @@ _set_args() {
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
-            ;;
-        pull-image-all)
-            exec_pull_image_all=true
-            exec_pull_image_php=true
             ;;
         upgrade)
             [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=true
