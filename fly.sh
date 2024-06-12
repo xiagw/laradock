@@ -456,6 +456,8 @@ _pull_image() {
                 docker pull "$image_repo:laradock-mysql-8"
                 docker tag "$image_repo:laradock-mysql-8" "${image_prefix}mysql"
             fi
+            docker pull "$image_repo:laradock-mysqlbak"
+            docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         redis)
             docker pull "$image_repo:laradock-redis"
