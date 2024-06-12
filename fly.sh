@@ -65,6 +65,7 @@ _check_cmd() {
 
 _check_distribution() {
     if [ -r /etc/os-release ]; then
+        # shellcheck disable=SC1091
         lsb_dist="$(. /etc/os-release && echo "$ID")"
         lsb_dist="${lsb_dist,,}"
     fi
@@ -489,6 +490,7 @@ _pull_image() {
 
 _test_nginx() {
     _reload_nginx
+    # shellcheck disable=SC1090
     source <(grep 'NGINX_HOST_HTTP_PORT' "$laradock_env")
     $dco stop nginx
     $dco up -d nginx
