@@ -17,9 +17,9 @@
 | 业务并发量 | 服务器套餐推荐（CPU/MEM/DISK/NETWORK）              |
 |:----------|:------------------------------------------------|
 | 最低配置   | 2C/8G/50G/50M   应用程序+数据库+缓存，单台           |
-| 1000 tps  | 4C/8G/100G/100M 应用程序2台，数据库2台，缓存redis1台 |
-| 3000 tps  | 4C/8G/100G/100M 应用程序6台，数据库2台，缓存redis1台 |
-| 5000 tps  | 4C/8G/100G/100M 应用程序10台，数据库2台，缓存redis1台 |
+| 1000 tps  | 2C/8G/100G/100M 应用程序2台，数据库2台，缓存redis1台 |
+| 3000 tps  | 2C/8G/100G/100M 应用程序4台，数据库2台，缓存redis1台 |
+| 5000 tps  | 2C/8G/100G/100M 应用程序6台，数据库2台，缓存redis1台 |
 
 
 
@@ -46,11 +46,11 @@
 ## 2. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 3. 默认下载并导入 php-fpm 镜像，其他镜像自动使用 docker build 创建
 ## 4. 访问不到 hub.docker.com 等网络问题，后面加参数 "pull-image-all"
-## 单例 nginx/php 请执行
+## 单个实例 nginx/php 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
 ## 套装 nginx/php/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php redis mysql nginx
-## 单例 nginx/java 请执行
+## 单个实例 nginx/java 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java nginx
 ## 套装 nginx/java/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java redis mysql nginx
@@ -110,10 +110,14 @@ cd $HOME/docker/laradock && tail -f spring/*.log          ## 如果程序写入 
 
 ## 替换 Nginx SSL 证书 key 文件 $HOME/docker/laradock/nginx/sites/ssl/default.key
 ## 替换 Nginx SSL 证书 pem 文件 $HOME/docker/laradock/nginx/sites/ssl/default.pem
-
 ## java / nodejs 修改 nginx 配置文件  $HOME/docker/laradock/nginx/sites/router.inc
 cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload     ## nginx 重启 (修改配置文件后必须重启)
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
+
+## 新增 spring 和 nodejs 容器
+## 1. copy 文件夹 spring 到新文件夹，例如 spring3（nodejs 同理）
+## 2. 修改 docker-compose.override.yml，复制 spring 段落到新段落（nodejs 同理）
+## 3. 修改 nginx 配置文件（nodejs 同理）
 
 ## 1. sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
 ## 2. 导入数据库文件（使用本服务器的db/redis）（独立mysql redis 不从此操作）
