@@ -622,6 +622,7 @@ _set_args() {
         exec_check_laradock=true
         exec_check_laradock_env=true
         exec_start_docker_service=true
+        exec_pull_image=true
     fi
     while [ "$#" -gt 0 ]; do
         case "${1}" in
@@ -632,6 +633,7 @@ _set_args() {
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
+            exec_pull_image=true
             ;;
         mysql)
             args+=(mysql)
@@ -639,6 +641,7 @@ _set_args() {
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
+            exec_pull_image=true
             ;;
         java | spring)
             args+=(spring)
@@ -646,6 +649,7 @@ _set_args() {
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
+            exec_pull_image=true
             ;;
         php | php-fpm | fpm)
             args+=(php-fpm)
@@ -653,12 +657,14 @@ _set_args() {
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
+            exec_pull_image=true
             ;;
         [0-9].[0-9])
             php_ver=${1:-7.1}
             ;;
         node | nodejs | node.js)
             args+=(nodejs)
+            exec_pull_image=true
             ;;
         nginx)
             args+=(nginx)
@@ -666,6 +672,7 @@ _set_args() {
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
+            exec_pull_image=true
             ;;
         gitlab | git)
             args+=(gitlab)
@@ -809,7 +816,7 @@ main() {
 
     ${exec_check_laradock_env:-false} && _check_laradock_env
 
-    ${exec_pull_image_php:-false} && _pull_image
+    ${exec_pull_image:-false} && _pull_image
 
     ${exec_start_docker_service:-false} && _start_docker_service
 
