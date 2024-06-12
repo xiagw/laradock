@@ -179,6 +179,7 @@ services:
           - INSTALL_DNSUTILS=${WORKSPACE_INSTALL_DNSUTILS}
           - INSTALL_POPPLER_UTILS=${WORKSPACE_INSTALL_POPPLER_UTILS}
           - INSTALL_JDK=${WORKSPACE_INSTALL_JDK}
+          - INSTALL_GITHUB_CLI=${WORKSPACE_INSTALL_GITHUB_CLI}
           - http_proxy
           - https_proxy
           - no_proxy
@@ -332,6 +333,7 @@ services:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
           - LARADOCK_PHP_VERSION=${PHP_VERSION}
           - PHALCON_VERSION=${PHALCON_VERSION}
+          - LARADOCK_PHALCON_VERSION=${PHALCON_VERSION}
           - INSTALL_BZ2=${PHP_WORKER_INSTALL_BZ2}
           - INSTALL_GD=${PHP_WORKER_INSTALL_GD}
           - INSTALL_IMAGEMAGICK=${PHP_WORKER_INSTALL_IMAGEMAGICK}
@@ -419,6 +421,9 @@ services:
     soketi:
       build:
         context: ./soketi
+        args:
+          - NODE_VERSION=${SOKETI_NODE_VERSION}
+          - BASE_IMAGE_TAG_PREFIX=${SOKETI_BASE_IMAGE_TAG_PREFIX}
       volumes:
         - ./soketi/config.json:/app/bin/config.json:ro
       ports:
