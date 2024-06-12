@@ -623,7 +623,11 @@ _set_args() {
     args=()
     if [ "$#" -eq 0 ]; then
         _msg warn "not found arguments, with default args \"nginx php-fpm spring mysql redis\"."
-        args=(nginx php-fpm spring mysql redis)
+        args+=(nginx php-fpm spring mysql redis)
+        exec_check_docker=true
+        exec_check_laradock=true
+        exec_check_laradock_env=true
+        exec_start_docker_service=true
     fi
     while [ "$#" -gt 0 ]; do
         case "${1}" in
