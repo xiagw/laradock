@@ -466,8 +466,13 @@ _pull_image() {
         spring)
             # _set_file_mode
             exec_test_java=true
-            docker pull "$image_repo:laradock-spring"
-            docker tag "$image_repo:laradock-spring" "${image_prefix}spring"
+            if grep '^JDK_IMAGE_NAME=.*:8' "$laradock_env"; then
+                docker pull "$image_repo:laradock-spring-8"
+                docker tag "$image_repo:laradock-spring-8" "${image_prefix}spring"
+            else
+                docker pull "$image_repo:laradock-spring-17"
+                docker tag "$image_repo:laradock-spring-17" "${image_prefix}spring"
+            fi
             ;;
         php*)
             _set_env_php_ver
