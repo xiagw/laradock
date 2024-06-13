@@ -109,6 +109,18 @@ _check_sudo() {
     already_check_sudo=true
 }
 
+_set_system_conf() {
+    ## redis-server 安装在服务器本机，非docker
+    # grep -q 'transparent_hugepage/enabled' /etc/rc.local ||
+    #     echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' | $use_sudo tee -a /etc/rc.local
+    # $use_sudo source /etc/rc.local
+    grep -q 'net.core.somaxconn' /etc/sysctl.conf ||
+        echo 'net.core.somaxconn = 1024' | $use_sudo tee -a /etc/sysctl.conf
+    grep -q 'vm.overcommit_memory' /etc/sysctl.conf ||
+        echo 'vm.overcommit_memory = 1' | $use_sudo tee -a /etc/sysctl.conf
+    $use_sudo sysctl -p
+}
+
 _check_dependence() {
     _msg step "check command: curl git binutils"
     _check_sudo
@@ -126,23 +138,15 @@ _check_dependence() {
         :
     else
         if ${IN_CHINA:-true}; then
-            $curl_opt "$url_fly_cdn/xiagw.keys" >>"$ssh_auth"
+            $curl_opt "$url_keys" >>"$ssh_auth"
         else
-            $curl_opt 'https://github.com/xiagw.keys' >>"$ssh_auth"
+            $curl_opt "$url_keys" >>"$ssh_auth"
         fi
     fi
     # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
 
     if ${set_sysctl:-false}; then
-        ## redis-server 安装在服务器本机，非docker
-        # grep -q 'transparent_hugepage/enabled' /etc/rc.local ||
-        #     echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' | $use_sudo tee -a /etc/rc.local
-        # $use_sudo source /etc/rc.local
-        grep -q 'net.core.somaxconn' /etc/sysctl.conf ||
-            echo 'net.core.somaxconn = 1024' | $use_sudo tee -a /etc/sysctl.conf
-        grep -q 'vm.overcommit_memory' /etc/sysctl.conf ||
-            echo 'vm.overcommit_memory = 1' | $use_sudo tee -a /etc/sysctl.conf
-        $use_sudo sysctl -p
+        _set_system_conf
     fi
     _msg time "dependence check done."
 }
@@ -172,9 +176,9 @@ _check_docker() {
         aliyun_os=true
     fi
     if ${aliyun_mirror:-true}; then
-        $curl_opt $url_fly_cdn/get-docker.sh | $use_sudo bash -s - --mirror Aliyun
+        $curl_opt "$url_get_docker" | $use_sudo bash -s - --mirror Aliyun
     else
-        $curl_opt https://get.docker.com | $use_sudo bash
+        $curl_opt "$url_get_docker" | $use_sudo bash
     fi
     if ! _check_root; then
         _msg time "Add user \"$USER\" to group docker."
@@ -357,9 +361,9 @@ _install_zsh() {
             _msg warn "Found $HOME/.fzf, skip git clone fzf."
         else
             if ${IN_CHINA:-true}; then
-                git clone --depth 1 https://gitee.com/mirrors/fzf.git "$HOME"/.fzf
+                git clone --depth 1 "$url_fzf" "$HOME"/.fzf
             else
-                git clone --depth 1 https://github.com/junegunn/fzf.git "$HOME"/.fzf
+                git clone --depth 1 "$url_fzf" "$HOME"/.fzf
             fi
         fi
         # sed -i -e "" "$HOME"/.fzf/install
@@ -373,9 +377,9 @@ _install_zsh() {
         _msg warn "Found $HOME/.oh-my-zsh, skip."
     else
         if ${IN_CHINA:-true}; then
-            git clone --depth 1 https://gitee.com/mirrors/ohmyzsh.git "$HOME"/.oh-my-zsh
+            git clone --depth 1 "$url_ohmyzsh" "$HOME"/.oh-my-zsh
         else
-            bash -c "$($curl_opt https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+            bash -c "$($curl_opt "$url_ohmyzsh")"
         fi
         cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
         sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
@@ -630,6 +634,7 @@ _set_args() {
         exec_check_laradock_env=true
         exec_start_docker_service=true
         exec_pull_image=true
+        return
     fi
     while [ "$#" -gt 0 ]; do
         case "${1}" in
@@ -758,12 +763,20 @@ main() {
         url_laradock_git=https://gitee.com/xiagw/laradock.git
         url_laradock_raw=https://gitee.com/xiagw/laradock/raw/in-china
         url_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw/main
+        url_keys="$url_fly_cdn/xiagw.keys"
+        url_get_docker="$url_fly_cdn/get-docker.sh"
+        url_fzf="https://gitee.com/mirrors/fzf.git"
+        url_ohmyzsh="https://gitee.com/mirrors/ohmyzsh.git"
     else
         url_laradock_git=https://github.com/xiagw/laradock.git
         url_laradock_raw=https://github.com/xiagw/laradock/raw/main
         url_deploy_raw=https://github.com/xiagw/deploy.sh/raw/main
+        url_keys='https://github.com/xiagw.keys'
+        url_get_docker="https://get.docker.com"
+        url_fzf="https://github.com/junegunn/fzf.git"
+        url_ohmyzsh="https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     fi
-    echo "$me_env $url_laradock_raw $url_deploy_raw" >/dev/null 2>&1
+    echo "$me_env $url_laradock_raw $url_deploy_raw" >/dev/null
 
     laradock_home="$HOME"/docker/laradock
     laradock_current="$me_path"
@@ -809,7 +822,7 @@ main() {
     fi
 
     ${exec_check_docker:-true} && _check_docker
-    ## if install docker and add normal user (not root) to group "docker"
+    ## install docker, add normal user (not root) to group "docker", re-login
     ${need_logout:-false} && return
 
     if ${exec_reset_laradock:-false}; then
