@@ -482,8 +482,8 @@ _pull_image() {
             _set_env_php_ver
             # _set_file_mode
             exec_test_php=true
-            docker pull "$image_repo:php-${php_ver}"
-            docker tag "$image_repo:php-${php_ver}" ${image_prefix}php-fpm
+            docker pull "$image_repo:php-${php_ver}-base"
+            docker tag "$image_repo:php-${php_ver}-base" ${image_prefix}php-fpm
             ;;
         esac
     done
