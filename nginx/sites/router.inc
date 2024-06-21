@@ -22,4 +22,6 @@ location /spring2-ui {
     # proxy_pass http://spring2:8081;
 }
 
-
+location /go-uri/ {
+    # proxy_pass http://golang:5000;
+}
