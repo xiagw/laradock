@@ -602,6 +602,19 @@ services:
         - frontend
         - backend
 
+    golang:
+      build:
+        context: ./golang
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
+      restart: always
+      volumes:
+        - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+        - ./golang:/app
+      networks:
+        - frontend
+        - backend
+
     xxljob:
       image: xuxueli/xxl-job-admin
       volumes:
