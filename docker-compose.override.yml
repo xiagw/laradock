@@ -610,7 +610,7 @@ services:
       restart: always
       volumes:
         - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
-        - ./golang:/app
+        # - ./golang:/app
       ports:
         - 5000:5000
       networks:
