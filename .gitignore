@@ -31,5 +31,5 @@ docker-compose.custom.yml
 
 /app*
 
-/spring/*
+/spring*/*
 !/spring/Dockerfile
