@@ -4,7 +4,7 @@ set -xe
 if [ -f /backup/xtrabackup/base/xtrabackup_logfile ]; then
     /usr/bin/xtrabackup \
         --backup \
-        --target-dir=/backup/inc-"$(date +%s)" \
+        --target-dir=/backup/xtrabackup/inc-"$(date +%s)" \
         --incremental-basedir=/backup/xtrabackup/base \
         --host=mysql \
         --user=root \
