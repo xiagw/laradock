@@ -13,10 +13,10 @@ if [ -f "$backup_base"/xtrabackup_logfile ]; then
         --user=root \
         --password="${MYSQL_ROOT_PASSWORD-}" \
         --target-dir="$backup_path"/inc-"$(date +%s)" \
-        --incremental-basedir="$backup_path"/"$backup_base"
+        --incremental-basedir="$backup_base"
 else
     [ -d "$backup_base" ] || mkdir -p "$backup_base"
-    chown 999:999 "$backup_base"
+    # chown 999:999 "$backup_base"
     $backup_bin \
         --backup \
         --datadir=/var/lib/mysql/ \
