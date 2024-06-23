@@ -28,6 +28,7 @@ while true; do
             --target-dir="$backup_base"
         echo "$(date), backup full end."
     fi
+    sleep 12h
 done &
 
 wait
