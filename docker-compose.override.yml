@@ -85,7 +85,7 @@ services:
         args:
           - TZ=${WORKSPACE_TIMEZONE}
       volumes:
-        - ${DATA_PATH_HOST}/percona_backup:/backup
+        - ${DATA_PATH_HOST}/mysqlbak:/backup
       networks:
         - backend
         - frontend
@@ -104,7 +104,7 @@ services:
         - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
         - TZ=${WORKSPACE_TIMEZONE}
       volumes:
-        - ${DATA_PATH_HOST}/mysql:/var/lib/mysql
+        - ${DATA_PATH_HOST}/percona:/var/lib/mysql
         - ${DATA_PATH_HOST}/mysqlbak:/backup
       # command: xtrabackup --backup --datadir=/var/lib/mysql/ --target-dir=/backup/xtrabackup --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD}
       # command: xtrabackup --backup --target-dir=/backup/inc1 --incremental-basedir=/backup/xtrabackup --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD}
