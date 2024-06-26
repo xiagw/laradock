@@ -546,6 +546,20 @@ _get_redis_mysql_info() {
     grep -E '^PHP_VERSION' "$laradock_env"
 }
 
+_mysql_cli() {
+    cd "$laradock_path"
+    # shellcheck disable=SC1090
+    source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=' "$laradock_env")
+    docker compose exec mysql bash -c "LANG=C.UTF-8 mysql $MYSQL_DATABASE -u $MYSQL_USER -p$MYSQL_PASSWORD 2>/dev/null"
+}
+
+_redis_cli() {
+    cd "$laradock_path"
+    # shellcheck disable=SC1090
+    source <(grep '^REDIS_PASSWORD=' "$laradock_env")
+    docker compose exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
+}
+
 _install_lsyncd() {
     _msg time "install lsyncd"
     _check_cmd install lsyncd
@@ -729,6 +743,12 @@ _set_args() {
         info)
             exec_get_redis_mysql_info=true
             ;;
+        mysql-cli)
+            exec_mysql_cli=true
+            ;;
+        redis-cli)
+            exec_redis_cli=true
+            ;;
         test)
             exec_test_nginx=true
             exec_test_php=true
@@ -792,6 +812,14 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
+    if ${exec_mysql_cli:-false}; then
+        _mysql_cli
+        return
+    fi
+    if ${exec_redis_cli:-false}; then
+        _redis_cli
+        return
+    fi
     if ${exec_get_redis_mysql_info:-false}; then
         _get_redis_mysql_info
         return

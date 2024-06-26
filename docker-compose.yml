@@ -787,7 +787,7 @@ services:
           - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
       volumes:
         - ${DATA_PATH_HOST}/redis:/data
-      command: --databases ${REDIS_DATABASES:-256} --requirepass ${REDIS_PASSWORD:-secret}
+      # command: --databases ${REDIS_DATABASES:-256} --requirepass ${REDIS_PASSWORD:-secret}
       ports:
         - "${REDIS_PORT}:6379"
       networks:
