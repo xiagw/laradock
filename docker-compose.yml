@@ -1531,7 +1531,7 @@ services:
           nginx['custom_gitlab_server_config'] = "location /jmeter/ {\n  root /var/opt/gitlab/;\n  autoindex on;\n}\n"
           nginx['custom_nginx_config'] = "include /var/opt/gitlab/nginx/conf/svn*.conf;"
           prometheus_monitoring['enable'] = false
-          prometheus['flags'] = { 'storage.tsdb.retention.time' => "15d"}
+          prometheus['flags'] = { 'storage.tsdb.retention.time' => "7d"}
       volumes:
         - ${DATA_PATH_HOST}/gitlab/config:/etc/gitlab
         - ${DATA_PATH_HOST}/gitlab/data:/var/opt/gitlab
