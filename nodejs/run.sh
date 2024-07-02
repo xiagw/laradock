@@ -12,6 +12,9 @@ trap _kill HUP INT PIPE QUIT TERM
 
 pids=()
 
+me_path="$(dirname "$(readlink -f "$0")")"
+cd "$me_path" || exit 1
+
 if [ -f package.json ]; then
     echo "found package.json"
     md5_new=$(md5sum package.json | cut -d ' ' -f 1)
