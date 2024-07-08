@@ -769,3 +769,44 @@ services:
       networks:
         - frontend
         - backend
+
+    filecodebox:
+      image: lanol/filecodebox:latest
+      # container_name: filecodebox
+      restart: unless-stopped
+      ports:
+        - '12345:12345'
+      volumes:
+        - ${DATA_PATH_HOST}/filecodebox/data:/app/data
+      networks:
+        - frontend
+        - backend
+
+    onenav:
+      image: helloz/onenav
+      # container_name: onenav
+      ports:
+        - "3080:80"
+      volumes:
+        - ${DATA_PATH_HOST}/onenav/data:/data/wwwroot/default/data
+      restart: always
+      networks:
+        - frontend
+        - backend
+
+    stirling-pdf:
+      image: frooodle/s-pdf:latest
+      ports:
+        - '8080:8080'
+      volumes:
+        - ${DATA_PATH_HOST}/stirling-pdf/trainingData:/usr/share/tessdata #Required for extra OCR languages
+        - ${DATA_PATH_HOST}/stirling-pdf/extraConfigs:/configs
+        # - ${DATA_PATH_HOST}/stirling-pdf/customFiles:/customFiles/
+        # - ${DATA_PATH_HOST}/stirling-pdf/logs:/logs/
+      environment:
+        - DOCKER_ENABLE_SECURITY=false
+        - INSTALL_BOOK_AND_ADVANCED_HTML_OPS=false
+        - LANGS=en_GB
+      networks:
+        - frontend
+        - backend

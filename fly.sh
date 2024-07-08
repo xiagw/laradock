@@ -550,7 +550,7 @@ _mysql_cli() {
     cd "$laradock_path"
     # shellcheck disable=SC1090
     source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=' "$laradock_env")
-    docker compose exec mysql bash -c "LANG=C.UTF-8 mysql $MYSQL_DATABASE -u $MYSQL_USER -p$MYSQL_PASSWORD 2>/dev/null"
+    docker compose exec mysql bash -c "LANG=C.UTF-8 MYSQL_PWD=$MYSQL_PASSWORD mysql -u $MYSQL_USER $MYSQL_DATABASE"
 }
 
 _redis_cli() {
