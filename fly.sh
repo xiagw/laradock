@@ -641,8 +641,8 @@ _set_args() {
 
     args=()
     if [ "$#" -eq 0 ]; then
-        _msg warn "not found arguments, with default args \"nginx php-fpm spring mysql redis\"."
-        args+=(nginx php-fpm spring mysql redis)
+        _msg warn "not found arguments, with default args \"mysql redis php-fpm spring nginx\"."
+        args+=(mysql redis php-fpm spring nginx)
         exec_check_docker=true
         exec_check_laradock=true
         exec_check_laradock_env=true
