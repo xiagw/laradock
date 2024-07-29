@@ -162,6 +162,21 @@ _install_wg() {
     $use_sudo modprobe wireguard
 }
 
+_check_docker_compose() {
+    dco="docker compose"
+    if $dco version; then
+        _msg info "$dco ready."
+    else
+        if _check_cmd docker-compose; then
+            dco="docker-compose"
+            dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
+            if [[ "$dco_ver" -lt 1190 ]]; then
+                _msg warn "docker-compose version is too old."
+            fi
+        fi
+    fi
+}
+
 _check_docker() {
     _msg step "check docker"
     if _check_cmd docker; then
@@ -171,9 +186,16 @@ _check_docker() {
     fi
 
     ## aliyun linux fake centos
-    if grep -q '^ID=.*alinux.*' /etc/os-release; then
-        $use_sudo sed -i -e '/^ID=/s/alinux/centos/' /etc/os-release
-        aliyun_os=true
+    if grep -q -E '^ID=.*openEuler.*' /etc/os-release; then
+        $use_sudo curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
+        $use_sudo sed -i 's#https://download.docker.com#https://mirrors.tuna.tsinghua.edu.cn/docker-ce#' /etc/yum.repos.d/docker-ce.repo
+        $use_sudo sed -i "s#\$releasever#7#g" /etc/yum.repos.d/docker-ce.repo
+        $use_sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    else
+        if grep -q -E '^ID=.*alinux.*' /etc/os-release; then
+            $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
+            fake_os=true
+        fi
     fi
     if ${aliyun_mirror:-true}; then
         $curl_opt "$url_get_docker" | $use_sudo bash -s - --mirror Aliyun
@@ -201,27 +223,12 @@ _check_docker() {
         $use_sudo usermod -aG docker ops
     fi
     ## revert aliyun linux fake centos
-    if ${aliyun_os:-false}; then
+    if ${fake_os:-false}; then
         $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
     fi
     $use_sudo systemctl enable docker
     $use_sudo systemctl start docker
     _check_docker_compose
-}
-
-_check_docker_compose() {
-    dco="docker compose"
-    if $dco version; then
-        _msg info "$dco ready."
-    else
-        if _check_cmd docker-compose; then
-            dco="docker-compose"
-            dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
-            if [[ "$dco_ver" -lt 1190 ]]; then
-                _msg warn "docker-compose version is too old."
-            fi
-        fi
-    fi
 }
 
 _check_timezone() {
