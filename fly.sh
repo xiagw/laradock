@@ -152,12 +152,12 @@ _check_dependence() {
 }
 
 _install_wg() {
-    if [[ "$lsb_dist" == centos ]]; then
-        $use_sudo yum install -y epel-release elrepo-release
-        $use_sudo yum install -y yum-plugin-elrepo
-        $use_sudo yum install -y kmod-wireguard wireguard-tools
+    if [[ "$lsb_dist" =~ (centos|alinux|openEuler) ]]; then
+        $cmd_pkg install -y epel-release elrepo-release
+        $cmd_pkg install -y yum-plugin-elrepo
+        $cmd_pkg install -y kmod-wireguard wireguard-tools
     else
-        $use_sudo apt install -yqq wireguard wireguard-tools
+        $cmd_pkg install -yqq wireguard wireguard-tools
     fi
     $use_sudo modprobe wireguard
 }
@@ -190,7 +190,7 @@ _check_docker() {
         $use_sudo curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
         $use_sudo sed -i 's#https://download.docker.com#https://mirrors.tuna.tsinghua.edu.cn/docker-ce#' /etc/yum.repos.d/docker-ce.repo
         $use_sudo sed -i "s#\$releasever#7#g" /etc/yum.repos.d/docker-ce.repo
-        $use_sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        $cmd_pkg install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     else
         if grep -q -E '^ID=.*alinux.*' /etc/os-release; then
             $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
@@ -360,18 +360,14 @@ _set_file_mode() {
 _install_zsh() {
     _msg step "install oh my zsh"
 
-    _check_cmd install zsh byobu
+    _check_cmd install zsh
 
     ## fzf
-    if [[ "$lsb_dist" =~ (alinux|centos) ]]; then
+    if [[ "$lsb_dist" =~ (alinux|centos|openEuler) ]]; then
         if [[ -d "$HOME"/.fzf ]]; then
             _msg warn "Found $HOME/.fzf, skip git clone fzf."
         else
-            if ${IN_CHINA:-true}; then
-                git clone --depth 1 "$url_fzf" "$HOME"/.fzf
-            else
-                git clone --depth 1 "$url_fzf" "$HOME"/.fzf
-            fi
+            git clone --depth 1 "$url_fzf" "$HOME"/.fzf
         fi
         # sed -i -e "" "$HOME"/.fzf/install
         "$HOME"/.fzf/install
@@ -396,6 +392,8 @@ _install_zsh() {
             sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
         fi
     fi
+    ## install byobu
+    _check_cmd install byobu || true
 }
 
 _install_trzsz() {
