@@ -641,7 +641,7 @@ EOF
 
 _set_args() {
     IN_CHINA=true
-    php_ver=8.3
+    php_ver=8.0
 
     args=()
     if [ "$#" -eq 0 ]; then
