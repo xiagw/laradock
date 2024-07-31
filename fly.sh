@@ -283,7 +283,6 @@ _check_laradock_env() {
     sed -i \
         -e "/^MYSQL_PASSWORD=/s/=.*/=$(_rand_password)/" \
         -e "/MYSQL_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
-        -e "/MYSQL_VERSION=latest/s/=.*/=5.7/" \
         -e "/REDIS_PASSWORD=/s/=.*/=$(_rand_password)/" \
         -e "/PHPREDISADMIN_PASS=/s/=.*/=$(_rand_password)/" \
         -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
