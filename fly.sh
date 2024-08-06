@@ -3,7 +3,7 @@
 _msg() {
     local color_on
     local color_off='\033[0m' # Text Reset
-    h_m_s="$((SECONDS / 3600))h$(((SECONDS / 60) % 60))m$((SECONDS % 60))s"
+    h_m_s="[$((SECONDS / 3600))h$(((SECONDS / 60) % 60))m$((SECONDS % 60))s]"
     time_now="$(date +%Y%m%d-%u-%T.%3N)"
 
     case "${1:-none}" in
@@ -70,7 +70,7 @@ _check_distribution() {
         lsb_dist="${lsb_dist,,}"
     fi
     lsb_dist="${lsb_dist:-unknown}"
-    _msg time "Your distribution is $lsb_dist"
+    _msg time "Your distribution is ${lsb_dist}."
 }
 
 _check_root() {
@@ -91,7 +91,7 @@ _check_sudo() {
             _msg time "User $USER has permission to execute this script!"
         else
             _msg time "User $USER has no permission to execute this script!"
-            _msg time "Please run visudo with root, and set sudo to $USER"
+            _msg time "Please run visudo with root, and set sudo to ${USER}."
             return 1
         fi
     fi
@@ -103,7 +103,7 @@ _check_sudo() {
     elif _check_cmd dnf; then
         cmd_pkg="$use_sudo dnf"
     else
-        _msg time "not found apt/yum/dnf, exit 1"
+        _msg time "not found apt/yum/dnf, exit 1."
         return 1
     fi
     already_check_sudo=true
@@ -122,7 +122,7 @@ _set_system_conf() {
 }
 
 _check_dependence() {
-    _msg step "check command: curl git binutils"
+    _msg step "check command: curl git binutils."
     _check_sudo
     _check_distribution
     _check_cmd install curl git strings
@@ -234,7 +234,7 @@ _check_docker() {
 _check_timezone() {
     ## change UTC to CST
     time_zone='Asia/Shanghai'
-    _msg step "check timezone $time_zone"
+    _msg step "check timezone $time_zone."
     if timedatectl | grep -q "$time_zone"; then
         _msg time "Timezone is already set to $time_zone."
     else
@@ -286,6 +286,7 @@ _check_laradock_env() {
         -e "/REDIS_PASSWORD=/s/=.*/=$(_rand_password)/" \
         -e "/PHPREDISADMIN_PASS=/s/=.*/=$(_rand_password)/" \
         -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
+        -e "/MYSQL_VERSION=/s/=.*/=${mysql_ver}/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
@@ -642,6 +643,7 @@ EOF
 _set_args() {
     IN_CHINA=true
     php_ver=8.1
+    mysql_ver=8.0
 
     args=()
     if [ "$#" -eq 0 ]; then
@@ -690,7 +692,7 @@ _set_args() {
             exec_pull_image=true
             ;;
         [0-9].[0-9])
-            php_ver=${1:-7.1}
+            php_ver=${1:-8.1}
             ;;
         node | nodejs | node.js)
             args+=(nodejs)
