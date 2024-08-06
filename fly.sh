@@ -440,9 +440,9 @@ _start_docker_service() {
 _pull_image() {
     _msg step "check docker image..."
     local image_repo=registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5
-    local dk_ver
-    dk_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
-    if ((dk_ver <= 19)); then
+    local docker_ver
+    docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
+    if ((docker_ver <= 19)); then
         local image_prefix="laradock_"
     else
         local image_prefix="laradock-"
@@ -540,7 +540,7 @@ _test_java() {
     fi
 }
 
-_get_redis_mysql_info() {
+_get_env_info() {
     set +e
     echo
     grep -E '^REDIS_' "$laradock_env" | sed -n '1,3p'
@@ -643,7 +643,7 @@ EOF
 
 _set_args() {
     IN_CHINA=true
-    php_ver=8.1
+    php_ver=7.4
     java_ver=8
     mysql_ver=8.0
 
@@ -651,11 +651,7 @@ _set_args() {
     if [ "$#" -eq 0 ]; then
         _msg warn "not found arguments, with default args \"mysql redis php-fpm spring nginx\"."
         args+=(mysql redis php-fpm spring nginx)
-        exec_check_docker=true
-        exec_check_laradock=true
-        exec_check_laradock_env=true
-        exec_start_docker_service=true
-        exec_pull_image=true
+        exec_group=1
         return
     fi
     while [ "$#" -gt 0 ]; do
@@ -663,65 +659,39 @@ _set_args() {
         redis)
             args+=(redis)
             set_sysctl=true
-            exec_check_docker=true
-            exec_check_laradock=true
-            exec_check_laradock_env=true
-            exec_start_docker_service=true
-            exec_pull_image=true
+            exec_group=1
             ;;
         mysql | mysql-[0-9]*)
             args+=(mysql)
-            exec_check_docker=true
-            exec_check_laradock=true
-            exec_check_laradock_env=true
-            exec_start_docker_service=true
-            exec_pull_image=true
+            exec_group=1
             [[ "${1}" == mysql-[0-9]* ]] && mysql_ver=${1#mysql-}
             ;;
         java | jdk | spring | java-[0-9]* | jdk-[0-9]*)
             args+=(spring)
-            exec_check_docker=true
-            exec_check_laradock=true
-            exec_check_laradock_env=true
-            exec_start_docker_service=true
-            exec_pull_image=true
+            exec_group=1
             [[ "${1}" == java-[0-9]* ]] && java_ver=${1#java-}
             [[ "${1}" == jdk-[0-9]* ]] && java_ver=${1#jdk-}
             ;;
         php | fpm | php-[0-9]*)
             args+=(php-fpm)
-            exec_check_docker=true
-            exec_check_laradock=true
-            exec_check_laradock_env=true
-            exec_start_docker_service=true
-            exec_pull_image=true
+            exec_group=1
             [[ "${1}" == php-[0-9]* ]] && php_ver=${1#php-}
             ;;
         node | nodejs | node.js)
             args+=(nodejs)
-            exec_pull_image=true
+            exec_group=1
             ;;
         nginx)
             args+=(nginx)
-            exec_check_docker=true
-            exec_check_laradock=true
-            exec_check_laradock_env=true
-            exec_start_docker_service=true
-            exec_pull_image=true
+            exec_group=1
             ;;
         gitlab | git)
             args+=(gitlab)
-            exec_check_docker=true
-            exec_check_laradock=true
-            exec_check_laradock_env=true
-            exec_start_docker_service=true
+            exec_group=1
             ;;
         svn | usvn)
             args+=(usvn)
-            exec_check_docker=true
-            exec_check_laradock=true
-            exec_check_laradock_env=true
-            exec_start_docker_service=true
+            exec_group=1
             ;;
         upgrade)
             [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=true
@@ -750,7 +720,7 @@ _set_args() {
             exec_install_wg=true
             ;;
         info)
-            exec_get_redis_mysql_info=true
+            exec_env_info=true
             ;;
         mysql-cli)
             exec_mysql_cli=true
@@ -771,6 +741,13 @@ _set_args() {
         esac
         shift
     done
+    if [ "${exec_group:-0}" -eq 1 ]; then
+        exec_check_docker=true
+        exec_check_laradock=true
+        exec_check_laradock_env=true
+        exec_start_docker_service=true
+        exec_pull_image=true
+    fi
 }
 
 main() {
@@ -829,8 +806,8 @@ main() {
         _redis_cli
         return
     fi
-    if ${exec_get_redis_mysql_info:-false}; then
-        _get_redis_mysql_info
+    if ${exec_env_info:-false}; then
+        _get_env_info
         return
     fi
     if ${exec_upgrade_java:-false}; then
