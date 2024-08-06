@@ -288,6 +288,7 @@ _check_laradock_env() {
         -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
         -e "/MYSQL_VERSION=/s/=.*/=${mysql_ver}/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
+        -e "/JDK_IMAGE_NAME=/s/=.*/=openjdk:${java_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
@@ -643,6 +644,7 @@ EOF
 _set_args() {
     IN_CHINA=true
     php_ver=8.1
+    java_ver=8
     mysql_ver=8.0
 
     args=()
@@ -667,32 +669,33 @@ _set_args() {
             exec_start_docker_service=true
             exec_pull_image=true
             ;;
-        mysql)
+        mysql | mysql-[0-9]*)
             args+=(mysql)
             exec_check_docker=true
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
             exec_pull_image=true
+            [[ "${1}" == mysql-[0-9]* ]] && mysql_ver=${1#mysql-}
             ;;
-        java | spring)
+        java | jdk | spring | java-[0-9]* | jdk-[0-9]*)
             args+=(spring)
             exec_check_docker=true
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
             exec_pull_image=true
+            [[ "${1}" == java-[0-9]* ]] && java_ver=${1#java-}
+            [[ "${1}" == jdk-[0-9]* ]] && java_ver=${1#jdk-}
             ;;
-        php | php-fpm | fpm)
+        php | fpm | php-[0-9]*)
             args+=(php-fpm)
             exec_check_docker=true
             exec_check_laradock=true
             exec_check_laradock_env=true
             exec_start_docker_service=true
             exec_pull_image=true
-            ;;
-        [0-9].[0-9])
-            php_ver=${1:-8.1}
+            [[ "${1}" == php-[0-9]* ]] && php_ver=${1#php-}
             ;;
         node | nodejs | node.js)
             args+=(nodejs)
