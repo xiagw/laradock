@@ -389,8 +389,10 @@ _install_zsh() {
         sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
         if _check_cmd fzf; then
             sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
+            echo "omz plugin enable z fzf extract docker docker-compose"
         else
             sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
+            echo "omz plugin enable z extract docker docker-compose"
         fi
     fi
     ## install byobu
@@ -543,9 +545,9 @@ _test_java() {
 _get_env_info() {
     set +e
     echo
-    grep -E '^REDIS_' "$laradock_env" | sed -n '1,3p'
+    grep -E '^REDIS_' "$laradock_env" | sed -n '1,3p' | sed "s/REDIS_PORT=.*/REDIS_PORT=6379/"
     echo
-    grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
+    grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID' | sed "s/MYSQL_PORT=.*/MYSQL_PORT=3306/"
     echo
     grep -E '^JDK_VERSION|^JDK_IMAGE|^JDK_IMAGE_NAME' "$laradock_env"
     echo
