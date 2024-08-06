@@ -624,13 +624,12 @@ Usage: $0 [parameters ...]
 Parameters:
     -h, --help          Show this help message.
     -v, --version       Show version info.
-    build               Build PHP image.
     info                Get MySQL and Redis info.
-    nginx               Install nginx.
-    php                 Install php-fpm 7.1.
-    java                Install JDK / spring.
-    mysql               Install MySQL.
     redis               Install Redis.
+    mysql               Install MySQL.
+    java                Install JDK / spring.
+    php                 Install php-fpm 7.1.
+    nginx               Install nginx.
     mysql-cli           Exec into MySQL CLI.
     redis-cli           Exec into Redis CLI.
     lsync               Setup lsyncd.
@@ -651,7 +650,11 @@ _set_args() {
     if [ "$#" -eq 0 ]; then
         _msg warn "not found arguments, with default args \"mysql redis php-fpm spring nginx\"."
         args+=(mysql redis php-fpm spring nginx)
-        exec_group=1
+        exec_check_docker=true
+        exec_check_laradock=true
+        exec_check_laradock_env=true
+        exec_start_docker_service=true
+        exec_pull_image=true
         return
     fi
     while [ "$#" -gt 0 ]; do
