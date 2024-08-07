@@ -545,7 +545,7 @@ _test_java() {
 _get_env_info() {
     set +e
     echo "####  代码内端口写标准端口 mysql 3306 / redis 6379 ####"
-    echo "####  此处显示端口只用于 SSH 端口转发映射            ####"
+    echo "####  此处如果显示非标准端口只用于 SSH 端口转发映射  ####"
     grep -E '^REDIS_' "$laradock_env" | sed -n '1,3p'
     echo
     grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
