@@ -43,17 +43,15 @@
 ## 假如服务器需要代理访问公网，则设置环境变量
 # export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
 
-## 1. 默认部署环境， docker/nginx/redis/mysql/php-7.1/jdk-1.8
+## 1. 默认部署环境， docker/nginx-1.25/redis-7/mysql-8.0/php-7.4/openjdk-8
 ## 2. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
-## 3. 默认下载并导入 php-fpm 镜像，其他镜像自动使用 docker build 创建
-## 4. 访问不到 hub.docker.com 等网络问题，后面加参数 "pull-image-all"
-## 单个实例 nginx/php 请执行
+## 单PHP nginx/php 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
-## 套装 nginx/php/redis/mysql 请执行
+## 套装LNMP nginx/php/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php redis mysql nginx
-## 单个实例 nginx/java 请执行
+## 单Java nginx/java 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java nginx
-## 套装 nginx/java/redis/mysql 请执行
+## 套装Java nginx/java/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java redis mysql nginx
 ## 套装 nginx/php/java/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php-fpm redis mysql nginx
@@ -76,7 +74,7 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php
 | https://www.xxx.com/uri/         | $HOME/docker/laradock/spring/                                       |
 | https://www.xxx.com/uri2/        | $HOME/docker/laradock/spring2/                                      |
 | https://www.xxx.com/             | $HOME/docker/html/  (本地存储文件路径)     (容器内为/var/www/html/) |
-| 后端：(NodeJS 文件存放目录)      | （可多个项目目录）（node_modules 不用上传）                         |
+| 后端：(node.js 文件存放目录)      | （可多个项目目录）（node_modules 不用上传）                         |
 | https://www.xxx.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
 | https://www.xxx.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
 | Nginx：目录配置和日志               | （可多个站点配置）                                                    |
@@ -96,7 +94,7 @@ cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
 ##  查看 mysql/redis 信息  ！！！注意 ！！！
 ## 1，如果客户没有单独的 db / redis，则使用本服务器的db/redis ，用此方式查看 mysql, redis 的链接/账号/密码/信息
 ## 2，如果客户有独立的 db / redis ，则不需要查看此信息（独立mysql redis 不从此查看）
-## 3，容器内代码内端口使用标准端口 mysql 3306 和 redis 6379，此端口信息是映射于服务器本机SSH端口转发
+## 3，容器内代码内端口写标准端口 mysql 3306 和 redis 6379，此处显示端口只用于 SSH 端口转发映射
 cd $HOME/docker/laradock && bash fly.sh info
 
 cd $HOME/docker/laradock && docker compose up -d nginx redis mysql php-fpm      ## 启动服务 php-fpm
