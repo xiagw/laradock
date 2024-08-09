@@ -1,49 +1,48 @@
 [TOC]
 
 ## 硬件/服务器/网络/域名配置推荐
-| 服务器        | 配置推荐                                      |
-|:-------------|:-------------------------------------------|
-| CPU 处理器    | >= 2 core(核)                                |
-| MEM 内存      | >= 8 GB                                      |
-| Disk 系统硬盘 | >= 50 GB                                      |
-| Net 网络带宽  | >= 50M(按量付费) >= 10M(固定带宽付费)           |
-| 私有云        | 带宽请自行根据实际业务情况配置网络带宽              |
-| 公有云费用    | 初期： 建议所有采购使用“按量付费”观察时间(一周/一月)  |
-| 公有云费用    | 初期后： 根据账单决定采购“固定消费”套餐(一月/一年)    |
-| 域名         | 前/后端各一个域名                                |
-| 防火墙/安全组 | 开放TCP端口 22/80/443                           |
+| 服务器        | 配置推荐                                             |
+|:--------------|:-----------------------------------------------------|
+| CPU 处理器    | >= 2 core(核)                                        |
+| MEM 内存      | >= 8 GB                                              |
+| Disk 系统硬盘 | >= 50 GB                                             |
+| Net 网络带宽  | >= 50M(按量付费) >= 10M(固定带宽付费)                |
+| 私有云        | 带宽请自行根据实际业务情况配置网络带宽               |
+| 公有云费用    | 初期： 建议所有采购使用“按量付费”观察时间(一周/一月) |
+| 公有云费用    | 初期后： 根据账单决定采购“固定消费”套餐(一月/一年)   |
+| 域名2个       | 前/后端各一个域名                                    |
+| 防火墙/安全组 | 开放TCP端口 22/80/443                                |
 
 
 ## 业务并发量服务器套餐推荐
-| 业务并发量 | 服务器套餐推荐（CPU/MEM/DISK/NETWORK）              |
-|:----------|:------------------------------------------------|
+| 业务并发量 | 服务器套餐推荐（CPU/MEM/DISK/NETWORK）               |
+|:-----------|:-----------------------------------------------------|
 | 最低配置   | 2C/8G/50G/50M   应用程序+数据库+缓存，单台           |
-| 1000 tps  | 2C/8G/100G/100M 应用程序2台，数据库2台，缓存redis1台 |
-| 3000 tps  | 2C/8G/100G/100M 应用程序4台，数据库2台，缓存redis1台 |
-| 5000 tps  | 2C/8G/100G/100M 应用程序6台，数据库2台，缓存redis1台 |
+| 1000 tps   | 2C/8G/100G/100M 应用程序2台，数据库2台，缓存redis1台 |
+| 3000 tps   | 2C/8G/100G/100M 应用程序4台，数据库2台，缓存redis1台 |
+| 5000 tps   | 2C/8G/100G/100M 应用程序6台，数据库2台，缓存redis1台 |
 
 
 
 ## 软件/中间件/操作系统/版本推荐
-| 软件      | 配置推荐                                                               |
+| 软件      | 配置推荐                                                             |
 |:----------|:---------------------------------------------------------------------|
 | Nginx     | >= 1.18                                                              |
-| PHP       | >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)                            |
-| JDK       | >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB) (openjdk/amazoncorretto)   |
-| MySQL     | >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB)                            |
-| Redis     | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)                            |
-| OS/单机   | Ubuntu 22.04 (推荐), CentOS/Anolis OS/RedHat/Debian/Rocky 等 Linux     |
-| OS/集群   | Kubernetes (根据云厂商自动推荐的OS/lifseaOS等/或自行安排)                  |
-| OS/不推荐 | windows 系统                                                           |
+| PHP       | >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)                          |
+| JDK       | >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB) (openjdk/amazoncorretto) |
+| MySQL     | >= 5.7 (CPU >=2核，内存 >=2GB，存储 >=20GB)                          |
+| Redis     | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)                          |
+| OS/单机   | Ubuntu 22.04 (推荐), CentOS/Anolis OS/RedHat/Debian/Rocky 等 Linux   |
+| OS/集群   | Kubernetes (根据云厂商自动推荐的OS/lifseaOS等/或自行安排)            |
+| OS/不推荐 | windows 系统                                                         |
 
 
 ## 推荐方式一/单机/多机docker-compose部署文档
 ```sh
-
 ## 假如服务器需要代理访问公网，则设置环境变量
 # export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
 
-## 1. 默认部署环境， docker/nginx-1.25/redis-7/mysql-8.0/php-7.4/openjdk-8
+## 1. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-7.4/openjdk-8
 ## 2. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 单PHP nginx/php 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
@@ -66,23 +65,23 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php
 | https://www.xxx.com/s1/          | $HOME/docker/html/s1/                                               |
 | https://www.xxx.com/s2/          | $HOME/docker/html/s2/                                               |
 | https://www.xxx.com/static/      | $HOME/docker/html/static/                                           |
-| 后端：(PHP 文件存放目录)         | （支持多个不同项目）                                                      |
+| 后端：(PHP 文件存放目录)         | （支持多个不同项目）                                                |
 | https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01                                      |
 | https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02                                      |
 | https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03                                      |
-| 后端：(Jar 文件存放目录)         | （支持多个jar文件/log文件也在此）                                 |
+| 后端：(Jar 文件存放目录)         | （支持多个jar文件/log文件也在此）                                   |
 | https://www.xxx.com/uri/         | $HOME/docker/laradock/spring/                                       |
 | https://www.xxx.com/uri2/        | $HOME/docker/laradock/spring2/                                      |
 | https://www.xxx.com/             | $HOME/docker/html/  (本地存储文件路径)     (容器内为/var/www/html/) |
-| 后端：(node.js 文件存放目录)      | （支持多个项目目录）（node_modules 不用上传）                         |
+| 后端：(node.js 文件存放目录)     | （支持多个项目目录）（node_modules 不用上传）                       |
 | https://www.xxx.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
 | https://www.xxx.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
-| Nginx：目录配置和日志               | （支持多个不同站点配置）                                                    |
-| nginx conf 配置文件路径            | $HOME/docker/laradock/nginx/sites/                                  |
-| nginx 日志文件存放路径              | $HOME/docker/laradock/logs/nginx/                                   |
-| redis 数据存放路径                 | $HOME/laradock-data/redis/                                          |
-| mysql 数据存放路径                 | $HOME/laradock-data/mysql/                                          |
-| mysql 数据备份路径                 | $HOME/laradock-data/mysqlbak/                                       |
+| Nginx：目录配置和日志            | （支持多个不同站点配置）                                            |
+| nginx conf 配置文件路径          | $HOME/docker/laradock/nginx/sites/                                  |
+| nginx 日志文件存放路径           | $HOME/docker/laradock/logs/nginx/                                   |
+| redis 数据存放路径               | $HOME/laradock-data/redis/                                          |
+| mysql 数据存放路径               | $HOME/laradock-data/mysql/                                          |
+| mysql 数据备份路径               | $HOME/laradock-data/mysqlbak/                                       |
 
 
 ### 操作docker容器简要方式/查看日志
@@ -172,7 +171,7 @@ kubectl -n dev get all
 | http://xxx.yyy.com/spring-xxx/ | C:\xampp\spring\ （安装 JDK， 部署 jar 文件） |
 
 
-```sh
+```powershell
 cd .\Downloads
 
 # irm https://gitee.com/xiagw/deploy.sh/raw/main/docs/bin/win.ssh.ps1 | iex
