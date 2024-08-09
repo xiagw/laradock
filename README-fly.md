@@ -66,20 +66,19 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php
 | https://www.xxx.com/s1/          | $HOME/docker/html/s1/                                               |
 | https://www.xxx.com/s2/          | $HOME/docker/html/s2/                                               |
 | https://www.xxx.com/static/      | $HOME/docker/html/static/                                           |
-| 后端：(PHP 文件存放目录)         | （可多个项目）                                                      |
+| 后端：(PHP 文件存放目录)         | （支持多个不同项目）                                                      |
 | https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01                                      |
 | https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02                                      |
 | https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03                                      |
-| 后端：(Jar 文件存放目录)         | （可存放多个jar文件/log文件也在此）                                 |
+| 后端：(Jar 文件存放目录)         | （支持多个jar文件/log文件也在此）                                 |
 | https://www.xxx.com/uri/         | $HOME/docker/laradock/spring/                                       |
 | https://www.xxx.com/uri2/        | $HOME/docker/laradock/spring2/                                      |
 | https://www.xxx.com/             | $HOME/docker/html/  (本地存储文件路径)     (容器内为/var/www/html/) |
-| 后端：(node.js 文件存放目录)      | （可多个项目目录）（node_modules 不用上传）                         |
+| 后端：(node.js 文件存放目录)      | （支持多个项目目录）（node_modules 不用上传）                         |
 | https://www.xxx.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
 | https://www.xxx.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
-| Nginx：目录配置和日志               | （可多个站点配置）                                                    |
+| Nginx：目录配置和日志               | （支持多个不同站点配置）                                                    |
 | nginx conf 配置文件路径            | $HOME/docker/laradock/nginx/sites/                                  |
-| nginx SSL 证书文件路径             | $HOME/docker/laradock/nginx/sites/ssl                               |
 | nginx 日志文件存放路径              | $HOME/docker/laradock/logs/nginx/                                   |
 | redis 数据存放路径                 | $HOME/laradock-data/redis/                                          |
 | mysql 数据存放路径                 | $HOME/laradock-data/mysql/                                          |
@@ -88,24 +87,24 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php
 
 ### 操作docker容器简要方式/查看日志
 ```sh
-## 操作容器 !!! 必须进入此目录 !!!
+## ！！！ 必须进入此目录 ！！！
 cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
 
-##  查看 mysql/redis 信息  ！！！注意 ！！！
-## 1，如果客户没有单独的 db / redis，则使用本服务器的db/redis ，用此方式查看 mysql, redis 的链接/账号/密码/信息
-## 2，如果客户有独立的 db / redis ，则不需要查看此信息（独立mysql redis 不从此查看）
-## 3，容器内代码内端口写标准端口 mysql 3306 和 redis 6379，此处显示端口只用于 SSH 端口转发映射
+## ！！！ 注意 ！！！
+## 1，如果客户有独立的 mysql/redis ，则不需要查看此信息（独立 mysql/redis 信息不从此查看）
+## 2，如果客户没有单独的 mysql/redis，则使用此方式查看本服务器 mysql/redis 的链接/账号/密码/信息
+## 3，容器内和代码内写标准端口 mysql=3306/redis=6379，此处显示端口只用于远程 SSH 端口转发映射
 cd $HOME/docker/laradock && bash fly.sh info
 
-cd $HOME/docker/laradock && docker compose up -d nginx redis mysql php-fpm      ## 启动服务 php-fpm
-cd $HOME/docker/laradock && docker compose up -d nginx redis mysql spring       ## 启动服务 Java (spring)
-cd $HOME/docker/laradock && docker compose up -d nginx redis mysql nodejs       ## 启动服务 Nodejs
 cd $HOME/docker/laradock && docker compose stop nginx redis mysql php-fpm      ## 停止服务 php-fpm
 cd $HOME/docker/laradock && docker compose stop nginx redis mysql spring       ## 停止服务 Java (spring)
 cd $HOME/docker/laradock && docker compose stop nginx redis mysql nodejs       ## 停止服务 nodejs
+cd $HOME/docker/laradock && docker compose up -d nginx redis mysql php-fpm      ## 启动服务 php-fpm
+cd $HOME/docker/laradock && docker compose up -d nginx redis mysql spring       ## 启动服务 Java (spring)
+cd $HOME/docker/laradock && docker compose up -d nginx redis mysql nodejs       ## 启动服务 Nodejs
 
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring       ## java 查看容器日志最后 100 行
-cd $HOME/docker/laradock && tail -f spring/*.log          ## 如果程序写入 log 文件，也可以查看 spring/*.log 文件
+cd $HOME/docker/laradock && tail -f spring/*.log          ## 查看文件夹内 spring/*.log 文件
 
 ## 替换 Nginx SSL 证书 key 文件 $HOME/docker/laradock/nginx/sites/ssl/default.key
 ## 替换 Nginx SSL 证书 pem 文件 $HOME/docker/laradock/nginx/sites/ssl/default.pem
@@ -115,11 +114,11 @@ cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## ngi
 
 ## 新增 spring 和 nodejs 容器
 ## 1. copy 文件夹 spring 到新文件夹，例如 spring3（nodejs 同理）
-## 2. 修改 docker-compose.override.yml，复制 spring 段落到新段落（nodejs 同理）
-## 3. 修改 nginx 配置文件（nodejs 同理）
+## 2. 修改 docker-compose.override.yml，复制 spring 段落到新段落，改名，例如 spring3（nodejs 同理）
+## 3. 修改 nginx 配置文件 router.inc（nodejs 同理）
 
 ## 1. sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
-## 2. 导入数据库文件（使用本服务器的db/redis）（独立mysql redis 不从此操作）
+## 2. 导入数据库文件（使用本服务器的 mysql/redis）（独立非本机 mysql/redis 不从此操作）
 cd $HOME/docker/laradock && docker compose exec mysql bash -c  'mysql -udefaultdb -p defaultdb </backup/db.sql'
 
 ## mysql 进入命令行操作
@@ -128,9 +127,8 @@ cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql
 ## redis 进入命令行操作
 cd $HOME/docker/laradock && docker compose exec redis redis-cli
 
-## 如果SSH登陆服务器为非root帐号，先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/laradock/spring
-sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
-
+## 如果 SSH 登陆服务器为非 root 帐号，先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/laradock/spring
+# sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
 sudo chown -R 1000:1000 $HOME/docker/laradock/spring    ## Java 容器内 uid=1000
@@ -145,11 +143,9 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=
 
 ## 推荐方式二/K8S集群kubectl/helm部署参考
 ```sh
-## 1. 前提条件，确保命令 kubectl / helm 工作正常
+## 1. 前提条件，确保命令 kubectl / helm 工作正常，可以正常操作 k8s 集群
 ## 2. 使用命令 helm create <your_app_name> 生成 helm 文件， 例如:
-cd /path/to/helm/
-helm create your_app_name
-
+cd /path/to/helm/ && helm create your_app_name
 ## 3. 根据需要自行修改 your_app_name/*.yml 文件，或使用软件服务商提供的 yml 文件
 ## 4. 执行 k8s 部署
 helm upgrade --install --atomic --history-max 3 \
@@ -158,7 +154,6 @@ your_app_name /path/to/helm/your_app_name/ \
 --set image.repository=registry-vpc.cn-hangzhou.aliyuncs.com/ns/repo \
 --set image.tag=spring-b962e447-1669878102 \
 --set image.pullPolicy=Always --timeout 120s
-
 ## 5. 使用 helm/kubectl 或 k9s 查看/操作 pods/services
 helm -n dev list
 kubectl -n dev get all
