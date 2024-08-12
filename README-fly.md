@@ -53,7 +53,7 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java ngi
 ## 套装Java nginx/java/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java redis mysql nginx
 ## 套装 nginx/php/java/redis/mysql 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php-fpm redis mysql nginx
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php redis mysql nginx
 
 ```
 
