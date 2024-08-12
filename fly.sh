@@ -631,7 +631,7 @@ Parameters:
     redis               Install Redis.
     mysql               Install MySQL.
     java                Install JDK / spring.
-    php                 Install php-fpm 7.1.
+    php                 Install php-fpm.
     nginx               Install nginx.
     mysql-cli           Exec into MySQL CLI.
     redis-cli           Exec into Redis CLI.

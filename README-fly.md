@@ -42,8 +42,9 @@
 ## 假如服务器需要代理访问公网，则设置环境变量
 # export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
 
-## 1. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-7.4/openjdk-8
-## 2. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
+## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
+## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-7.4/openjdk-8
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
 ## 单PHP nginx/php 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
 ## 套装LNMP nginx/php/redis/mysql 请执行
@@ -150,9 +151,9 @@ cd /path/to/helm/ && helm create your_app_name
 helm upgrade --install --atomic --history-max 3 \
 --namespace dev --create-namespace \
 your_app_name /path/to/helm/your_app_name/ \
+--set image.pullPolicy=Always --timeout 120s \
 --set image.repository=registry-vpc.cn-hangzhou.aliyuncs.com/ns/repo \
---set image.tag=spring-b962e447-1669878102 \
---set image.pullPolicy=Always --timeout 120s
+--set image.tag=spring-b962e447-1669878102
 ## 5. 使用 helm/kubectl 或 k9s 查看/操作 pods/services
 helm -n dev list
 kubectl -n dev get all
