@@ -597,6 +597,7 @@ services:
         context: ./nodejs
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
+          - NODE_VERSION=${NODE_VERSION}
       restart: always
       volumes:
         - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}

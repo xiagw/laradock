@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090
 
 _msg() {
     local color_on
@@ -456,35 +457,33 @@ _pull_image() {
             docker pull "$image_repo:laradock-nginx"
             docker tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
             ;;
-        mysql)
-            if [ ! -d "$laradock_path"/../../laradock-data/mysqlbak ]; then
-                $use_sudo mkdir -p "$laradock_path"/../../laradock-data/mysqlbak
-            fi
-            $use_sudo chown 1000:1000 "$laradock_path"/../../laradock-data/mysqlbak
-            if grep '^MYSQL_VERSION=5.7' "$laradock_env"; then
-                docker pull "$image_repo:laradock-mysql-5.7"
-                docker tag "$image_repo:laradock-mysql-5.7" "${image_prefix}mysql"
-            else
-                docker pull "$image_repo:laradock-mysql-8"
-                docker tag "$image_repo:laradock-mysql-8" "${image_prefix}mysql"
-            fi
-            docker pull "$image_repo:laradock-mysqlbak"
-            docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
-            ;;
         redis)
             docker pull "$image_repo:laradock-redis"
             docker tag "$image_repo:laradock-redis" "${image_prefix}redis"
             ;;
-        spring)
-            # _set_file_mode
-            exec_test_java=true
-            if grep '^JDK_IMAGE_NAME=.*:8' "$laradock_env"; then
-                docker pull "$image_repo:laradock-spring-8"
-                docker tag "$image_repo:laradock-spring-8" "${image_prefix}spring"
-            else
-                docker pull "$image_repo:laradock-spring-17"
-                docker tag "$image_repo:laradock-spring-17" "${image_prefix}spring"
+        mysql)
+            source <(grep '^MYSQL_VERSION=' "$laradock_env")
+            docker pull "$image_repo:laradock-mysql-${MYSQL_VERSION}"
+            docker tag "$image_repo:laradock-mysql-${MYSQL_VERSION}" "${image_prefix}mysql"
+            ## mysqlbak
+            if [ ! -d "$laradock_path"/../../laradock-data/mysqlbak ]; then
+                $use_sudo mkdir -p "$laradock_path"/../../laradock-data/mysqlbak
             fi
+            $use_sudo chown 1000:1000 "$laradock_path"/../../laradock-data/mysqlbak
+            docker pull "$image_repo:laradock-mysqlbak"
+            docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
+            ;;
+        spring)
+            source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
+            jdk_ver="${JDK_IMAGE_NAME##*:}"
+            exec_test_java=true
+            docker pull "$image_repo:laradock-spring-${jdk_ver}"
+            docker tag "$image_repo:laradock-spring-${jdk_ver}" "${image_prefix}spring"
+            ;;
+        nodejs)
+            source <(grep '^NODE_VERSION=' "$laradock_env")
+            docker pull "$image_repo:laradock-nodejs-${NODE_VERSION}"
+            docker tag "$image_repo:laradock-nodejs-${NODE_VERSION}" "${image_prefix}nodejs"
             ;;
         php*)
             _set_env_php_ver
@@ -501,7 +500,6 @@ _pull_image() {
 
 _test_nginx() {
     _reload_nginx
-    # shellcheck disable=SC1090
     source <(grep 'NGINX_HOST_HTTP_PORT' "$laradock_env")
     $dco stop nginx
     $dco up -d nginx
@@ -510,7 +508,7 @@ _test_nginx() {
         if $curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
             break
         else
-            _msg time "[$((i * 2))] test nginx err."
+            _msg time "[$((i * 2))] test nginx error."
             sleep 2
         fi
     done
@@ -522,7 +520,6 @@ _test_php() {
     if [[ ! -f "$path_nginx_root/test.php" ]]; then
         _msg time "Create test.php"
         $use_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
-        # shellcheck disable=1090
         source "$laradock_env" 2>/dev/null
         sed -i \
             -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
@@ -553,18 +550,18 @@ _get_env_info() {
     grep -E '^JDK_VERSION|^JDK_IMAGE|^JDK_IMAGE_NAME' "$laradock_env"
     echo
     grep -E '^PHP_VERSION' "$laradock_env"
+    echo
+    grep -E '^NODE_VERSION' "$laradock_env"
 }
 
 _mysql_cli() {
     cd "$laradock_path"
-    # shellcheck disable=SC1090
     source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=' "$laradock_env")
     docker compose exec mysql bash -c "LANG=C.UTF-8 MYSQL_PWD=$MYSQL_PASSWORD mysql -u $MYSQL_USER $MYSQL_DATABASE"
 }
 
 _redis_cli() {
     cd "$laradock_path"
-    # shellcheck disable=SC1090
     source <(grep '^REDIS_PASSWORD=' "$laradock_env")
     docker compose exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
 }
@@ -630,15 +627,19 @@ Parameters:
     info                Get MySQL and Redis info.
     redis               Install Redis.
     mysql               Install MySQL.
-    java                Install JDK / spring.
+    mysql-5.7           Install MySQL version 5.7.
+    java                Install openjdk-8.
+    java-17             Install openjdk-17.
     php                 Install php-fpm.
+    php-8.2             Install php version 8.2.
+    node                Install nodejs.
+    node-19             Install nodejs version 19.
     nginx               Install nginx.
     mysql-cli           Exec into MySQL CLI.
     redis-cli           Exec into Redis CLI.
     lsync               Setup lsyncd.
     zsh                 Install zsh.
-    reset               Reset laradock.
-    upgrade             Upgrade PHP / Java.
+    gitlab              Install gitlab.
 EOF
     exit 1
 }
