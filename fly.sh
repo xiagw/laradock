@@ -451,45 +451,45 @@ _pull_image() {
         local image_prefix="laradock-"
     fi
     for i in "${args[@]}"; do
+        _msg time "docker pull image $i ..."
         case $i in
         nginx)
             exec_test_nginx=true
-            docker pull "$image_repo:laradock-nginx"
+            docker pull -q "$image_repo:laradock-nginx" >/dev/null
             docker tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
             ;;
         redis)
-            docker pull "$image_repo:laradock-redis"
+            docker pull -q "$image_repo:laradock-redis" >/dev/null
             docker tag "$image_repo:laradock-redis" "${image_prefix}redis"
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$laradock_env")
-            docker pull "$image_repo:laradock-mysql-${MYSQL_VERSION}"
+            docker pull -q "$image_repo:laradock-mysql-${MYSQL_VERSION}" >/dev/null
             docker tag "$image_repo:laradock-mysql-${MYSQL_VERSION}" "${image_prefix}mysql"
             ## mysqlbak
             if [ ! -d "$laradock_path"/../../laradock-data/mysqlbak ]; then
                 $use_sudo mkdir -p "$laradock_path"/../../laradock-data/mysqlbak
             fi
             $use_sudo chown 1000:1000 "$laradock_path"/../../laradock-data/mysqlbak
-            docker pull "$image_repo:laradock-mysqlbak"
+            docker pull -q "$image_repo:laradock-mysqlbak" >/dev/null
             docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         spring)
             source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
             jdk_ver="${JDK_IMAGE_NAME##*:}"
             exec_test_java=true
-            docker pull "$image_repo:laradock-spring-${jdk_ver}"
+            docker pull -q "$image_repo:laradock-spring-${jdk_ver}" >/dev/null
             docker tag "$image_repo:laradock-spring-${jdk_ver}" "${image_prefix}spring"
             ;;
         nodejs)
             source <(grep '^NODE_VERSION=' "$laradock_env")
-            docker pull "$image_repo:laradock-nodejs-${NODE_VERSION}"
+            docker pull -q "$image_repo:laradock-nodejs-${NODE_VERSION}" >/dev/null
             docker tag "$image_repo:laradock-nodejs-${NODE_VERSION}" "${image_prefix}nodejs"
             ;;
         php*)
             _set_env_php_ver
-            # _set_file_mode
             exec_test_php=true
-            docker pull "$image_repo:php-${php_ver}"
+            docker pull -q "$image_repo:php-${php_ver}" >/dev/null
             docker tag "$image_repo:php-${php_ver}" ${image_prefix}php-fpm
             ;;
         esac
