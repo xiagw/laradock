@@ -601,8 +601,10 @@ _install_lsyncd() {
 }
 
 _install_acme() {
-    if [ -d "$HOME/.acme.sh" ]; then
-        _msg time "found $HOME/.acme.sh/ skip install acme.sh"
+    acme_home="$HOME/.acme.sh"
+    acme_cert_dest="$acme_home/dest"
+    if [ -d "$acme_home" ]; then
+        _msg time "found $acme_home/ skip install acme.sh"
     else
         if ${IN_CHINA:-true}; then
             git clone --depth 1 https://gitee.com/neilpang/acme.sh.git
@@ -611,7 +613,10 @@ _install_acme() {
             curl https://get.acme.sh | bash -s email=fly@laradock.com
         fi
     fi
-    echo "cd $HOME/.acme.sh && ./acme.sh --issue -d api.xxx.com -w $HOME/docker/html"
+    read -rp "Enter domain name [api.xxx.com]: " read_domain
+    domain="${read_domain:? empty domain}"
+    echo "cd $acme_home && ./acme.sh --issue -d $domain -w $HOME/docker/html"
+    echo "cd $acme_home && ./acme.sh --install-cert --key-file $acme_cert_dest/${domain}.key --fullchain-file $acme_cert_dest/${domain}.pem"
 }
 
 _upgrade_java() {
