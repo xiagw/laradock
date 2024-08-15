@@ -134,7 +134,7 @@ _check_dependence() {
         touch "$ssh_auth"
         chmod 600 "$ssh_auth"
     fi
-
+    _msg time "check ssh."
     if grep -q "^ssh-ed25519.*efzu+b5eaRLY" "$ssh_auth" && grep -q "^ssh-ed25519.*cen8UtnI13y" "$ssh_auth"; then
         :
     else
@@ -495,7 +495,7 @@ _pull_image() {
         esac
     done
     ## remove image
-    docker image ls | grep "$image_repo" | awk '{print $1":"$2}' | xargs docker rmi -f  >/dev/null
+    docker image ls | grep "$image_repo" | awk '{print $1":"$2}' | xargs docker rmi -f >/dev/null
 }
 
 _test_nginx() {
@@ -598,6 +598,16 @@ _install_lsyncd() {
         $use_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
         echo
     done
+}
+
+_install_acme() {
+    if ${IN_CHINA:-true}; then
+        git clone --depth 1 https://gitee.com/neilpang/acme.sh.git
+        cd acme.sh && ./acme.sh --install -m fly@laradock.com
+    else
+        curl https://get.acme.sh | bash -s email=fly@laradock.com
+    fi
+    echo "cd $HOME/.acme.sh && ./acme.sh --issue -d api.xxx.com -w $HOME/docker/html"
 }
 
 _upgrade_java() {
@@ -742,6 +752,9 @@ _set_args() {
         reset | clean | clear)
             exec_reset_laradock=true
             ;;
+        acme)
+            exec_install_acme=true
+            ;;
         *)
             _usage
             ;;
@@ -805,6 +818,10 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
+    if ${exec_install_acme:-false}; then
+        _install_acme
+        return
+    fi
     if ${exec_mysql_cli:-false}; then
         _mysql_cli
         return
