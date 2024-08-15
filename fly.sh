@@ -601,11 +601,15 @@ _install_lsyncd() {
 }
 
 _install_acme() {
-    if ${IN_CHINA:-true}; then
-        git clone --depth 1 https://gitee.com/neilpang/acme.sh.git
-        cd acme.sh && ./acme.sh --install -m fly@laradock.com
+    if [ -d "$HOME/.acme.sh" ]; then
+        _msg time "found $HOME/.acme.sh/ skip install acme.sh"
     else
-        curl https://get.acme.sh | bash -s email=fly@laradock.com
+        if ${IN_CHINA:-true}; then
+            git clone --depth 1 https://gitee.com/neilpang/acme.sh.git
+            cd acme.sh && ./acme.sh --install -m fly@laradock.com
+        else
+            curl https://get.acme.sh | bash -s email=fly@laradock.com
+        fi
     fi
     echo "cd $HOME/.acme.sh && ./acme.sh --issue -d api.xxx.com -w $HOME/docker/html"
 }
