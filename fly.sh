@@ -602,8 +602,8 @@ _install_lsyncd() {
 
 _install_acme() {
     acme_home="$HOME/.acme.sh"
-    acme_cert_dest="$acme_home/dest"
-    if [ -d "$acme_home" ]; then
+    acme_cert_dest="$HOME/docker/laradock/nginx/sites/ssl"
+    if [ -f "$acme_home/acme.sh" ]; then
         _msg time "found $acme_home/ skip install acme.sh"
     else
         if ${IN_CHINA:-true}; then
@@ -616,7 +616,9 @@ _install_acme() {
     read -rp "Enter domain name [api.xxx.com]: " read_domain
     domain="${read_domain:? empty domain}"
     echo "cd $acme_home && ./acme.sh --issue -d $domain -w $HOME/docker/html"
-    echo "cd $acme_home && ./acme.sh --install-cert --key-file $acme_cert_dest/${domain}.key --fullchain-file $acme_cert_dest/${domain}.pem"
+    echo "cd $acme_home && ./acme.sh --install-cert --key-file $acme_cert_dest/default.key --fullchain-file $acme_cert_dest/default.pem"
+    # openssl x509 -noout -text -in xxx.pem
+    # openssl x509 -noout -dates -in xxx.pem
 }
 
 _upgrade_java() {
