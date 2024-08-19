@@ -601,10 +601,12 @@ _install_lsyncd() {
 }
 
 _install_acme() {
-    acme_home="$HOME/.acme.sh"
-    acme_cert_dest="$HOME/docker/laradock/nginx/sites/ssl"
+    local acme_home="$HOME/.acme.sh"
+    local key="$laradock_home/nginx/sites/ssl/default.key"
+    local pem="$laradock_home/nginx/sites/ssl/default.pem"
+    local html="$HOME"/docker/html
     if [ -f "$acme_home/acme.sh" ]; then
-        _msg time "found $acme_home/ skip install acme.sh"
+        _msg time "found $acme_home/acme.sh, skip install acme.sh"
     else
         if ${IN_CHINA:-true}; then
             git clone --depth 1 https://gitee.com/neilpang/acme.sh.git
@@ -613,10 +615,19 @@ _install_acme() {
             curl https://get.acme.sh | bash -s email=fly@laradock.com
         fi
     fi
-    # read -rp "Enter domain name [api.xxx.com]: " read_domain
-    domain="${read_domain:-api.xxx.com}"
-    echo "cd $acme_home && ./acme.sh -d $domain --issue  -w $HOME/docker/html"
-    echo "cd $acme_home && ./acme.sh -d $domain --install-cert --key-file $acme_cert_dest/default.key --fullchain-file $acme_cert_dest/default.pem"
+    domain="${1}"
+    _msg time "your domain is: $domain"
+    case "$domain" in
+    *.*.*)
+        cd "$acme_home" || return 1
+        ./acme.sh --issue -w "$html" -d "$domain"
+        ./acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
+        ;;
+    *)
+        echo "cd $acme_home && ./acme.sh --issue -w $html -d $domain"
+        echo "cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d $domain"
+        ;;
+    esac
     # openssl x509 -noout -text -in xxx.pem
     # openssl x509 -noout -dates -in xxx.pem
 }
@@ -661,6 +672,7 @@ Parameters:
     lsync               Setup lsyncd.
     zsh                 Install zsh.
     gitlab              Install gitlab.
+    acme                Install acme.sh.
 EOF
     exit 1
 }
@@ -765,6 +777,7 @@ _set_args() {
             ;;
         acme)
             exec_install_acme=true
+            read_domain="$2"
             ;;
         *)
             _usage
@@ -830,7 +843,7 @@ main() {
     laradock_env="$laradock_path"/.env
 
     if ${exec_install_acme:-false}; then
-        _install_acme
+        _install_acme "$read_domain"
         return
     fi
     if ${exec_mysql_cli:-false}; then
