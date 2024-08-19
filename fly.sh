@@ -615,8 +615,8 @@ _install_acme() {
     fi
     read -rp "Enter domain name [api.xxx.com]: " read_domain
     domain="${read_domain:? empty domain}"
-    echo "cd $acme_home && ./acme.sh --issue -d $domain -w $HOME/docker/html"
-    echo "cd $acme_home && ./acme.sh --install-cert --key-file $acme_cert_dest/default.key --fullchain-file $acme_cert_dest/default.pem"
+    echo "cd $acme_home && ./acme.sh -d $domain --issue  -w $HOME/docker/html"
+    echo "cd $acme_home && ./acme.sh -d $domain --install-cert --key-file $acme_cert_dest/default.key --fullchain-file $acme_cert_dest/default.pem"
     # openssl x509 -noout -text -in xxx.pem
     # openssl x509 -noout -dates -in xxx.pem
 }
