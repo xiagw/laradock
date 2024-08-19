@@ -778,6 +778,7 @@ _set_args() {
         acme)
             exec_install_acme=true
             read_domain="$2"
+            shift
             ;;
         *)
             _usage
