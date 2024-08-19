@@ -613,8 +613,8 @@ _install_acme() {
             curl https://get.acme.sh | bash -s email=fly@laradock.com
         fi
     fi
-    read -rp "Enter domain name [api.xxx.com]: " read_domain
-    domain="${read_domain:? empty domain}"
+    # read -rp "Enter domain name [api.xxx.com]: " read_domain
+    domain="${read_domain:-api.xxx.com}"
     echo "cd $acme_home && ./acme.sh -d $domain --issue  -w $HOME/docker/html"
     echo "cd $acme_home && ./acme.sh -d $domain --install-cert --key-file $acme_cert_dest/default.key --fullchain-file $acme_cert_dest/default.pem"
     # openssl x509 -noout -text -in xxx.pem
