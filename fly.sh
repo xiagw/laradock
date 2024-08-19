@@ -616,7 +616,7 @@ _install_acme() {
         fi
     fi
     domain="${1}"
-    _msg time "your domain is: $domain"
+    _msg time "your domain is: ${domain:-api.xxx.com}"
     case "$domain" in
     *.*.*)
         cd "$acme_home" || return 1
@@ -624,8 +624,8 @@ _install_acme() {
         ./acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
         ;;
     *)
-        echo "cd $acme_home && ./acme.sh --issue -w $html -d $domain"
-        echo "cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d $domain"
+        echo "cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com}"
+        echo "cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-api.xxx.com}"
         ;;
     esac
     # openssl x509 -noout -text -in xxx.pem
