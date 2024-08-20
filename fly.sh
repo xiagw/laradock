@@ -290,6 +290,7 @@ _check_laradock_env() {
         -e "/MYSQL_VERSION=/s/=.*/=${mysql_ver}/" \
         -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/JDK_IMAGE_NAME=/s/=.*/=openjdk:${java_ver}/" \
+        -e "/NODE_VERSION=/s/=.*/=${node_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
@@ -682,6 +683,7 @@ _set_args() {
     php_ver=7.4
     java_ver=8
     mysql_ver=8.0
+    node_ver=18
 
     args=()
     if [ "$#" -eq 0 ]; then
@@ -717,8 +719,9 @@ _set_args() {
             exec_group=1
             [[ "${1}" == php-[0-9]* ]] && php_ver=${1#php-}
             ;;
-        node | nodejs | node.js)
+        node | nodejs | node-[0-9]*)
             args+=(nodejs)
+            [[ "${1}" == node-[0-9]* ]] && node_ver=${1#node-}
             exec_group=1
             ;;
         nginx)
@@ -749,6 +752,11 @@ _set_args() {
             exec_install_zsh=true
             exec_check_timezone=true
             ;;
+        install-acme | acme)
+            exec_install_acme=true
+            read_domain="$2"
+            [ -z "$2" ] || shift
+            ;;
         install-trzsz | trzsz)
             exec_install_trzsz=true
             exec_check_timezone=true
@@ -774,11 +782,6 @@ _set_args() {
             ;;
         reset | clean | clear)
             exec_reset_laradock=true
-            ;;
-        acme)
-            exec_install_acme=true
-            read_domain="$2"
-            shift
             ;;
         *)
             _usage
