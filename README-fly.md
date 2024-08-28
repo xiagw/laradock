@@ -159,6 +159,8 @@ kubectl -n dev get all
 
 
 ## 不推荐部署于Windows服务器
+1. Windows 服务器不适合安装redis，Windows 兼容性较差，以及与docker兼容性较差，不建议使用Windows服务器
+1. 以下为套装环境集成包，不能保证可以成功部署
 1. Download URL: http://oss.flyh6.com/d/xampp.zip
 1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
 
