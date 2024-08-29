@@ -30,7 +30,6 @@
 | Redis     | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)                          |
 | OS/单机   | Ubuntu 22.04 (推荐), CentOS/Anolis OS/RedHat/Debian/Rocky 等 Linux   |
 | OS/集群   | Kubernetes (根据云厂商自动推荐的OS/lifseaOS等/或自行安排)            |
-| OS/不推荐 | windows 系统                                                         |
 
 
 ## 推荐方式一/单机/多机docker-compose部署文档
@@ -110,18 +109,16 @@ cd $HOME/docker/laradock && tail -f spring/*.log          ## 查看文件夹内 
 cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload     ## nginx 重启 (修改配置文件后必须重启)
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
 
-## 新增 spring 和 nodejs 容器
+## 新增 spring 或 nodejs 容器
 ## 1. copy 文件夹 spring 到新文件夹，例如 spring3（nodejs 同理）
 ## 2. 修改 docker-compose.override.yml，复制 spring 段落到新段落，改名，例如 spring3（nodejs 同理）
 ## 3. 修改 nginx 配置文件 router.inc（nodejs 同理）
 
 ## 1. sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
 ## 2. 导入数据库文件（使用本服务器的 mysql/redis）（独立非本机 mysql/redis 不从此操作）
-cd $HOME/docker/laradock && docker compose exec mysql bash -c  'mysql -udefaultdb -p defaultdb </backup/db.sql'
-
+cd $HOME/docker/laradock && docker compose exec mysql bash -c 'mysql -udefaultdb -p defaultdb </backup/db.sql'
 ## mysql 进入命令行操作
 cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql defaultdb"
-
 ## redis 进入命令行操作
 cd $HOME/docker/laradock && docker compose exec redis redis-cli
 
