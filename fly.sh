@@ -214,15 +214,11 @@ _check_docker() {
         echo '############################################'
         need_logout=true
     fi
-    if [[ "$USER" != ubuntu ]] && id ubuntu 2>/dev/null; then
-        $use_sudo usermod -aG docker ubuntu
-    fi
-    if [[ "$USER" != centos ]] && id centos 2>/dev/null; then
-        $use_sudo usermod -aG docker centos
-    fi
-    if [[ "$USER" != ops ]] && id ops 2>/dev/null; then
-        $use_sudo usermod -aG docker ops
-    fi
+    for u in ubuntu centos ops; do
+        if [[ "$USER" != "$u" ]] && id "$u" 2>/dev/null; then
+            $use_sudo usermod -aG docker "$u"
+        fi
+    done
     ## revert aliyun linux fake centos
     if ${fake_os:-false}; then
         $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
