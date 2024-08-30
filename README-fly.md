@@ -93,12 +93,12 @@ cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
 ## 3，容器内和代码内写标准端口 mysql=3306/redis=6379，此处显示端口只用于远程 SSH 端口转发映射
 cd $HOME/docker/laradock && bash fly.sh info
 
-cd $HOME/docker/laradock && docker compose stop nginx redis mysql php-fpm      ## 停止服务 php-fpm
-cd $HOME/docker/laradock && docker compose stop nginx redis mysql spring       ## 停止服务 Java (spring)
-cd $HOME/docker/laradock && docker compose stop nginx redis mysql nodejs       ## 停止服务 nodejs
-cd $HOME/docker/laradock && docker compose up -d nginx redis mysql php-fpm      ## 启动服务 php-fpm
-cd $HOME/docker/laradock && docker compose up -d nginx redis mysql spring       ## 启动服务 Java (spring)
-cd $HOME/docker/laradock && docker compose up -d nginx redis mysql nodejs       ## 启动服务 Nodejs
+cd $HOME/docker/laradock && docker compose stop redis mysql php-fpm nginx      ## 停止服务 php-fpm
+cd $HOME/docker/laradock && docker compose stop redis mysql spring nginx       ## 停止服务 Java (spring)
+cd $HOME/docker/laradock && docker compose stop redis mysql nodejs nginx       ## 停止服务 nodejs
+cd $HOME/docker/laradock && docker compose up -d redis mysql php-fpm nginx      ## 启动服务 php-fpm
+cd $HOME/docker/laradock && docker compose up -d redis mysql spring nginx       ## 启动服务 Java (spring)
+cd $HOME/docker/laradock && docker compose up -d redis mysql nodejs nginx       ## 启动服务 Nodejs
 
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring       ## java 查看容器日志最后 100 行
 cd $HOME/docker/laradock && tail -f spring/*.log          ## 查看文件夹内 spring/*.log 文件
