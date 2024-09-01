@@ -451,7 +451,7 @@ _pull_image() {
         _msg time "docker pull image $i ..."
         case $i in
         nginx)
-            exec_test_nginx=true
+            arg_test_nginx=true
             docker pull -q "$image_repo:laradock-nginx" >/dev/null
             docker tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
             ;;
@@ -474,7 +474,7 @@ _pull_image() {
         spring)
             source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
             jdk_ver="${JDK_IMAGE_NAME##*:}"
-            exec_test_java=true
+            arg_test_java=true
             docker pull -q "$image_repo:laradock-spring-${jdk_ver}" >/dev/null
             docker tag "$image_repo:laradock-spring-${jdk_ver}" "${image_prefix}spring"
             ;;
@@ -485,7 +485,7 @@ _pull_image() {
             ;;
         php*)
             _set_env_php_ver
-            exec_test_php=true
+            arg_test_php=true
             docker pull -q "$image_repo:php-${php_ver}" >/dev/null
             docker tag "$image_repo:php-${php_ver}" ${image_prefix}php-fpm
             ;;
@@ -683,58 +683,53 @@ _set_args() {
 
     args=()
     if [ "$#" -eq 0 ]; then
-        _msg warn "not found arguments, with default args \"mysql redis php-fpm spring nginx\"."
-        args+=(mysql redis php-fpm spring nginx)
-        exec_check_docker=true
-        exec_check_laradock=true
-        exec_check_laradock_env=true
-        exec_start_docker_service=true
-        exec_pull_image=true
-        return
+        _msg warn "not found arguments, with default args \"redis mysql php-fpm spring nginx\"."
+        args+=(redis mysql php-fpm spring nginx)
+        arg_group=1
     fi
     while [ "$#" -gt 0 ]; do
         case "${1}" in
         redis)
             args+=(redis)
             set_sysctl=true
-            exec_group=1
+            arg_group=1
             ;;
         mysql | mysql-[0-9]*)
             args+=(mysql)
-            exec_group=1
+            arg_group=1
             [[ "${1}" == mysql-[0-9]* ]] && mysql_ver=${1#mysql-}
             ;;
         java | jdk | spring | java-[0-9]* | jdk-[0-9]*)
             args+=(spring)
-            exec_group=1
+            arg_group=1
             [[ "${1}" == java-[0-9]* ]] && java_ver=${1#java-}
             [[ "${1}" == jdk-[0-9]* ]] && java_ver=${1#jdk-}
             ;;
         php | fpm | php-[0-9]*)
             args+=(php-fpm)
-            exec_group=1
+            arg_group=1
             [[ "${1}" == php-[0-9]* ]] && php_ver=${1#php-}
             ;;
         node | nodejs | node-[0-9]*)
             args+=(nodejs)
             [[ "${1}" == node-[0-9]* ]] && node_ver=${1#node-}
-            exec_group=1
+            arg_group=1
             ;;
         nginx)
             args+=(nginx)
-            exec_group=1
+            arg_group=1
             ;;
         gitlab | git)
             args+=(gitlab)
-            exec_group=1
+            arg_group=1
             ;;
         svn | usvn)
             args+=(usvn)
-            exec_group=1
+            arg_group=1
             ;;
         upgrade)
-            [[ "${args[*]}" == *php-fpm* ]] && exec_upgrade_php=true
-            [[ "${args[*]}" == *spring* ]] && exec_upgrade_java=true
+            [[ "${args[*]}" == *php-fpm* ]] && arg_upgrade_php=true
+            [[ "${args[*]}" == *spring* ]] && arg_upgrade_java=true
             ;;
         not-china | not-cn | ncn)
             IN_CHINA=false
@@ -742,42 +737,42 @@ _set_args() {
             ;;
         install-docker-without-aliyun)
             aliyun_mirror=false
-            exec_check_docker=true
+            arg_check_docker=true
             ;;
         install-zsh | zsh)
-            exec_install_zsh=true
-            exec_check_timezone=true
+            arg_install_zsh=true
+            arg_check_timezone=true
             ;;
         install-acme | acme)
-            exec_install_acme=true
+            arg_install_acme=true
             read_domain="$2"
             [ -z "$2" ] || shift
             ;;
         install-trzsz | trzsz)
-            exec_install_trzsz=true
-            exec_check_timezone=true
+            arg_install_trzsz=true
+            arg_check_timezone=true
             ;;
         install-lsyncd | lsync | lsyncd)
-            exec_install_lsyncd=true
+            arg_install_lsyncd=true
             ;;
         install-wg | wg | wireguard)
-            exec_install_wg=true
+            arg_install_wg=true
             ;;
         info)
-            exec_env_info=true
+            arg_env_info=true
             ;;
         mysql-cli)
-            exec_mysql_cli=true
+            arg_mysql_cli=true
             ;;
         redis-cli)
-            exec_redis_cli=true
+            arg_redis_cli=true
             ;;
         test)
-            exec_test_nginx=true
-            exec_test_php=true
+            arg_test_nginx=true
+            arg_test_php=true
             ;;
         reset | clean | clear)
-            exec_reset_laradock=true
+            arg_reset_laradock=true
             ;;
         *)
             _usage
@@ -785,12 +780,12 @@ _set_args() {
         esac
         shift
     done
-    if [ "${exec_group:-0}" -eq 1 ]; then
-        exec_check_docker=true
-        exec_check_laradock=true
-        exec_check_laradock_env=true
-        exec_start_docker_service=true
-        exec_pull_image=true
+    if [ "${arg_group:-0}" -eq 1 ]; then
+        arg_check_docker=true
+        arg_check_laradock=true
+        arg_check_laradock_env=true
+        arg_start_docker_service=true
+        arg_pull_image=true
     fi
 }
 
@@ -842,71 +837,71 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
-    if ${exec_install_acme:-false}; then
+    if ${arg_install_acme:-false}; then
         _install_acme "$read_domain"
         return
     fi
-    if ${exec_mysql_cli:-false}; then
+    if ${arg_mysql_cli:-false}; then
         _mysql_cli
         return
     fi
-    if ${exec_redis_cli:-false}; then
+    if ${arg_redis_cli:-false}; then
         _redis_cli
         return
     fi
-    if ${exec_env_info:-false}; then
+    if ${arg_env_info:-false}; then
         _get_env_info
         return
     fi
-    if ${exec_upgrade_java:-false}; then
+    if ${arg_upgrade_java:-false}; then
         _upgrade_java
         return
     fi
-    if ${exec_upgrade_php:-false}; then
+    if ${arg_upgrade_php:-false}; then
         _upgrade_php
         return
     fi
 
-    ${exec_check_dependence:-true} && _check_dependence
+    ${arg_check_dependence:-true} && _check_dependence
 
-    ${exec_install_trzsz:-false} && _install_trzsz
-    if ${exec_install_zsh:-false}; then
+    ${arg_install_trzsz:-false} && _install_trzsz
+    if ${arg_install_zsh:-false}; then
         _install_zsh
         return
     fi
-    if ${exec_install_lsyncd:-false}; then
+    if ${arg_install_lsyncd:-false}; then
         _install_lsyncd
         return
     fi
-    if ${exec_install_wg:-false}; then
+    if ${arg_install_wg:-false}; then
         _install_wg
         return
     fi
 
-    ${exec_check_docker:-true} && _check_docker
+    ${arg_check_docker:-true} && _check_docker
     ## install docker, add normal user (not root) to group "docker", re-login
     ${need_logout:-false} && return
 
-    if ${exec_reset_laradock:-false}; then
+    if ${arg_reset_laradock:-false}; then
         _reset_laradock
         return
     fi
 
-    ${exec_check_timezone:-false} && _check_timezone
+    ${arg_check_timezone:-false} && _check_timezone
 
-    ${exec_check_laradock:-false} && _check_laradock
+    ${arg_check_laradock:-false} && _check_laradock
 
-    ${exec_check_laradock_env:-false} && _check_laradock_env
+    ${arg_check_laradock_env:-false} && _check_laradock_env
 
-    ${exec_pull_image:-false} && _pull_image
+    ${arg_pull_image:-false} && _pull_image
 
-    ${exec_start_docker_service:-false} && _start_docker_service
+    ${arg_start_docker_service:-false} && _start_docker_service
 
-    ${exec_test_nginx:-false} && _test_nginx
+    ${arg_test_nginx:-false} && _test_nginx
 
-    ${exec_test_php:-false} && _test_php
+    ${arg_test_php:-false} && _test_php
 
-    ${exec_test_java:-false} && _test_java
+    ${arg_test_java:-false} && _test_java
 }
 
 main "$@"
