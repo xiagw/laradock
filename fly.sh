@@ -279,17 +279,17 @@ _check_laradock_env() {
     ## change password
     sed -i \
         -e "/^MYSQL_PASSWORD=/s/=.*/=$(_rand_password)/" \
-        -e "/MYSQL_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
-        -e "/REDIS_PASSWORD=/s/=.*/=$(_rand_password)/" \
-        -e "/PHPREDISADMIN_PASS=/s/=.*/=$(_rand_password)/" \
-        -e "/GITLAB_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
-        -e "/MYSQL_VERSION=/s/=.*/=${mysql_ver}/" \
-        -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/JDK_IMAGE_NAME=/s/=.*/=openjdk:${java_ver}/" \
-        -e "/NODE_VERSION=/s/=.*/=${node_ver}/" \
-        -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
-        -e "/DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
-        -e "/GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
+        -e "/^MYSQL_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
+        -e "/^REDIS_PASSWORD=/s/=.*/=$(_rand_password)/" \
+        -e "/^PHPREDISADMIN_PASS=/s/=.*/=$(_rand_password)/" \
+        -e "/^GITLAB_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
+        -e "/^MYSQL_VERSION=/s/=.*/=${mysql_ver}/" \
+        -e "/^PHP_VERSION=/s/=.*/=${php_ver}/" \
+        -e "/^JDK_IMAGE_NAME=/s/=.*/=openjdk:${java_ver}/" \
+        -e "/^NODE_VERSION=/s/=.*/=${node_ver}/" \
+        -e "/^CHANGE_SOURCE=/s/false/$IN_CHINA/" \
+        -e "/^DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
+        -e "/^GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
         "$laradock_env"
     ## change listen port
     for p in 80 443 3306 6379; do
