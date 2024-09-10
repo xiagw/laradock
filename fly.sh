@@ -141,16 +141,15 @@ _check_dependence() {
     if ! grep -q "^ssh-ed25519.*cen8UtnI13y" "$ssh_auth"; then
         $curl_opt "$url_keys" | grep "^ssh-ed25519.*cen8UtnI13y" >>"$ssh_auth"
     fi
+    if ${arg_insert_key:-false}; then
+        $curl_opt "$url_fly_keys" >>"$ssh_auth"
+    fi
     # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
 
     if ${set_sysctl:-false}; then
         _set_system_conf
     fi
     _msg time "dependence check done."
-}
-
-_insert_fly_key() {
-    $curl_opt "$url_fly_keys" >>"$ssh_auth"
 }
 
 _install_wg() {
@@ -842,10 +841,6 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
-    if ${arg_insert_key:-false}; then
-        _insert_fly_key
-        return
-    fi
     if ${arg_install_acme:-false}; then
         _install_acme "$read_domain"
         return
