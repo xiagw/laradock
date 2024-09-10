@@ -681,7 +681,7 @@ _set_args() {
     node_ver=18
 
     args=()
-    if [ "$#" -eq 0 ]; then
+    if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = key ]; }; then
         _msg warn "not found arguments, with default args \"redis mysql php-fpm spring nginx\"."
         args+=(redis mysql php-fpm spring nginx)
         arg_group=1
@@ -782,6 +782,7 @@ _set_args() {
         esac
         shift
     done
+    # unique_array=($(printf "%s\n" "${args[@]}" | awk '!seen[$0]++'))
     if [ "${arg_group:-0}" -eq 1 ]; then
         arg_check_docker=true
         arg_check_laradock=true
