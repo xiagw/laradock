@@ -4,29 +4,30 @@
 _msg() {
     local color_on
     local color_off='\033[0m' # Text Reset
-    h_m_s="[$((SECONDS / 3600))h$(((SECONDS / 60) % 60))m$((SECONDS % 60))s]"
-    time_now="$(date +%Y%m%d-%u-%T.%3N)"
+    time_hms="$((SECONDS / 3600))h$(((SECONDS / 60) % 60))m$((SECONDS % 60))s"
+    timestamp="$(date +%Y%m%d-%u-%T.%3N)"
 
     case "${1:-none}" in
-    red | error | erro) color_on='\033[0;31m' ;;       # Red
-    green | info) color_on='\033[0;32m' ;;             # Green
-    yellow | warning | warn) color_on='\033[0;33m' ;;  # Yellow
-    blue) color_on='\033[0;34m' ;;                     # Blue
-    purple | question | ques) color_on='\033[0;35m' ;; # Purple
-    cyan) color_on='\033[0;36m' ;;                     # Cyan
-    orange) color_on='\033[1;33m' ;;                   # Orange
+    info) color_on='' ;;
+    warn | warning | yellow) color_on='\033[0;33m' ;;
+    error | err | red) color_on='\033[0;31m' ;;
+    question | ques | purple) color_on='\033[0;35m' ;;
+    green) color_on='\033[0;32m' ;;
+    blue) color_on='\033[0;34m' ;;
+    cyan) color_on='\033[0;36m' ;;
+    orange) color_on='\033[1;33m' ;;
     step)
         ((++STEP))
-        color_on="\033[0;36m[${STEP}] $time_now \033[0m"
-        color_off=" $h_m_s"
+        color_on="\033[0;36m$timestamp - [$STEP] \033[0m"
+        color_off=" - [$time_hms]"
         ;;
     time)
-        color_on="[${STEP}] $time_now "
-        color_off=" $h_m_s"
+        color_on="$timestamp - [${STEP}] "
+        color_off=" - [$time_hms]"
         ;;
     log)
         shift
-        echo "$time_now $*" >>"$me_log"
+        echo "$timestamp - $*" >>"$me_log"
         return
         ;;
     *)
@@ -165,7 +166,7 @@ _install_wg() {
 _check_docker_compose() {
     dco="docker compose"
     if $dco version; then
-        _msg info "$dco ready."
+        _msg green "$dco ready."
     else
         if _check_cmd docker-compose; then
             dco="docker-compose"
@@ -398,7 +399,7 @@ _install_zsh() {
 
 _install_trzsz() {
     if _check_cmd trz; then
-        _msg "skip trzsz install"
+        _msg warn "skip trzsz install"
     else
         _msg step "install trzsz"
         if command -v apt; then
@@ -529,9 +530,9 @@ _test_php() {
 _test_java() {
     _msg time "Test spring..."
     if $dco ps | grep "spring.*Up"; then
-        _msg time "container spring is up"
+        _msg green "container spring is up"
     else
-        _msg time "container spring is down"
+        _msg red "container spring is down"
     fi
 }
 
