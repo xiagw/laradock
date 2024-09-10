@@ -505,7 +505,7 @@ _test_nginx() {
         if $curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
             break
         else
-            _msg time "[$((i * 2))] test nginx error."
+            _msg time "test nginx error...[$((i * 2))]"
             sleep 2
         fi
     done
