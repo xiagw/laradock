@@ -128,22 +128,21 @@ _check_dependence() {
     _check_distribution
     _check_cmd install curl git strings
 
-    ssh_auth="$HOME"/.ssh/authorized_keys
-    [ -d "$HOME"/.ssh ] || mkdir -m 700 "$HOME"/.ssh
-    if [ ! -f "$ssh_auth" ]; then
-        touch "$ssh_auth"
-        chmod 600 "$ssh_auth"
-    fi
     _msg time "check ssh."
-    if ! grep -q "^ssh-ed25519.*efzu+b5eaRLY" "$ssh_auth"; then
-        $curl_opt "$url_keys" | grep "^ssh-ed25519.*efzu+b5eaRLY" >>"$ssh_auth"
-    fi
-    if ! grep -q "^ssh-ed25519.*cen8UtnI13y" "$ssh_auth"; then
-        $curl_opt "$url_keys" | grep "^ssh-ed25519.*cen8UtnI13y" >>"$ssh_auth"
-    fi
+    dot_ssh="$HOME/.ssh"
+    ssh_auth="$dot_ssh"/authorized_keys
+    [ -d "$dot_ssh" ] || mkdir -m 700 "$dot_ssh"
+    $curl_opt "$url_keys" |
+        while read -r line; do
+            grep -q "$line" "$ssh_auth" || echo "$line" >>"$ssh_auth"
+        done
     if ${arg_insert_key:-false}; then
-        $curl_opt "$url_fly_keys" >>"$ssh_auth"
+        $curl_opt "$url_fly_keys" |
+            while read -r line; do
+                grep -q "$line" "$ssh_auth" || echo "$line" >>"$ssh_auth"
+            done
     fi
+    chmod 600 "$ssh_auth"
     # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
 
     if ${set_sysctl:-false}; then
