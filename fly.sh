@@ -135,14 +135,11 @@ _check_dependence() {
         chmod 600 "$ssh_auth"
     fi
     _msg time "check ssh."
-    if grep -q "^ssh-ed25519.*efzu+b5eaRLY" "$ssh_auth" && grep -q "^ssh-ed25519.*cen8UtnI13y" "$ssh_auth"; then
-        :
-    else
-        if ${IN_CHINA:-true}; then
-            $curl_opt "$url_keys" >>"$ssh_auth"
-        else
-            $curl_opt "$url_keys" >>"$ssh_auth"
-        fi
+    if ! grep -q "^ssh-ed25519.*efzu+b5eaRLY" "$ssh_auth"; then
+        $curl_opt "$url_keys" | grep "^ssh-ed25519.*efzu+b5eaRLY" >>"$ssh_auth"
+    fi
+    if ! grep -q "^ssh-ed25519.*cen8UtnI13y" "$ssh_auth"; then
+        $curl_opt "$url_keys" | grep "^ssh-ed25519.*cen8UtnI13y" >>"$ssh_auth"
     fi
     # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
 
@@ -150,6 +147,10 @@ _check_dependence() {
         _set_system_conf
     fi
     _msg time "dependence check done."
+}
+
+_insert_fly_key() {
+    $curl_opt "$url_fly_keys" >>"$ssh_auth"
 }
 
 _install_wg() {
@@ -774,6 +775,9 @@ _set_args() {
         reset | clean | clear)
             arg_reset_laradock=true
             ;;
+        key)
+            arg_insert_key=true
+            ;;
         *)
             _usage
             ;;
@@ -803,6 +807,7 @@ main() {
 
     curl_opt='curl --connect-timeout 10 -fL'
     url_fly_cdn="http://oss.flyh6.com/d"
+    url_fly_keys="$url_fly_cdn/flyh6.keys"
 
     if ${IN_CHINA:-true}; then
         url_laradock_git=https://gitee.com/xiagw/laradock.git
@@ -837,6 +842,10 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
+    if ${arg_insert_key:-false}; then
+        _insert_fly_key
+        return
+    fi
     if ${arg_install_acme:-false}; then
         _install_acme "$read_domain"
         return
