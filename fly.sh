@@ -621,8 +621,15 @@ _install_acme() {
         ./acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
         ;;
     *)
-        echo "cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com}"
-        echo "cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-api.xxx.com}"
+        echo
+        echo "Single host domain:"
+        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com}"
+        echo "Wildcard domain:"
+        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com} -d '${domain:-*.xxx.com}' "
+        echo "DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]"
+        echo "  cd $acme_home && ./acme.sh --issue --dns dns_cf -d ${domain:-api.xxx.com} -d '${domain:-*.xxx.com}' "
+        echo "Deploy cert"
+        echo "  cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-api.xxx.com}"
         ;;
     esac
     # openssl x509 -noout -text -in xxx.pem
