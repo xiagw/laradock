@@ -20,7 +20,7 @@
 
 
 
-## 软件/中间件/操作系统/版本推荐
+## 软件/中间件/操作系统/版本
 | 软件      | 系统/配置推荐                                                             |
 |:----------|:---------------------------------------------------------------------|
 | Nginx     | >= 1.18                                                              |
@@ -32,7 +32,7 @@
 | OS/集群   | Kubernetes (根据云厂商自动推荐的OS/lifseaOS等/或自行安排)            |
 
 
-## 推荐方式一/单机/多机docker-compose部署文档
+## 方式一/单机/多机docker-compose部署文档
 ```sh
 ## 假如服务器需要代理访问公网，则设置环境变量
 # export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
@@ -40,19 +40,16 @@
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-7.4/openjdk-8
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
-## 单PHP nginx/php 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
 ## 套装LNMP nginx/php/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php redis mysql nginx
-## 单Java nginx/java 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java nginx
 ## 套装Java nginx/java/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java redis mysql nginx
+## 单PHP nginx/php 请执行
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
+## 单Java nginx/java 请执行
+curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java nginx
 ## 单Nodejs nginx/nodejs 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nodejs nginx
-## 套装 nginx/php/java/redis/mysql 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java php redis mysql nginx
-
 ```
 
 ### 单机docker部署方式站点URL对应服务器目录说明
@@ -126,6 +123,7 @@ cd $HOME/docker/laradock && docker compose exec redis redis-cli
 # sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
+sudo chown -R 33:33 $HOME/docker/html/upload_php       ## PHP 容器内 uid=33 对应容器内目录 /var/www/html/upload_php
 sudo chown -R 1000:1000 $HOME/docker/laradock/spring    ## Java 容器内 uid=1000
 sudo chown -R 1000:1000 $HOME/docker/html/uploads       ## Java 容器内 uid=1000 对应容器内目录 /var/www/html/uploads
 sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=1000
@@ -136,10 +134,10 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=
 
 ```
 
-## 推荐方式二/K8S集群kubectl/helm部署参考
+## 方式二/K8S集群kubectl/helm部署参考
 ```sh
 ## 1. 前提条件，确保命令 kubectl / helm 工作正常，可以正常操作 k8s 集群
-## 2. 使用命令 helm create <your_app_name> 生成 helm 文件， 例如:
+## 2. 使用命令 helm create <your_app_name> 生成 helm 文件
 cd /path/to/helm/ && helm create your_app_name
 ## 3. 根据需要自行修改 your_app_name/*.yml 文件，或使用软件服务商提供的 yml 文件
 ## 4. 执行 k8s 部署
@@ -155,7 +153,7 @@ kubectl -n dev get all
 ```
 
 
-## 不推荐部署于Windows服务器
+## 不建议部署于Windows服务器
 1. Windows 服务器不适合安装redis，Windows 兼容性较差，以及与docker兼容性较差，不建议使用Windows服务器
 1. 以下为套装环境集成包，不能保证可以成功部署
 1. Download URL: http://oss.flyh6.com/d/xampp.zip
@@ -201,21 +199,18 @@ Start-Process .\amazon-corretto-8-x64-windows-jdk.msi
 
 
 ## 查询域名备案
-1. https://beian.miit.gov.cn/#/Integrated/recordQuery
+1. 查询备案： https://beian.miit.gov.cn/#/Integrated/recordQuery
+1. 阿里云ICP备案 https://beian.aliyun.com/ （建议下载它的App进行备案速度更快）
+1. “备案提供商”和“服务器提供商”必须一致，例如“阿里云备案”则必须是“阿里云服务器”，例如腾讯云服务器+阿里云备案是无效的。
+1. 服务器在中国内地需要域名备案，港澳台和外国无需域名备案
 
-# Bitvise教程/下载/安装软件
+# Bitvise教程/下载/安装软件/登录服务器/拷贝文件到服务器目录
 1. 下载方式一， [BvSshClient http://oss.flyh6.com/d/BvSshClient-Inst.zip](http://oss.flyh6.com/d/BvSshClient-Inst.zip)
 1. 下载方式二， [BvSshClient https://www.putty.org/](https://www.putty.org/)
-
-# Bitvise密码/登录服务器
-1.  `假如无法使用密码，则需用SSH Key登录`
+1. 假如无法使用密码，则需用SSH Key登录
 1. 从管理员/客户处获取服务器IP/帐号/密码，
-1. 输入 `Host:` IP
-1. 输入 `Username:`  帐号
+1. 输入 `Host:` IP ，输入 `Username:`  帐号
 1. 点左下角 `login` , （点击 `Accept and Save`），`输入密码`登录
 1. 点击左侧 `New Terminal console` 进入命令行界面
 1. 点击左侧 `New SFTP window` 进入文件夹管理界面，可以直接上传/下载文件
-
-# Bitvise拷贝文件到服务器目录
-1. 使用以上 `Bitvise SSH Client` 可以拷贝文件到服务器端 目录。
 1. 网址对应服务器目录关系，参考本页上方的“### 单机docker部署方式站点URL对应服务器目录说明”
