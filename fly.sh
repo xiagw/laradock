@@ -67,8 +67,10 @@ _check_cmd() {
 
 _check_distribution() {
     if [ -r /etc/os-release ]; then
-        # shellcheck disable=SC1091
-        lsb_dist="$(. /etc/os-release && echo "$ID")"
+        source /etc/os-release
+        # shellcheck disable=SC1091,SC2153
+        version_id="$VERSION_ID"
+        lsb_dist="$ID"
         lsb_dist="${lsb_dist,,}"
     fi
     lsb_dist="${lsb_dist:-unknown}"
@@ -199,7 +201,11 @@ _check_docker() {
         fi
     fi
     if ${aliyun_mirror:-true}; then
-        $curl_opt "$url_get_docker" | $use_sudo bash -s - --mirror Aliyun
+        if [[ $version_id -eq 7 ]]; then
+            $curl_opt "$url_get_docker" | $use_sudo bash -s - --mirror Aliyun
+        else
+            $curl_opt "$url_get_docker2" | $use_sudo bash -s - --mirror Aliyun
+        fi
     else
         $curl_opt "$url_get_docker" | $use_sudo bash
     fi
@@ -822,6 +828,7 @@ main() {
         url_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw/main
         url_keys="$url_fly_cdn/xiagw.keys"
         url_get_docker="$url_fly_cdn/get-docker.sh"
+        url_get_docker2="$url_fly_cdn/get-docker2.sh"
         url_fzf="https://gitee.com/mirrors/fzf.git"
         url_ohmyzsh="https://gitee.com/mirrors/ohmyzsh.git"
     else
