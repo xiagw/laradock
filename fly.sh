@@ -201,7 +201,7 @@ _check_docker() {
         fi
     fi
     if ${aliyun_mirror:-true}; then
-        if [[ $version_id -eq 7 ]]; then
+        if [[ "${version_id%%.*}" -eq 7 ]]; then
             $curl_opt "$url_get_docker" | $use_sudo bash -s - --mirror Aliyun
         else
             $curl_opt "$url_get_docker2" | $use_sudo bash -s - --mirror Aliyun
