@@ -659,6 +659,20 @@ _reset_laradock() {
     $use_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
 }
 
+_refresh_cdn() {
+    trigger=/root/docker/html/cdn.txt
+    obj_path="${1:?empty object path}"
+    region="${2:-cn-hangzhou}"
+    while true; do
+        if [ -f $trigger ]; then
+            aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "$obj_path"
+            sleep 3
+            sudo rm -f $trigger
+        fi
+        sleep 30
+    done
+}
+
 _usage() {
     cat <<EOF
 Usage: $0 [parameters ...]
@@ -790,6 +804,12 @@ _set_args() {
         key)
             arg_insert_key=true
             ;;
+        cdn | refresh)
+            arg_refresh_cdn=true
+            cdn_path="$2"
+            cdn_region="${3:-cn-hangzhou}"
+            shift 2
+            ;;
         *)
             _usage
             ;;
@@ -856,6 +876,10 @@ main() {
 
     laradock_env="$laradock_path"/.env
 
+    if ${arg_refresh_cdn:-false}; then
+        _refresh_cdn "$cdn_path" "$cdn_region" &
+        return
+    fi
     if ${arg_install_acme:-false}; then
         _install_acme "$read_domain"
         return
