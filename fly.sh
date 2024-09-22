@@ -506,6 +506,7 @@ _test_nginx() {
     source <(grep 'NGINX_HOST_HTTP_PORT' "$laradock_env")
     $dco stop nginx
     $dco up -d nginx
+    [ -f "$laradock_path/../html/favicon.ico" ] || $curl_opt -s -o "$laradock_path/../html/favicon.ico" $url_fly_ico
     _msg time "test nginx $1 ..."
     for i in {1..10}; do
         if $curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
@@ -668,7 +669,9 @@ _refresh_cdn() {
     fi
     while true; do
         if [ -f $trigger ]; then
+            _msg time "cdn refresh $region  $obj_path"
             aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "$obj_path"
+            echo
             sleep 3
             sudo rm -f $trigger
         fi
@@ -844,6 +847,7 @@ main() {
     curl_opt='curl --connect-timeout 10 -fL'
     url_fly_cdn="http://oss.flyh6.com/d"
     url_fly_keys="$url_fly_cdn/flyh6.keys"
+    url_fly_ico="$url_fly_cdn/flyh6.ico"
 
     if ${IN_CHINA:-true}; then
         url_laradock_git=https://gitee.com/xiagw/laradock.git
