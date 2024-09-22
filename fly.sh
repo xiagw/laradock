@@ -663,6 +663,9 @@ _refresh_cdn() {
     trigger=/root/docker/html/cdn.txt
     obj_path="${1:?empty object path}"
     region="${2:-cn-hangzhou}"
+    if [[ "$obj_path" != */ ]]; then
+        obj_path="${obj_path}/"
+    fi
     while true; do
         if [ -f $trigger ]; then
             aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "$obj_path"
