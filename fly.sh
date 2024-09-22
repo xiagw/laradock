@@ -137,12 +137,12 @@ _check_dependence() {
     [ -d "$dot_ssh" ] || mkdir -m 700 "$dot_ssh"
     $curl_opt "$url_keys" |
         while read -r line; do
-            grep -q "$line" "$ssh_auth" || echo "$line" >>"$ssh_auth"
+            grep -q "$(echo "$line" | awk '{print $2}')" "$ssh_auth" || echo "$line" >>"$ssh_auth"
         done
     if ${arg_insert_key:-false}; then
         $curl_opt "$url_fly_keys" |
             while read -r line; do
-                grep -q "$line" "$ssh_auth" || echo "$line" >>"$ssh_auth"
+                grep -q "$(echo "$line" | awk '{print $2}')" "$ssh_auth" || echo "$line" >>"$ssh_auth"
             done
     fi
     chmod 600 "$ssh_auth"
