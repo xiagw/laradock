@@ -598,8 +598,8 @@ _install_lsyncd() {
         _msg time "ssh-copy-id -i $id_file root@$ssh_host_ip"
         ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
         _msg time "add $ssh_host_ip to $lsyncd_conf"
-        line_num=$(grep -n '^targets' $lsyncd_conf | awk -F: '{print $1}')
-        $use_sudo sed -i -e "$line_num a '$ssh_host_ip:$HOME/docker/html/'," $lsyncd_conf
+        $use_sudo sed -i -e "/^htmlhosts/ a '$ssh_host_ip:$laradock_path/../html/'," $lsyncd_conf
+        $use_sudo sed -i -e "/^nginxhosts/ a '$ssh_host_ip:$laradock_path/nginx/'," $lsyncd_conf
         echo
     done
 }

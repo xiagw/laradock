@@ -9,12 +9,13 @@ settings {
 }
 
 htmldir = "/root/docker/html/"
-targets = {
+htmlhosts = {
     -- '172.16.0.2:/root/docker/html/',
 }
-for _, target in ipairs(targets) do
+for _, target in ipairs(htmlhosts) do
     sync {
         default.rsync,
+        rsync = { archive = true },
         -- delete = running,
         -- excludeFrom = '/root/lsyncd.exclude',
         exclude = {'runtime/*', 'Runtime/*', '.svn', '.git', '.gitignore', '.gitattributes', '.idea', '*.bak', '*.log'},
@@ -30,6 +31,7 @@ nginxhosts = {
 for _, target in ipairs(nginxhosts) do
     sync {
         default.rsync,
+        rsync = { archive = true },
         -- exclude = {'ssl/', '*.key', '.svn', '.git', '.gitignore', '.gitattributes', '.idea', '*.bak', '*.log'},
         exclude = {'.svn', '.git', '.gitignore', '.gitattributes', '.idea', '*.bak', '*.log'},
         source = nginxdir,
