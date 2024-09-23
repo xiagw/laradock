@@ -582,7 +582,7 @@ _install_lsyncd() {
         _msg time "new lsyncd.conf.lua"
         $use_sudo cp -vf "$laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
     fi
-    [[ "$USER" == "root" ]] || $use_sudo sed -i "s/\/root\/docker/$HOME\/docker/g" $lsyncd_conf
+    [[ "$USER" == "root" ]] || $use_sudo sed -i "s@/root/docker@$HOME/docker@g" $lsyncd_conf
 
     id_file="$HOME/.ssh/id_ed25519"
     if [ -f "$id_file" ]; then
