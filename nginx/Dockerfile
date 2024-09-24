@@ -1,6 +1,4 @@
-ARG IMAGE_NAME=nginx:stable-alpine
-# ARG IMAGE_NAME=arm64v8/nginx:stable-alpine
-FROM ${IMAGE_NAME}
+FROM nginx:stable-alpine
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
