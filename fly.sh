@@ -343,9 +343,24 @@ _set_nginx_php() {
 
 _set_env_php_ver() {
     sed -i \
-        -e "/PHP_VERSION=/s/=.*/=${php_ver}/" \
+        -e "/^PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         "$laradock_env"
+}
+
+_set_env_node_ver() {
+    sed -i \
+        -e "/^NODE_VERSION=/s/=.*/=${node_ver}/"
+    "$laradock_env"
+    source <(grep '^NODE_VERSION=' "$laradock_env")
+}
+
+_set_env_java_ver() {
+    source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
+    sed -i \
+        -e "/^JDK_IMAGE_NAME=/s/=.*/=${JDK_IMAGE_NAME%:*}:${java_ver}/"
+    "$laradock_env"
+    source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
 }
 
 _set_file_mode() {
@@ -478,16 +493,15 @@ _pull_image() {
             docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         spring)
-            source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
-            jdk_ver="${JDK_IMAGE_NAME##*:}"
+            _set_env_java_ver
             arg_test_java=true
-            docker pull -q "$image_repo:laradock-spring-${jdk_ver}" >/dev/null
-            docker tag "$image_repo:laradock-spring-${jdk_ver}" "${image_prefix}spring"
+            docker pull -q "$image_repo:laradock-spring-${java_ver}" >/dev/null
+            docker tag "$image_repo:laradock-spring-${java_ver}" "${image_prefix}spring"
             ;;
         nodejs)
-            source <(grep '^NODE_VERSION=' "$laradock_env")
-            docker pull -q "$image_repo:laradock-nodejs-${NODE_VERSION}" >/dev/null
-            docker tag "$image_repo:laradock-nodejs-${NODE_VERSION}" "${image_prefix}nodejs"
+            _set_env_node_ver
+            docker pull -q "$image_repo:laradock-nodejs-${node_ver}" >/dev/null
+            docker tag "$image_repo:laradock-nodejs-${node_ver}" "${image_prefix}nodejs"
             ;;
         php*)
             _set_env_php_ver
@@ -743,7 +757,7 @@ _set_args() {
             arg_group=1
             [[ "${1}" == php-[0-9]* ]] && php_ver=${1#php-}
             ;;
-        node | nodejs | node-[0-9]*)
+        node | nodejs | node-[0-9]* | nodejs-[0-9]*)
             args+=(nodejs)
             [[ "${1}" == node-[0-9]* ]] && node_ver=${1#node-}
             arg_group=1
