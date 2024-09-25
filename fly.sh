@@ -344,22 +344,19 @@ _set_nginx_php() {
 _set_env_php_ver() {
     sed -i \
         -e "/^PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" \
-        "$laradock_env"
+        -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$laradock_env"
 }
 
 _set_env_node_ver() {
     sed -i \
-        -e "/^NODE_VERSION=/s/=.*/=${node_ver}/"
-    "$laradock_env"
+        -e "/^NODE_VERSION=/s/=.*/=${node_ver}/" "$laradock_env"
     source <(grep '^NODE_VERSION=' "$laradock_env")
 }
 
 _set_env_java_ver() {
     source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
     sed -i \
-        -e "/^JDK_IMAGE_NAME=/s/=.*/=${JDK_IMAGE_NAME%:*}:${java_ver}/"
-    "$laradock_env"
+        -e "/^JDK_IMAGE_NAME=/s/=.*/=${JDK_IMAGE_NAME%:*}:${java_ver}/" "$laradock_env"
     source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
 }
 
