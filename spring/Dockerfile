@@ -1,10 +1,9 @@
-## arch: x86_64
 # ARG JDK_IMAGE_NAME=openjdk:8
-# ARG JDK_IMAGE_NAME=amazoncorretto:8
+ARG JDK_IMAGE_NAME=amazoncorretto:8
 # ARG JDK_IMAGE_NAME=amazoncorretto:11
 # ARG JDK_IMAGE_NAME=amazoncorretto:17
 
-FROM amazoncorretto:8
+FROM ${JDK_IMAGE_NAME}
 
 ARG IN_CHINA=${CHANGE_SOURCE}
 ARG CHANGE_SOURCE=${CHANGE_SOURCE}
