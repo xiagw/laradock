@@ -492,8 +492,8 @@ _pull_image() {
         php*)
             _set_env_php_ver
             arg_test_php=true
-            docker pull -q "$image_repo:php-${php_ver}" >/dev/null
-            docker tag "$image_repo:php-${php_ver}" ${image_prefix}php-fpm
+            docker pull -q "$image_repo:laradock-php-${php_ver}" >/dev/null
+            docker tag "$image_repo:laradock-php-${php_ver}" ${image_prefix}php-fpm
             ;;
         esac
     done
