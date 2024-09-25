@@ -28,8 +28,8 @@ chown -R nginx $ssl_dir/*.key $log_path
 ## php upstream
 if ping -c 2 php-fpm >/dev/null 2>&1; then
     echo 'upstream upstream-php { server php-fpm:9000; }' >/etc/nginx/conf.d/upstream-php.conf
-# else
-#     echo 'upstream upstream-php { server 127.0.0.1:9000; }' >/etc/nginx/conf.d/upstream-php.conf
+else
+    echo 'upstream upstream-php { server 127.0.0.1:9000; }' >/etc/nginx/conf.d/upstream-php.conf
 fi
 
 ## nginx 4xx 5xx
