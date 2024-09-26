@@ -291,7 +291,7 @@ _check_laradock_env() {
         -e "/^GITLAB_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
         -e "/^MYSQL_VERSION=/s/=.*/=${mysql_ver}/" \
         -e "/^PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/^JDK_IMAGE_NAME=/s/=.*/=openjdk:${java_ver}/" \
+        -e "/^JDK_VERSION=/s/=.*/=${java_ver}/" \
         -e "/^NODE_VERSION=/s/=.*/=${node_ver}/" \
         -e "/^CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/^DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
@@ -342,22 +342,18 @@ _set_nginx_php() {
 }
 
 _set_env_php_ver() {
-    sed -i \
-        -e "/^PHP_VERSION=/s/=.*/=${php_ver}/" \
+    sed -i -e "/^PHP_VERSION=/s/=.*/=${php_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$laradock_env"
 }
 
 _set_env_node_ver() {
-    sed -i \
-        -e "/^NODE_VERSION=/s/=.*/=${node_ver}/" "$laradock_env"
+    sed -i -e "/^NODE_VERSION=/s/=.*/=${node_ver}/" "$laradock_env"
     source <(grep '^NODE_VERSION=' "$laradock_env")
 }
 
 _set_env_java_ver() {
-    source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
-    sed -i \
-        -e "/^JDK_IMAGE_NAME=/s/=.*/=${JDK_IMAGE_NAME%:*}:${java_ver}/" "$laradock_env"
-    source <(grep '^JDK_IMAGE_NAME=.*:' "$laradock_env")
+    sed -i -e "/^JDK_VERSION=/s/=.*/=${java_ver}/" "$laradock_env"
+    source <(grep '^JDK_VERSION=.*' "$laradock_env")
 }
 
 _set_file_mode() {
@@ -562,7 +558,7 @@ _get_env_info() {
     echo
     grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
     echo
-    grep -E '^JDK_VERSION|^JDK_IMAGE|^JDK_IMAGE_NAME' "$laradock_env"
+    grep -E '^JDK_IMAGE|^JDK_VERSION' "$laradock_env"
     echo
     grep -E '^PHP_VERSION' "$laradock_env"
     echo
