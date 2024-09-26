@@ -66,6 +66,7 @@ _check_cmd() {
 }
 
 _check_distribution() {
+    _msg step "check distribution."
     if [ -r /etc/os-release ]; then
         source /etc/os-release
         # shellcheck disable=SC1091,SC2153
