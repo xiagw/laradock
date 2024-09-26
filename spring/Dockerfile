@@ -1,9 +1,9 @@
-# ARG JDK_IMAGE_NAME=openjdk:8
-ARG JDK_IMAGE_NAME=amazoncorretto:8
-# ARG JDK_IMAGE_NAME=amazoncorretto:11
-# ARG JDK_IMAGE_NAME=amazoncorretto:17
-
-FROM ${JDK_IMAGE_NAME}
+ARG JDK_IMAGE=amazoncorretto
+# ARG JDK_IMAGE=openjdk
+ARG JDK_VERSION=8
+# ARG JDK_VERSION=17
+# ARG JDK_VERSION=21
+FROM ${JDK_IMAGE}:${JDK_VERSION}
 
 ARG IN_CHINA=${CHANGE_SOURCE}
 ARG CHANGE_SOURCE=${CHANGE_SOURCE}
@@ -11,6 +11,7 @@ ARG MVN_PROFILE=main
 ARG TZ=Asia/Shanghai
 ARG INSTALL_FONTS=false
 ARG INSTALL_FFMPEG=false
+ARG INSTALL_LIBREOFFICE=false
 ARG BUILD_URL=https://gitee.com/xiagw/deploy.sh/raw/main/conf/dockerfile/root/opt/build.sh
 
 ENV TZ=$TZ
