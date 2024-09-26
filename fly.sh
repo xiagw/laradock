@@ -126,9 +126,9 @@ _set_system_conf() {
 }
 
 _check_dependence() {
-    _msg step "check command: curl git binutils."
     _check_sudo
     _check_distribution
+    _msg step "check command: curl git binutils."
     _check_cmd install curl git strings
 
     _msg time "check ssh."
@@ -151,7 +151,7 @@ _check_dependence() {
     if ${set_sysctl:-false}; then
         _set_system_conf
     fi
-    _msg time "dependence check done."
+    _msg time "check dependence done."
 }
 
 _install_wg() {
@@ -181,7 +181,7 @@ _check_docker_compose() {
 }
 
 _check_docker() {
-    _msg step "check docker"
+    _msg step "check docker and docker compose"
     if _check_cmd docker; then
         _check_docker_compose
         _msg time "docker is already installed."
@@ -280,7 +280,7 @@ _check_laradock_env() {
     ## change docker host ip
     docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
 
-    _msg time "copy .env.example to .env, and set password"
+    _msg time "copy .env.example to .env, and set random password"
     cp -vf "$laradock_env".example "$laradock_env"
     ## change password
     sed -i \
@@ -542,7 +542,7 @@ _test_php() {
 }
 
 _test_java() {
-    _msg time "Test spring..."
+    _msg time "check spring..."
     if $dco ps | grep "spring.*Up"; then
         _msg green "container spring is up"
     else
@@ -676,7 +676,7 @@ _refresh_cdn() {
     fi
     while true; do
         if [ -f $trigger ]; then
-            _msg time "cdn refresh $region  $obj_path"
+            _msg time "refresh cdn $region  $obj_path"
             aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "$obj_path"
             echo
             sleep 3
@@ -723,7 +723,7 @@ _set_args() {
 
     args=()
     if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = key ]; }; then
-        _msg warn "not found arguments, with default args \"redis mysql php-fpm spring nginx\"."
+        _msg warn "not found any arguments, with default args \"redis mysql php-fpm spring nginx\"."
         args+=(redis mysql php-fpm spring nginx)
         arg_group=1
     fi
