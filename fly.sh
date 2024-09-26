@@ -746,14 +746,16 @@ _set_args() {
             [[ "${1}" == java-[0-9]* ]] && java_ver=${1#java-}
             [[ "${1}" == jdk-[0-9]* ]] && java_ver=${1#jdk-}
             ;;
-        php | fpm | php-[0-9]*)
+        php | fpm | php-[0-9]* | php-fpm-[0-9])
             args+=(php-fpm)
             arg_group=1
             [[ "${1}" == php-[0-9]* ]] && php_ver=${1#php-}
+            [[ "${1}" == php-fpm-[0-9]* ]] && php_ver=${1#php-fpm}
             ;;
         node | nodejs | node-[0-9]* | nodejs-[0-9]*)
             args+=(nodejs)
             [[ "${1}" == node-[0-9]* ]] && node_ver=${1#node-}
+            [[ "${1}" == nodejs-[0-9]* ]] && node_ver=${1#nodejs-}
             arg_group=1
             ;;
         nginx)
