@@ -740,13 +740,13 @@ _set_args() {
             arg_group=1
             [[ "${1}" == mysql-[0-9]* ]] && mysql_ver=${1#mysql-}
             ;;
-        java | jdk | spring | java-[0-9]* | jdk-[0-9]*)
+        java | jdk | spring | java-[0-9]* | jdk-[0-9]* | spring-[0-9]*)
             args+=(spring)
             arg_group=1
             [[ "${1}" == java-[0-9]* ]] && java_ver=${1#java-}
             [[ "${1}" == jdk-[0-9]* ]] && java_ver=${1#jdk-}
             ;;
-        php | fpm | php-[0-9]* | php-fpm-[0-9])
+        php | fpm | php-[0-9]* | php-fpm-[0-9]*)
             args+=(php-fpm)
             arg_group=1
             [[ "${1}" == php-[0-9]* ]] && php_ver=${1#php-}
