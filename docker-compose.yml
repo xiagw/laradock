@@ -933,8 +933,8 @@ services:
         - ${DATA_PATH_HOST}/rabbitmq:/var/lib/rabbitmq
         - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
         - ./rabbitmq/management_agent.disable_metrics_collector.conf:/etc/rabbitmq/conf.d/management_agent.disable_metrics_collector.conf
-      depends_on:
-        - php-fpm
+      # depends_on:
+      #   - php-fpm
       networks:
         - backend
 
@@ -1150,8 +1150,8 @@ services:
       ports:
         - "${ELASTICSEARCH_HOST_HTTP_PORT}:9200"
         - "${ELASTICSEARCH_HOST_TRANSPORT_PORT}:9300"
-      depends_on:
-        - php-fpm
+      # depends_on:
+      #   - php-fpm
       networks:
         - frontend
         - backend
