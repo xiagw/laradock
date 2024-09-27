@@ -516,7 +516,7 @@ _test_nginx() {
     $dco up -d nginx
     [ -f "$laradock_path/../html/favicon.ico" ] || $curl_opt -s -o "$laradock_path/../html/favicon.ico" $url_fly_ico
     _msg time "test nginx $1 ..."
-    for i in {1..10}; do
+    for i in {1..5}; do
         if $curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
             break
         else
