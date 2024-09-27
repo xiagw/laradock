@@ -750,7 +750,7 @@ _set_args() {
             args+=(php-fpm)
             arg_group=1
             [[ "${1}" == php-[0-9]* ]] && php_ver=${1#php-}
-            [[ "${1}" == php-fpm-[0-9]* ]] && php_ver=${1#php-fpm}
+            [[ "${1}" == php-fpm-[0-9]* ]] && php_ver=${1#php-fpm-}
             ;;
         node | nodejs | node-[0-9]* | nodejs-[0-9]*)
             args+=(nodejs)
