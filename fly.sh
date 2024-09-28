@@ -677,7 +677,7 @@ _refresh_cdn() {
     fi
     while true; do
         if [ -f $trigger ]; then
-            _msg time "refresh cdn $region  $obj_path"
+            echo "refresh cdn $region  $obj_path"
             aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "$obj_path"
             echo
             sleep 3
