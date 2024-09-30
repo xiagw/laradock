@@ -8,15 +8,13 @@ if [ "${CHANGE_SOURCE:-false}" = true ]; then
         apt_file=/etc/apt/sources.list.d/debian.sources
     fi
     sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' "$apt_file"
-    # export http_proxy=http://192.168.41.252:1080
-    # export https_proxy=http://192.168.41.252:1080
+    # export http_proxy=http://192.168.44.11:1080
+    # export https_proxy=http://192.168.44.11:1080
 fi
 # ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
 # echo $TZ >/etc/timezone
 apt-get -yq update
-apt-get install -yq --no-install-recommends apache2 php php-curl php-gd \
-    php-ldap php-mbstring php-mysql php-xml php-zip php-cli php-json \
-    curl ca-certificates unzip libapache2-mod-php
+apt-get install -yq --no-install-recommends apache2 php php-curl php-gd php-ldap php-mbstring php-mysql php-xml php-zip php-cli php-json curl ca-certificates unzip libapache2-mod-php
 # Clear dev deps
 apt-get clean
 apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
@@ -48,8 +46,7 @@ EOF
 
 # https://www.zentao.net/dl/zentao/18.9/ZenTaoPMS-18.9-php7.2_7.4.zip
 # https://www.zentao.net/dl/zentao/18.12/ZenTaoPMS-18.12-php8.1.zip
-# download_url="http://www.zentao.net/dl/zentao/${ZENTAO_VERSION}/ZenTaoPMS-${ZENTAO_VERSION}-php8.1.zip"
-download_url="http://oss.flyh6.com/d/ZenTaoPMS-${ZENTAO_VERSION}-php8.1.zip"
+download_url="https://www.zentao.net/dl/zentao/${ZENTAO_VERSION}/ZenTaoPMS-${ZENTAO_VERSION}-php8.1.zip"
 curl -Lo zentao.zip "$download_url"
 unzip -q zentao.zip
 rm -f zentao.zip
