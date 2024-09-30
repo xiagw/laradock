@@ -515,13 +515,13 @@ services:
         - backend
 
     zentao:
-      # container_name: zentao
       image: hub.zentao.net/app/zentao:${ZT_VERSION}
       # build:
       #   context: ./zentao
       #   args:
       #     - CHANGE_SOURCE=${CHANGE_SOURCE}
       #     - TZ=${WORKSPACE_TIMEZONE}
+      #     - ZT_VERSION=${ZT_VERSION}
       ports:
         - 8080:80
       volumes:

@@ -1,6 +1,9 @@
 
 <?php
 
+// 禁止错误显示
+error_reporting(0);
+
 class Sample {
 
     public static function testPhp() {
@@ -32,10 +35,10 @@ class Sample {
             $connection->options(MYSQLI_OPT_READ_TIMEOUT, 5);
             // $connection = mysqli_connect($dns,$username,$passwd);
             if(mysqli_real_connect($connection,$dns,$username,$passwd)){
-                echo "Connect mysql:    OK." . PHP_EOL;
+                echo "Test MySQL connect:    OK." . PHP_EOL;
             } else {
                 // die("connection Failed:" . mysqli_connect_errno());
-                echo "Connect mysql:    Fail." . PHP_EOL;
+                echo "Test MySQL connect:    Fail." . PHP_EOL;
             }
             mysqli_close($connection);
         }
