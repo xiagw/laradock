@@ -676,7 +676,7 @@ _refresh_cdn() {
     temp_file=$(mktemp)
 
     while true; do
-        get_result=$(curl -fsSL https://${obj_path}/cdn.txt)
+        get_result=$(curl -fsSL https://${obj_path}/cdn.txt 2>/dev/null)
         local_saved=$(cat "$temp_file")
         if [[ "$get_result" != "$local_saved" ]]; then
             echo "$get_result" >"$temp_file"
