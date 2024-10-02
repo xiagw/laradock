@@ -7,7 +7,7 @@ error_reporting(0);
 class Sample {
 
     public static function testPhp() {
-        $displayInfo = "Test PHP Page...";
+        $displayInfo = "Test PHP echo...";
         echo $displayInfo . PHP_EOL;
     }
 
@@ -18,9 +18,9 @@ class Sample {
             $redis->auth('ENV_REDIS_PASSWORD');
             $value = $redis->set('foo', rand(1, 1000000));
             $response = $redis->get('foo');
-            echo "Test Redis (random value): $response  OK." . PHP_EOL;
+            echo "Test Redis: $response  OK." . PHP_EOL;
         } catch (Exception $e) {
-            echo "Redis error: " . $e->getMessage() . PHP_EOL;
+            echo "Test Redis error: " . $e->getMessage() . PHP_EOL;
         }
     }
 

@@ -669,21 +669,22 @@ _reset_laradock() {
 }
 
 _refresh_cdn() {
-    trigger=/root/docker/html/cdn.txt
     obj_path="${1:?empty object path}"
     region="${2:-cn-hangzhou}"
-    if [[ "$obj_path" != */ ]]; then
-        obj_path="${obj_path}/"
-    fi
+    # trigger=/root/docker/html/cdn.txt
+    temp_file=$(mktemp)
+
     while true; do
-        if [ -f $trigger ]; then
-            echo "refresh cdn $region  $obj_path"
-            aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "$obj_path"
+        get_result=$(curl -fsSL https://${obj_path}/cdn.txt)
+        local_saved=$(cat "$temp_file")
+        if [[ "$get_result" != "$local_saved" ]]; then
+            echo "$get_result" >"$temp_file"
+            echo "refresh cdn $region ${obj_path}"
+            aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "${obj_path}"
+            # aliyun cdn RefreshObjectCaches --region "$region" --ObjectType File --ObjectPath "${obj_path}"
             echo
-            sleep 3
-            sudo rm -f $trigger
         fi
-        sleep 30
+        sleep 10
     done
 }
 
