@@ -669,6 +669,7 @@ _reset_laradock() {
 }
 
 _refresh_cdn() {
+    set +e
     obj_path="${1:?empty object path}"
     region="${2:-cn-hangzhou}"
     # trigger=/root/docker/html/cdn.txt
