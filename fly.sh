@@ -680,10 +680,9 @@ _refresh_cdn() {
         local_saved=$(cat "$temp_file")
         if [[ "$get_result" != "$local_saved" ]]; then
             echo "$get_result" >"$temp_file"
-            echo "refresh cdn $region ${obj_path}"
             aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "${obj_path}"
             # aliyun cdn RefreshObjectCaches --region "$region" --ObjectType File --ObjectPath "${obj_path}"
-            echo
+            echo "refresh cdn $region ${obj_path}"
         fi
         sleep 10
     done
