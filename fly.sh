@@ -672,15 +672,14 @@ _refresh_cdn() {
     set +e
     obj_path="${1:?empty object path}"
     region="${2:-cn-hangzhou}"
-    # trigger=/root/docker/html/cdn.txt
     temp_file=$(mktemp)
 
     while true; do
-        get_result=$(curl -fsSL https://${obj_path}/cdn.txt 2>/dev/null)
+        get_result=$(curl -fsSL "https://${obj_path}/cdn.txt" 2>/dev/null)
         local_saved=$(cat "$temp_file")
         if [[ "$get_result" != "$local_saved" ]]; then
             echo "$get_result" >"$temp_file"
-            aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "${obj_path}"
+            aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "${obj_path}/"
             # aliyun cdn RefreshObjectCaches --region "$region" --ObjectType File --ObjectPath "${obj_path}"
             echo "refresh cdn $region ${obj_path}"
         fi
