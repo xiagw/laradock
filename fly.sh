@@ -672,7 +672,7 @@ _refresh_cdn() {
     set +e
     obj_path="${1:?empty object path}"
     region="${2:-cn-hangzhou}"
-    temp_file=$(mktemp)
+    temp_file=/tmp/cdn.txt
 
     while true; do
         get_result=$(curl -fsSL "https://${obj_path}/cdn.txt" 2>/dev/null)
@@ -822,7 +822,7 @@ _parse_args() {
             ;;
         cdn | refresh)
             arg_refresh_cdn=true
-            cdn_path="$2"
+            cdn_directory="$2"
             cdn_region="${3:-cn-hangzhou}"
             shift 2
             ;;
@@ -894,7 +894,7 @@ main() {
     g_laradock_env="$g_laradock_path"/.env
 
     if ${arg_refresh_cdn:-false}; then
-        _refresh_cdn "$cdn_path" "$cdn_region" &
+        _refresh_cdn "$cdn_directory" "$cdn_region" &
         return
     fi
     if ${arg_install_acme:-false}; then
