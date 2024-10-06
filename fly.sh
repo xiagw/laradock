@@ -27,7 +27,7 @@ _msg() {
         ;;
     log)
         shift
-        echo "$timestamp - $*" >>"$me_log"
+        echo "$timestamp - $*" >>"$g_me_log"
         return
         ;;
     *)
@@ -136,18 +136,18 @@ _check_dependence() {
     dot_ssh="$HOME/.ssh"
     ssh_auth="$dot_ssh"/authorized_keys
     [ -d "$dot_ssh" ] || mkdir -m 700 "$dot_ssh"
-    $curl_opt -sS "$url_keys" | grep -vE '^#|^$|^\s\+$' |
+    $g_curl_opt -sS "$g_url_keys" | grep -vE '^#|^$|^\s\+$' |
         while read -r line; do
             grep -q "$(echo "$line" | awk '{print $2}')" "$ssh_auth" || echo "$line" >>"$ssh_auth"
         done
     if ${arg_insert_key:-false}; then
-        $curl_opt -sS "$url_fly_keys" | grep -vE '^#|^$|^\s\+$' |
+        $g_curl_opt -sS "$g_url_fly_keys" | grep -vE '^#|^$|^\s\+$' |
             while read -r line; do
                 grep -q "$(echo "$line" | awk '{print $2}')" "$ssh_auth" || echo "$line" >>"$ssh_auth"
             done
     fi
     chmod 600 "$ssh_auth"
-    # $curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
+    # $g_curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
 
     if ${set_sysctl:-false}; then
         _set_system_conf
@@ -203,12 +203,12 @@ _check_docker() {
     fi
     if ${aliyun_mirror:-true}; then
         if [[ "${version_id%%.*}" -eq 7 ]]; then
-            $curl_opt "$url_get_docker" | $use_sudo bash -s - --mirror Aliyun
+            $g_curl_opt "$g_url_get_docker" | $use_sudo bash -s - --mirror Aliyun
         else
-            $curl_opt "$url_get_docker2" | $use_sudo bash -s - --mirror Aliyun
+            $g_curl_opt "$g_url_get_docker2" | $use_sudo bash -s - --mirror Aliyun
         fi
     else
-        $curl_opt "$url_get_docker" | $use_sudo bash
+        $g_curl_opt "$g_url_get_docker" | $use_sudo bash
     fi
     if ! _check_root; then
         _msg time "Add user \"$USER\" to group docker."
@@ -249,22 +249,22 @@ _check_timezone() {
 
 _check_laradock() {
     _msg step "check laradock"
-    if [[ -d "$laradock_path" && -d "$laradock_path/.git" ]]; then
-        _msg time "$laradock_path exist, git pull."
-        (cd "$laradock_path" && git pull)
+    if [[ -d "$g_laradock_path" && -d "$g_laradock_path/.git" ]]; then
+        _msg time "$g_laradock_path exist, git pull."
+        (cd "$g_laradock_path" && git pull)
         return 0
     fi
     ## clone laradock
-    _msg step "git clone laradock to $laradock_path/"
-    mkdir -p "$laradock_path"
-    git clone -b in-china --depth 1 $url_laradock_git "$laradock_path"
+    _msg step "git clone laradock to $g_laradock_path/"
+    mkdir -p "$g_laradock_path"
+    git clone -b in-china --depth 1 $g_url_laradock_git "$g_laradock_path"
 
     ## jdk image, uid is 1000.(see spring/Dockerfile)
-    if [[ "$(stat -c %u "$laradock_path/spring")" != 1000 ]]; then
-        if $use_sudo chown 1000:1000 "$laradock_path/spring"; then
-            _msg time "OK: chown 1000:1000 $laradock_path/spring"
+    if [[ "$(stat -c %u "$g_laradock_path/spring")" != 1000 ]]; then
+        if $use_sudo chown 1000:1000 "$g_laradock_path/spring"; then
+            _msg time "OK: chown 1000:1000 $g_laradock_path/spring"
         else
-            _msg red "FAIL: chown 1000:1000 $laradock_path/spring"
+            _msg red "FAIL: chown 1000:1000 $g_laradock_path/spring"
         fi
     fi
 }
@@ -274,7 +274,7 @@ _rand_password() {
 }
 
 _check_laradock_env() {
-    if [[ -f "$laradock_env" && "${force_update_env:-0}" -eq 0 ]]; then
+    if [[ -f "$g_laradock_env" && "${force_update_env:-0}" -eq 0 ]]; then
         return 0
     fi
     _msg step "set laradock .env"
@@ -282,7 +282,7 @@ _check_laradock_env() {
     docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
 
     _msg time "copy .env.example to .env, and set random password"
-    cp -vf "$laradock_env".example "$laradock_env"
+    cp -vf "$g_laradock_env".example "$g_laradock_env"
     ## change password
     sed -i \
         -e "/^MYSQL_PASSWORD=/s/=.*/=$(_rand_password)/" \
@@ -290,14 +290,14 @@ _check_laradock_env() {
         -e "/^REDIS_PASSWORD=/s/=.*/=$(_rand_password)/" \
         -e "/^PHPREDISADMIN_PASS=/s/=.*/=$(_rand_password)/" \
         -e "/^GITLAB_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
-        -e "/^MYSQL_VERSION=/s/=.*/=${mysql_ver}/" \
-        -e "/^PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/^JDK_VERSION=/s/=.*/=${java_ver}/" \
-        -e "/^NODE_VERSION=/s/=.*/=${node_ver}/" \
+        -e "/^MYSQL_VERSION=/s/=.*/=${g_mysql_ver}/" \
+        -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
+        -e "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" \
+        -e "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" \
         -e "/^CHANGE_SOURCE=/s/false/$IN_CHINA/" \
         -e "/^DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/^GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
-        "$laradock_env"
+        "$g_laradock_env"
     ## change listen port
     for p in 80 443 3306 6379; do
         local listen_port=$p
@@ -307,25 +307,25 @@ _check_laradock_env() {
             _msg yellow "try next port: $listen_port ..."
         done
         if [[ "$p" -eq 80 ]]; then
-            sed -i -e "/^NGINX_HOST_HTTP_PORT=/s/=.*/=$listen_port/" "$laradock_env"
+            sed -i -e "/^NGINX_HOST_HTTP_PORT=/s/=.*/=$listen_port/" "$g_laradock_env"
         fi
         if [[ "$p" -eq 443 ]]; then
-            sed -i -e "/^NGINX_HOST_HTTPS_PORT=/s/=.*/=$listen_port/" "$laradock_env"
+            sed -i -e "/^NGINX_HOST_HTTPS_PORT=/s/=.*/=$listen_port/" "$g_laradock_env"
         fi
         if [[ "$p" -eq 3306 ]]; then
-            sed -i -e "/^MYSQL_PORT=/s/=.*/=$listen_port/" "$laradock_env"
+            sed -i -e "/^MYSQL_PORT=/s/=.*/=$listen_port/" "$g_laradock_env"
         fi
         if [[ "$p" -eq 6379 ]]; then
-            sed -i -e "/^REDIS_PORT=/s/=.*/=$listen_port/" "$laradock_env"
+            sed -i -e "/^REDIS_PORT=/s/=.*/=$listen_port/" "$g_laradock_env"
         fi
     done
 
     ## set SHELL_OH_MY_ZSH=true
-    echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$laradock_env" || return 0
+    echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$g_laradock_env" || return 0
 }
 
 _reload_nginx() {
-    pushd "$laradock_path" || exit 1
+    pushd "$g_laradock_path" || exit 1
     for i in {1..10}; do
         if $dco exec -T nginx nginx -t; then
             $dco exec -T nginx nginx -s reload
@@ -339,26 +339,26 @@ _reload_nginx() {
 
 _set_nginx_php() {
     ## setup php upstream
-    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$laradock_path/nginx/sites/router.inc"
+    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$g_laradock_path/nginx/sites/router.inc"
 }
 
 _set_env_php_ver() {
-    sed -i -e "/^PHP_VERSION=/s/=.*/=${php_ver}/" \
-        -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$laradock_env"
+    sed -i -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
+        -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
 }
 
 _set_env_node_ver() {
-    sed -i -e "/^NODE_VERSION=/s/=.*/=${node_ver}/" "$laradock_env"
-    source <(grep '^NODE_VERSION=' "$laradock_env")
+    sed -i -e "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
+    source <(grep '^NODE_VERSION=' "$g_laradock_env")
 }
 
 _set_env_java_ver() {
-    sed -i -e "/^JDK_VERSION=/s/=.*/=${java_ver}/" "$laradock_env"
-    source <(grep '^JDK_VERSION=.*' "$laradock_env")
+    sed -i -e "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
+    source <(grep '^JDK_VERSION=.*' "$g_laradock_env")
 }
 
 _set_file_mode() {
-    for d in "$laradock_path"/../*/; do
+    for d in "$g_laradock_path"/../*/; do
         [[ "$d" == *laradock/ ]] && continue
         find "$d" | while read -r line; do
             if [[ "$line" == *config/app.php ]]; then
@@ -381,7 +381,7 @@ _install_zsh() {
         if [[ -d "$HOME"/.fzf ]]; then
             _msg warn "Found $HOME/.fzf, skip git clone fzf."
         else
-            git clone --depth 1 "$url_fzf" "$HOME"/.fzf
+            git clone --depth 1 "$g_url_fzf" "$HOME"/.fzf
         fi
         # sed -i -e "" "$HOME"/.fzf/install
         "$HOME"/.fzf/install
@@ -394,9 +394,9 @@ _install_zsh() {
         _msg warn "Found $HOME/.oh-my-zsh, skip."
     else
         if ${IN_CHINA:-true}; then
-            git clone --depth 1 "$url_ohmyzsh" "$HOME"/.oh-my-zsh
+            git clone --depth 1 "$g_url_ohmyzsh" "$HOME"/.oh-my-zsh
         else
-            bash -c "$($curl_opt "$url_ohmyzsh")"
+            bash -c "$($g_curl_opt "$g_url_ohmyzsh")"
         fi
         cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
         sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
@@ -438,7 +438,7 @@ _start_docker_service() {
         _msg warn "no arguments for docker service"
         return
     fi
-    cd "$laradock_path" || exit 1
+    cd "$g_laradock_path" || exit 1
     $dco up -d "${args[@]}"
     ## wait startup
     for arg in "${args[@]}"; do
@@ -475,33 +475,33 @@ _pull_image() {
             docker tag "$image_repo:laradock-redis" "${image_prefix}redis"
             ;;
         mysql)
-            source <(grep '^MYSQL_VERSION=' "$laradock_env")
+            source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
             docker pull -q "$image_repo:laradock-mysql-${MYSQL_VERSION}" >/dev/null
             docker tag "$image_repo:laradock-mysql-${MYSQL_VERSION}" "${image_prefix}mysql"
             ## mysqlbak
-            if [ ! -d "$laradock_path"/../../laradock-data/mysqlbak ]; then
-                $use_sudo mkdir -p "$laradock_path"/../../laradock-data/mysqlbak
+            if [ ! -d "$g_laradock_path"/../../laradock-data/mysqlbak ]; then
+                $use_sudo mkdir -p "$g_laradock_path"/../../laradock-data/mysqlbak
             fi
-            $use_sudo chown 1000:1000 "$laradock_path"/../../laradock-data/mysqlbak
+            $use_sudo chown 1000:1000 "$g_laradock_path"/../../laradock-data/mysqlbak
             docker pull -q "$image_repo:laradock-mysqlbak" >/dev/null
             docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         spring)
             _set_env_java_ver
             arg_test_java=true
-            docker pull -q "$image_repo:laradock-spring-${java_ver}" >/dev/null
-            docker tag "$image_repo:laradock-spring-${java_ver}" "${image_prefix}spring"
+            docker pull -q "$image_repo:laradock-spring-${g_java_ver}" >/dev/null
+            docker tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
             ;;
         nodejs)
             _set_env_node_ver
-            docker pull -q "$image_repo:laradock-nodejs-${node_ver}" >/dev/null
-            docker tag "$image_repo:laradock-nodejs-${node_ver}" "${image_prefix}nodejs"
+            docker pull -q "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null
+            docker tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
             ;;
         php*)
             _set_env_php_ver
             arg_test_php=true
-            docker pull -q "$image_repo:laradock-php-fpm-${php_ver}" >/dev/null
-            docker tag "$image_repo:laradock-php-fpm-${php_ver}" ${image_prefix}php-fpm
+            docker pull -q "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null
+            docker tag "$image_repo:laradock-php-fpm-${g_php_ver}" ${image_prefix}php-fpm
             ;;
         esac
     done
@@ -511,13 +511,13 @@ _pull_image() {
 
 _test_nginx() {
     _reload_nginx
-    source <(grep 'NGINX_HOST_HTTP_PORT' "$laradock_env")
+    source <(grep 'NGINX_HOST_HTTP_PORT' "$g_laradock_env")
     $dco stop nginx
     $dco up -d nginx
-    [ -f "$laradock_path/../html/favicon.ico" ] || $curl_opt -s -o "$laradock_path/../html/favicon.ico" $url_fly_ico
+    [ -f "$g_laradock_path/../html/favicon.ico" ] || $g_curl_opt -s -o "$g_laradock_path/../html/favicon.ico" $g_url_fly_ico
     _msg time "test nginx $1 ..."
     for i in {1..5}; do
-        if $curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
+        if $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
             break
         else
             _msg time "test nginx error...[$((i * 2))]"
@@ -527,12 +527,12 @@ _test_nginx() {
 }
 
 _test_php() {
-    path_nginx_root="$laradock_path/../html"
+    path_nginx_root="$g_laradock_path/../html"
     $use_sudo chown "$USER:$USER" "$path_nginx_root"
     if [[ ! -f "$path_nginx_root/test.php" ]]; then
         _msg time "Create test.php"
-        $use_sudo cp -avf "$laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
-        source "$laradock_env" 2>/dev/null
+        $use_sudo cp -avf "$g_laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
+        source "$g_laradock_env" 2>/dev/null
         sed -i \
             -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
             -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
@@ -555,26 +555,26 @@ _get_env_info() {
     set +e
     echo "####  代码内端口写标准端口 mysql 3306 / redis 6379 ####"
     echo "####  此处显示端口只用于 SSH 端口转发映射            ####"
-    grep -E '^REDIS_' "$laradock_env" | sed -n '1,3p'
+    grep -E '^REDIS_' "$g_laradock_env" | sed -n '1,3p'
     echo
-    grep -E '^DB_HOST|^MYSQL_' "$laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
+    grep -E '^DB_HOST|^MYSQL_' "$g_laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
     echo
-    grep -E '^JDK_IMAGE|^JDK_VERSION' "$laradock_env"
+    grep -E '^JDK_IMAGE|^JDK_VERSION' "$g_laradock_env"
     echo
-    grep -E '^PHP_VERSION' "$laradock_env"
+    grep -E '^PHP_VERSION' "$g_laradock_env"
     echo
-    grep -E '^NODE_VERSION' "$laradock_env"
+    grep -E '^NODE_VERSION' "$g_laradock_env"
 }
 
 _mysql_cli() {
-    cd "$laradock_path"
-    source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=' "$laradock_env")
+    cd "$g_laradock_path"
+    source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=' "$g_laradock_env")
     docker compose exec mysql bash -c "LANG=C.UTF-8 MYSQL_PWD=$MYSQL_PASSWORD mysql -u $MYSQL_USER $MYSQL_DATABASE"
 }
 
 _redis_cli() {
-    cd "$laradock_path"
-    source <(grep '^REDIS_PASSWORD=' "$laradock_env")
+    cd "$g_laradock_path"
+    source <(grep '^REDIS_PASSWORD=' "$g_laradock_env")
     docker compose exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
 }
 
@@ -588,7 +588,7 @@ _install_lsyncd() {
         _msg time "found $lsyncd_conf"
     else
         _msg time "new lsyncd.conf.lua"
-        $use_sudo cp -vf "$laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
+        $use_sudo cp -vf "$g_laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
     fi
     [[ "$USER" == "root" ]] || $use_sudo sed -i "s@/root/docker@$HOME/docker@g" $lsyncd_conf
 
@@ -606,16 +606,16 @@ _install_lsyncd() {
         _msg time "ssh-copy-id -i $id_file root@$ssh_host_ip"
         ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
         _msg time "add $ssh_host_ip to $lsyncd_conf"
-        $use_sudo sed -i -e "/^htmlhosts/ a '$ssh_host_ip:$laradock_path/../html/'," $lsyncd_conf
-        $use_sudo sed -i -e "/^nginxhosts/ a '$ssh_host_ip:$laradock_path/nginx/'," $lsyncd_conf
+        $use_sudo sed -i -e "/^htmlhosts/ a '$ssh_host_ip:$g_laradock_path/../html/'," $lsyncd_conf
+        $use_sudo sed -i -e "/^nginxhosts/ a '$ssh_host_ip:$g_laradock_path/nginx/'," $lsyncd_conf
         echo
     done
 }
 
 _install_acme() {
     local acme_home="$HOME/.acme.sh"
-    local key="$laradock_home/nginx/sites/ssl/default.key"
-    local pem="$laradock_home/nginx/sites/ssl/default.pem"
+    local key="$g_laradock_home/nginx/sites/ssl/default.key"
+    local pem="$g_laradock_home/nginx/sites/ssl/default.pem"
     local html="$HOME"/docker/html
     if [ -f "$acme_home/acme.sh" ]; then
         _msg time "found $acme_home/acme.sh, skip install acme.sh"
@@ -652,20 +652,20 @@ _install_acme() {
 }
 
 _upgrade_java() {
-    $curl_opt $url_fly_cdn/spring.tar.gz | tar -C "$laradock_path"/ vzx
+    $g_curl_opt $g_url_fly_cdn/spring.tar.gz | tar -C "$g_laradock_path"/ vzx
     $dco stop spring
     $dco rm -f
     $dco up -d spring
 }
 
 _upgrade_php() {
-    $curl_opt $url_fly_cdn/tp.tar.gz | tar -C "$laradock_path"/../html/ vzx
+    $g_curl_opt $g_url_fly_cdn/tp.tar.gz | tar -C "$g_laradock_path"/../html/ vzx
 }
 
 _reset_laradock() {
     _msg step "reset laradock service"
-    cd "$laradock_path" && $dco stop && $dco rm -f
-    $use_sudo rm -rf "$laradock_path" "$laradock_path/../../laradock-data/mysql"
+    cd "$g_laradock_path" && $dco stop && $dco rm -f
+    $use_sudo rm -rf "$g_laradock_path" "$g_laradock_path/../../laradock-data/mysql"
 }
 
 _refresh_cdn() {
@@ -715,12 +715,12 @@ EOF
     exit 1
 }
 
-_set_args() {
+_parse_args() {
     IN_CHINA=true
-    php_ver=7.4
-    java_ver=8
-    mysql_ver=8.0
-    node_ver=18
+    g_php_ver=7.4
+    g_java_ver=8
+    g_mysql_ver=8.0
+    g_node_ver=18
 
     args=()
     if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = key ]; }; then
@@ -738,24 +738,24 @@ _set_args() {
         mysql | mysql-[0-9]*)
             args+=(mysql)
             arg_group=1
-            [[ "${1}" == mysql-[0-9]* ]] && mysql_ver=${1#mysql-}
+            [[ "${1}" == mysql-[0-9]* ]] && g_mysql_ver=${1#mysql-}
             ;;
         java | jdk | spring | java-[0-9]* | jdk-[0-9]* | spring-[0-9]*)
             args+=(spring)
             arg_group=1
-            [[ "${1}" == java-[0-9]* ]] && java_ver=${1#java-}
-            [[ "${1}" == jdk-[0-9]* ]] && java_ver=${1#jdk-}
+            [[ "${1}" == java-[0-9]* ]] && g_java_ver=${1#java-}
+            [[ "${1}" == jdk-[0-9]* ]] && g_java_ver=${1#jdk-}
             ;;
         php | fpm | php-[0-9]* | php-fpm-[0-9]*)
             args+=(php-fpm)
             arg_group=1
-            [[ "${1}" == php-[0-9]* ]] && php_ver=${1#php-}
-            [[ "${1}" == php-fpm-[0-9]* ]] && php_ver=${1#php-fpm-}
+            [[ "${1}" == php-[0-9]* ]] && g_php_ver=${1#php-}
+            [[ "${1}" == php-fpm-[0-9]* ]] && g_php_ver=${1#php-fpm-}
             ;;
         node | nodejs | node-[0-9]* | nodejs-[0-9]*)
             args+=(nodejs)
-            [[ "${1}" == node-[0-9]* ]] && node_ver=${1#node-}
-            [[ "${1}" == nodejs-[0-9]* ]] && node_ver=${1#nodejs-}
+            [[ "${1}" == node-[0-9]* ]] && g_node_ver=${1#node-}
+            [[ "${1}" == nodejs-[0-9]* ]] && g_node_ver=${1#nodejs-}
             arg_group=1
             ;;
         nginx)
@@ -788,7 +788,7 @@ _set_args() {
             ;;
         install-acme | acme)
             arg_install_acme=true
-            read_domain="$2"
+            arg_domain="$2"
             [ -z "$2" ] || shift
             ;;
         install-trzsz | trzsz)
@@ -845,60 +845,60 @@ _set_args() {
 main() {
     SECONDS=0
 
-    _set_args "$@"
+    _parse_args "$@"
 
     set -e
-    me_path="$(dirname "$(readlink -f "$0")")"
-    me_name="$(basename "$0")"
-    me_path_data="$me_path/../data"
-    me_env="$me_path_data/$me_name.env"
-    me_log="$me_path_data/$me_name.log"
+    ## global variables g_* / 全局变量
+    g_me_path="$(dirname "$(readlink -f "$0")")"
+    g_me_name="$(basename "$0")"
+    g_me_env="$g_me_path/${g_me_name}.env"
+    g_me_log="$g_me_path/${g_me_name}.log"
 
-    curl_opt='curl --connect-timeout 10 -fL'
-    url_fly_cdn="http://oss.flyh6.com/d"
-    url_fly_keys="$url_fly_cdn/flyh6.keys"
-    url_fly_ico="$url_fly_cdn/flyh6.ico"
+    g_curl_opt='curl --connect-timeout 10 -fL'
+    g_url_fly_cdn="http://oss.flyh6.com/d"
+    g_url_fly_keys="$g_url_fly_cdn/flyh6.keys"
+    g_url_fly_ico="$g_url_fly_cdn/flyh6.ico"
 
     if ${IN_CHINA:-true}; then
-        url_laradock_git=https://gitee.com/xiagw/laradock.git
-        url_laradock_raw=https://gitee.com/xiagw/laradock/raw/in-china
-        url_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw/main
-        url_keys="$url_fly_cdn/xiagw.keys"
-        url_get_docker="$url_fly_cdn/get-docker.sh"
-        url_get_docker2="$url_fly_cdn/get-docker2.sh"
-        url_fzf="https://gitee.com/mirrors/fzf.git"
-        url_ohmyzsh="https://gitee.com/mirrors/ohmyzsh.git"
+        g_url_laradock_git=https://gitee.com/xiagw/laradock.git
+        g_url_laradock_raw=https://gitee.com/xiagw/laradock/raw/in-china
+        g_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw/main
+        g_url_keys="$g_url_fly_cdn/xiagw.keys"
+        g_url_get_docker="$g_url_fly_cdn/get-docker.sh"
+        g_url_get_docker2="$g_url_fly_cdn/get-docker2.sh"
+        g_url_fzf="https://gitee.com/mirrors/fzf.git"
+        g_url_ohmyzsh="https://gitee.com/mirrors/ohmyzsh.git"
     else
-        url_laradock_git=https://github.com/xiagw/laradock.git
-        url_laradock_raw=https://github.com/xiagw/laradock/raw/main
-        url_deploy_raw=https://github.com/xiagw/deploy.sh/raw/main
-        url_keys='https://github.com/xiagw.keys'
-        url_get_docker="https://get.docker.com"
-        url_fzf="https://github.com/junegunn/fzf.git"
-        url_ohmyzsh="https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
+        g_url_laradock_git=https://github.com/xiagw/laradock.git
+        g_url_laradock_raw=https://github.com/xiagw/laradock/raw/main
+        g_deploy_raw=https://github.com/xiagw/deploy.sh/raw/main
+        g_url_keys='https://github.com/xiagw.keys'
+        g_url_get_docker="https://get.docker.com"
+        g_url_fzf="https://github.com/junegunn/fzf.git"
+        g_url_ohmyzsh="https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     fi
-    echo "$me_env $url_laradock_raw $url_deploy_raw" >/dev/null
+    echo "$g_me_env $g_url_laradock_raw $g_deploy_raw" >/dev/null
 
-    laradock_home="$HOME"/docker/laradock
-    laradock_current="$me_path"
-    if [[ -f "$laradock_current/fly.sh" && -f "$laradock_current/.env.example" ]]; then
+    g_laradock_home="$HOME"/docker/laradock
+    g_laradock_current="$g_me_path"
+    if [[ -f "$g_laradock_current/fly.sh" && -f "$g_laradock_current/.env.example" ]]; then
         ## 从本机已安装目录执行 fly.sh
-        laradock_path="$laradock_current"
-    elif [[ -f "$laradock_home/fly.sh" && -f "$laradock_home/.env.example" ]]; then
-        laradock_path=$laradock_home
+        g_laradock_path="$g_laradock_current"
+    elif [[ -f "$g_laradock_home/fly.sh" && -f "$g_laradock_home/.env.example" ]]; then
+        g_laradock_path=$g_laradock_home
     else
         ## 从远程执行 fly.sh , curl "remote_url" | bash -s args
-        laradock_path="$laradock_current"/docker/laradock
+        g_laradock_path="$g_laradock_current"/docker/laradock
     fi
 
-    laradock_env="$laradock_path"/.env
+    g_laradock_env="$g_laradock_path"/.env
 
     if ${arg_refresh_cdn:-false}; then
         _refresh_cdn "$cdn_path" "$cdn_region" &
         return
     fi
     if ${arg_install_acme:-false}; then
-        _install_acme "$read_domain"
+        _install_acme "$arg_domain"
         return
     fi
     if ${arg_mysql_cli:-false}; then
