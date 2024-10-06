@@ -675,8 +675,8 @@ _refresh_cdn() {
     temp_file=/tmp/cdn.txt
 
     while true; do
-        get_result=$(curl -fsSL "https://${obj_path}/cdn.txt" 2>/dev/null)
-        local_saved=$(cat "$temp_file")
+        get_result=$(curl -fsSL "https://${obj_path}/cdn.txt" 2>/dev/null | head -n1)
+        local_saved=$(cat "$temp_file" 2>/dev/null)
         if [[ "$get_result" != "$local_saved" ]]; then
             echo "$get_result" >"$temp_file"
             aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "${obj_path}/"
