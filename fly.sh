@@ -671,6 +671,7 @@ _reset_laradock() {
 _refresh_cdn() {
     set +e
     obj_path="${1:?empty object path}"
+    obj_path="${obj_path%/}"
     region="${2:-cn-hangzhou}"
     temp_file=/tmp/cdn.txt
 
@@ -678,10 +679,11 @@ _refresh_cdn() {
         get_result=$(curl -fsSL "https://${obj_path}/cdn.txt" 2>/dev/null | head -n1)
         local_saved=$(cat "$temp_file" 2>/dev/null)
         if [[ "$get_result" != "$local_saved" ]]; then
-            echo "$get_result" >"$temp_file"
+            echo "get: $get_result, local: $local_saved"
             aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "${obj_path}/"
             # aliyun cdn RefreshObjectCaches --region "$region" --ObjectType File --ObjectPath "${obj_path}"
             echo "refresh cdn $region ${obj_path}"
+            echo "$get_result" >"$temp_file"
         fi
         sleep 10
     done
