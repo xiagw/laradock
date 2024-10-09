@@ -824,9 +824,8 @@ _parse_args() {
             ;;
         cdn | refresh)
             arg_refresh_cdn=true
-            cdn_directory="$2"
-            cdn_region="${3:-cn-hangzhou}"
-            shift 2
+            shift
+            return
             ;;
         *)
             _usage
@@ -896,7 +895,7 @@ main() {
     g_laradock_env="$g_laradock_path"/.env
 
     if ${arg_refresh_cdn:-false}; then
-        _refresh_cdn "$cdn_directory" "$cdn_region" &
+        _refresh_cdn "$@" &
         return
     fi
     if ${arg_install_acme:-false}; then
