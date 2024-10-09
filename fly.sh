@@ -670,8 +670,8 @@ _reset_laradock() {
 
 _refresh_cdn() {
     set +e
-    obj_path="${1%/}/"
-    oss_name="${2}"
+    oss_name="${1}"
+    obj_path="${2%/}/"
     region="${3:-cn-hangzhou}"
     temp_file=/tmp/cdn.txt
 
