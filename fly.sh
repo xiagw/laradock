@@ -2,13 +2,15 @@
 # shellcheck disable=SC1090
 
 _msg() {
-    local color_on
+    local color_on=''
     local color_off='\033[0m' # Text Reset
+    local time_hms
     time_hms="$((SECONDS / 3600))h$(((SECONDS / 60) % 60))m$((SECONDS % 60))s"
+    local timestamp
     timestamp="$(date +%Y%m%d-%u-%T.%3N)"
 
     case "${1:-none}" in
-    info) color_on='' ;;
+    info) ;;
     warn | warning | yellow) color_on='\033[0;33m' ;;
     error | err | red) color_on='\033[0;31m' ;;
     question | ques | purple) color_on='\033[0;35m' ;;
@@ -40,39 +42,39 @@ _msg() {
 }
 
 _get_yes_no() {
-    read -rp "${1:-Confirm the action?} [y/N] " read_yes_no
-    case ${read_yes_no:-n} in
-    [Yy] | [Yy][Ee][Ss]) return 0 ;;
-    *) return 1 ;;
-    esac
+    read -rp "${1:-Confirm the action?} [y/N] " -n 1 -s read_yes_no
+    echo
+    [[ ${read_yes_no,,} == y ]] && return 0 || return 1
 }
 
 _check_cmd() {
     if [[ "$1" == install ]]; then
         shift
+        local updated=0
         for c in "$@"; do
-            if ! command -v "$c"; then
-                [[ "${apt_update:-0}" -eq 1 ]] && $cmd_pkg update -yqq
+            if ! command -v "$c" &>/dev/null; then
+                if [[ $updated -eq 0 && "${apt_update:-0}" -eq 1 ]]; then
+                    $cmd_pkg update -yqq
+                    updated=1
+                fi
                 pkg=$c
                 [[ "$c" == strings ]] && pkg=binutils
                 $cmd_pkg install -y "$pkg"
             fi
         done
     else
-        for c in "$@"; do
-            command -v "$c"
-        done
+        command -v "$@"
     fi
 }
 
 _check_distribution() {
     _msg step "check distribution."
+    # shellcheck source=/etc/os-release
     if [ -r /etc/os-release ]; then
         source /etc/os-release
         # shellcheck disable=SC1091,SC2153
         version_id="$VERSION_ID"
-        lsb_dist="$ID"
-        lsb_dist="${lsb_dist,,}"
+        lsb_dist="${ID,,}"
     fi
     lsb_dist="${lsb_dist:-unknown}"
     _msg time "Your distribution is ${lsb_dist}."
@@ -82,36 +84,34 @@ _check_root() {
     if [ "$(id -u)" -eq 0 ]; then
         unset use_sudo
         return 0
-    else
-        use_sudo=sudo
-        return 1
     fi
+    use_sudo=sudo
+    return 1
 }
 
 _check_sudo() {
     ${already_check_sudo:-false} && return 0
 
     if ! _check_root; then
-        if $use_sudo -l -U "$USER"; then
-            _msg time "User $USER has permission to execute this script!"
-        else
+        if ! $use_sudo -l -U "$USER" &>/dev/null; then
             _msg time "User $USER has no permission to execute this script!"
-            _msg time "Please run visudo with root, and set sudo to ${USER}."
+            _msg time "Please run visudo with root, and set sudo for ${USER}."
             return 1
         fi
+        _msg time "User $USER has permission to execute this script!"
     fi
-    if _check_cmd apt; then
-        cmd_pkg="$use_sudo apt-get"
-        apt_update=1
-    elif _check_cmd yum; then
-        cmd_pkg="$use_sudo yum"
-    elif _check_cmd dnf; then
-        cmd_pkg="$use_sudo dnf"
-    else
-        _msg time "not found apt/yum/dnf, exit 1."
-        return 1
-    fi
-    already_check_sudo=true
+
+    for pkg_manager in apt yum dnf; do
+        if _check_cmd "$pkg_manager"; then
+            cmd_pkg="$use_sudo $pkg_manager"
+            [[ $pkg_manager == apt ]] && cmd_pkg+=-get && apt_update=1
+            already_check_sudo=true
+            return 0
+        fi
+    done
+
+    _msg time "Package manager (apt/yum/dnf) not found, exiting."
+    return 1
 }
 
 _set_system_conf() {
@@ -119,40 +119,49 @@ _set_system_conf() {
     # grep -q 'transparent_hugepage/enabled' /etc/rc.local ||
     #     echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' | $use_sudo tee -a /etc/rc.local
     # $use_sudo source /etc/rc.local
-    grep -q 'net.core.somaxconn' /etc/sysctl.conf ||
-        echo 'net.core.somaxconn = 1024' | $use_sudo tee -a /etc/sysctl.conf
-    grep -q 'vm.overcommit_memory' /etc/sysctl.conf ||
-        echo 'vm.overcommit_memory = 1' | $use_sudo tee -a /etc/sysctl.conf
+    local sysctl_conf="/etc/sysctl.conf"
+    local params=(
+        "net.core.somaxconn = 1024"
+        "vm.overcommit_memory = 1"
+    )
+
+    for param in "${params[@]}"; do
+        if ! grep -q "${param%%=*}" "$sysctl_conf"; then
+            echo "$param" | $use_sudo tee -a "$sysctl_conf" >/dev/null
+        fi
+    done
+
     $use_sudo sysctl -p
 }
 
 _check_dependence() {
     _check_sudo
     _check_distribution
-    _msg step "check command: curl git binutils."
+    _msg step "Checking commands: curl, git, binutils."
     _check_cmd install curl git strings
 
-    _msg time "check ssh."
+    _msg time "Checking SSH configuration."
     dot_ssh="$HOME/.ssh"
-    ssh_auth="$dot_ssh"/authorized_keys
+    ssh_auth="$dot_ssh/authorized_keys"
     [ -d "$dot_ssh" ] || mkdir -m 700 "$dot_ssh"
-    $g_curl_opt -sS "$g_url_keys" | grep -vE '^#|^$|^\s\+$' |
-        while read -r line; do
-            grep -q "$(echo "$line" | awk '{print $2}')" "$ssh_auth" || echo "$line" >>"$ssh_auth"
-        done
-    if ${arg_insert_key:-false}; then
-        $g_curl_opt -sS "$g_url_fly_keys" | grep -vE '^#|^$|^\s\+$' |
-            while read -r line; do
-                grep -q "$(echo "$line" | awk '{print $2}')" "$ssh_auth" || echo "$line" >>"$ssh_auth"
-            done
-    fi
-    chmod 600 "$ssh_auth"
-    # $g_curl_opt 'https://api.github.com/users/xiagw/keys' | awk -F: '/key/,gsub("\"","") {print $2}'
 
-    if ${set_sysctl:-false}; then
-        _set_system_conf
-    fi
-    _msg time "check dependence done."
+    update_ssh_keys() {
+        local url="$1"
+        $g_curl_opt -sS "$url" | grep -vE '^#|^$|^\s+$' |
+            while read -r line; do
+                key=$(echo "$line" | awk '{print $2}')
+                grep -q "$key" "$ssh_auth" || echo "$line" >>"$ssh_auth"
+            done
+    }
+
+    update_ssh_keys "$g_url_keys"
+    ${arg_insert_key:-false} && update_ssh_keys "$g_url_fly_keys"
+
+    chmod 600 "$ssh_auth"
+
+    ${set_sysctl:-false} && _set_system_conf
+
+    _msg time "Dependency check completed."
 }
 
 _install_wg() {
@@ -167,17 +176,16 @@ _install_wg() {
 }
 
 _check_docker_compose() {
-    dco="docker compose"
-    if $dco version; then
-        _msg green "$dco ready."
-    else
-        if _check_cmd docker-compose; then
-            dco="docker-compose"
-            dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
-            if [[ "$dco_ver" -lt 1190 ]]; then
-                _msg warn "docker-compose version is too old."
-            fi
+    if docker compose version &>/dev/null; then
+        _msg green "docker compose ready."
+    elif _check_cmd docker-compose; then
+        if [[ $(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}') -lt 1190 ]]; then
+            _msg warn "docker-compose version is too old."
+        else
+            _msg green "docker-compose ready."
         fi
+    else
+        _msg warn "No docker compose or docker-compose found."
     fi
 }
 
@@ -189,13 +197,14 @@ _check_docker() {
         return
     fi
 
-    ## aliyun linux fake centos
+    # Handle OpenEuler distribution
     if grep -q -E '^ID=.*openEuler.*' /etc/os-release; then
         $use_sudo curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
         $use_sudo sed -i 's#https://download.docker.com#https://mirrors.tuna.tsinghua.edu.cn/docker-ce#' /etc/yum.repos.d/docker-ce.repo
         $use_sudo sed -i "s#\$releasever#7#g" /etc/yum.repos.d/docker-ce.repo
         $cmd_pkg install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     else
+        # Handle Aliyun Linux
         if grep -q -E '^ID=.*alinux.*' /etc/os-release; then
             $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
             fake_os=true
@@ -206,7 +215,7 @@ _check_docker() {
             $g_curl_opt "$g_url_get_docker" | $use_sudo bash -s - --mirror Aliyun
         else
             $g_curl_opt "$g_url_get_docker2" | $use_sudo bash -s - --mirror Aliyun
-        fi
+    fi
     else
         $g_curl_opt "$g_url_get_docker" | $use_sudo bash
     fi
@@ -221,17 +230,17 @@ _check_docker() {
         echo '############################################'
         need_logout=true
     fi
+
+    # Add other users to docker group
     for u in ubuntu centos ops; do
-        if [[ "$USER" != "$u" ]] && id "$u" 2>/dev/null; then
-            $use_sudo usermod -aG docker "$u"
-        fi
+        [[ "$USER" != "$u" ]] && id "$u" &>/dev/null && $use_sudo usermod -aG docker "$u"
     done
-    ## revert aliyun linux fake centos
-    if ${fake_os:-false}; then
-        $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
-    fi
-    $use_sudo systemctl enable docker
-    $use_sudo systemctl start docker
+
+    # Revert Aliyun Linux fake Centos
+    ${fake_os:-false} && $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
+
+    # Enable and start Docker
+    $use_sudo systemctl enable --now docker
     _check_docker_compose
 }
 
@@ -709,10 +718,11 @@ Parameters:
     nginx               Install nginx.
     mysql-cli           Exec into MySQL CLI.
     redis-cli           Exec into Redis CLI.
-    lsync               Setup lsyncd.
+    lsync               Install and setup lsyncd.
     zsh                 Install zsh.
     gitlab              Install gitlab.
     acme                Install acme.sh.
+    cdn                 Refresh CDN: [cdn oss-name domain cn-hangzhou]
 EOF
     exit 1
 }
