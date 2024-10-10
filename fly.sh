@@ -176,16 +176,17 @@ _install_wg() {
 }
 
 _check_docker_compose() {
-    if docker compose version &>/dev/null; then
-        _msg green "docker compose ready."
-    elif _check_cmd docker-compose; then
-        if [[ $(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}') -lt 1190 ]]; then
-            _msg warn "docker-compose version is too old."
-        else
-            _msg green "docker-compose ready."
-        fi
+    dco="docker compose"
+    if $dco version; then
+        _msg green "$dco ready."
     else
-        _msg warn "No docker compose or docker-compose found."
+        if _check_cmd docker-compose; then
+            dco="docker-compose"
+            dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
+            if [[ "$dco_ver" -lt 1190 ]]; then
+                _msg warn "docker-compose version is too old."
+            fi
+        fi
     fi
 }
 
