@@ -1,119 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1090
 
-_msg() {
-    local color_on=''
-    local color_off='\033[0m' # Text Reset
-    local time_hms
-    time_hms="$((SECONDS / 3600))h$(((SECONDS / 60) % 60))m$((SECONDS % 60))s"
-    local timestamp
-    timestamp="$(date +%Y%m%d-%u-%T.%3N)"
-
-    case "${1:-none}" in
-    info) ;;
-    warn | warning | yellow) color_on='\033[0;33m' ;;
-    error | err | red) color_on='\033[0;31m' ;;
-    question | ques | purple) color_on='\033[0;35m' ;;
-    green) color_on='\033[0;32m' ;;
-    blue) color_on='\033[0;34m' ;;
-    cyan) color_on='\033[0;36m' ;;
-    orange) color_on='\033[1;33m' ;;
-    step)
-        ((++STEP))
-        color_on="\033[0;36m$timestamp - [$STEP] \033[0m"
-        color_off=" - [$time_hms]"
-        ;;
-    time)
-        color_on="$timestamp - [${STEP}] "
-        color_off=" - [$time_hms]"
-        ;;
-    log)
-        shift
-        echo "$timestamp - $*" >>"$g_me_log"
-        return
-        ;;
-    *)
-        unset color_on color_off
-        ;;
-    esac
-
-    [ "$#" -gt 1 ] && shift
-    echo -e "${color_on}$*${color_off}"
-}
-
-_get_yes_no() {
-    read -rp "${1:-Confirm the action?} [y/N] " -n 1 -s read_yes_no
-    echo
-    [[ ${read_yes_no,,} == y ]] && return 0 || return 1
-}
-
-_check_cmd() {
-    if [[ "$1" == install ]]; then
-        shift
-        local updated=0
-        for c in "$@"; do
-            if ! command -v "$c" &>/dev/null; then
-                if [[ $updated -eq 0 && "${apt_update:-0}" -eq 1 ]]; then
-                    $cmd_pkg update -yqq
-                    updated=1
-                fi
-                pkg=$c
-                [[ "$c" == strings ]] && pkg=binutils
-                $cmd_pkg install -y "$pkg"
-            fi
-        done
-    else
-        command -v "$@"
-    fi
-}
-
-_check_distribution() {
-    _msg step "check distribution."
-    # shellcheck source=/etc/os-release
-    if [ -r /etc/os-release ]; then
-        source /etc/os-release
-        # shellcheck disable=SC1091,SC2153
-        version_id="$VERSION_ID"
-        lsb_dist="${ID,,}"
-    fi
-    lsb_dist="${lsb_dist:-unknown}"
-    _msg time "Your distribution is ${lsb_dist}."
-}
-
-_check_root() {
-    if [ "$(id -u)" -eq 0 ]; then
-        unset use_sudo
-        return 0
-    fi
-    use_sudo=sudo
-    return 1
-}
-
-_check_sudo() {
-    ${already_check_sudo:-false} && return 0
-
-    if ! _check_root; then
-        if ! $use_sudo -l -U "$USER" &>/dev/null; then
-            _msg time "User $USER has no permission to execute this script!"
-            _msg time "Please run visudo with root, and set sudo for ${USER}."
-            return 1
-        fi
-        _msg time "User $USER has permission to execute this script!"
-    fi
-
-    for pkg_manager in apt yum dnf; do
-        if _check_cmd "$pkg_manager"; then
-            cmd_pkg="$use_sudo $pkg_manager"
-            [[ $pkg_manager == apt ]] && cmd_pkg+=-get && apt_update=1
-            already_check_sudo=true
-            return 0
-        fi
-    done
-
-    _msg time "Package manager (apt/yum/dnf) not found, exiting."
-    return 1
-}
-
 _set_system_conf() {
     ## redis-server 安装在服务器本机，非docker
     # grep -q 'transparent_hugepage/enabled' /etc/rc.local ||
@@ -127,7 +14,7 @@ _set_system_conf() {
 
     for param in "${params[@]}"; do
         if ! grep -q "${param%%=*}" "$sysctl_conf"; then
-            echo "$param" | $use_sudo tee -a "$sysctl_conf" >/dev/null
+            echo "$param" | ${use_sudo-} tee -a "$sysctl_conf" >/dev/null
         fi
     done
 
@@ -165,8 +52,8 @@ _check_dependence() {
 }
 
 _install_wg() {
-    if [[ "$lsb_dist" =~ (centos|alinux|openEuler) ]]; then
-        $cmd_pkg install -y epel-release elrepo-release
+    if [[ "${lsb_dist-}" =~ (centos|alinux|openEuler) ]]; then
+        ${cmd_pkg-} install -y epel-release elrepo-release
         $cmd_pkg install -y yum-plugin-elrepo
         $cmd_pkg install -y kmod-wireguard wireguard-tools
     else
@@ -212,11 +99,12 @@ _check_docker() {
         fi
     fi
     if ${aliyun_mirror:-true}; then
+        echo "${version_id-}"
         if [[ "${version_id%%.*}" -eq 7 ]]; then
             $g_curl_opt "$g_url_get_docker" | $use_sudo bash -s - --mirror Aliyun
         else
             $g_curl_opt "$g_url_get_docker2" | $use_sudo bash -s - --mirror Aliyun
-    fi
+        fi
     else
         $g_curl_opt "$g_url_get_docker" | $use_sudo bash
     fi
@@ -889,7 +777,11 @@ main() {
         g_url_fzf="https://github.com/junegunn/fzf.git"
         g_url_ohmyzsh="https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     fi
-    echo "$g_me_env $g_url_laradock_raw $g_deploy_raw" >/dev/null
+    echo "$g_me_env $g_me_log $g_url_laradock_raw" >/dev/null
+    # Download and source include.sh
+    $g_curl_opt "$g_deploy_raw/bin/include.sh" >include.sh
+    # shellcheck disable=SC1091
+    source include.sh
 
     g_laradock_home="$HOME"/docker/laradock
     g_laradock_current="$g_me_path"
