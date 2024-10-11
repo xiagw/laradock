@@ -542,18 +542,18 @@ _reset_laradock() {
 _refresh_cdn() {
     set +e
     local oss_name="${1}"
-    local obj_path="${2%/}/"
+    local obj_path="${2}"
     local region="${3:-cn-hangzhou}"
     local temp_file="/tmp/cdn.txt"
-    local get_result local_saved
+    local get_result local_saved object_type
 
     while true; do
         get_result=$(aliyun oss cat "oss://$oss_name/cdn.txt" 2>/dev/null | head -n1)
         local_saved=$(cat "$temp_file" 2>/dev/null)
         if [[ "$get_result" != "$local_saved" ]]; then
             echo "get_result: $get_result, local_saved: $local_saved"
-            aliyun cdn RefreshObjectCaches --region "$region" --ObjectType Directory --ObjectPath "${obj_path}"
-            # aliyun cdn RefreshObjectCaches --region "$region" --ObjectType File --ObjectPath "${obj_path}"
+            object_type=$([ "${obj_path: -1}" = "/" ] && echo "Directory" || echo "File")
+            aliyun cdn RefreshObjectCaches --region "$region" --ObjectType "$object_type" --ObjectPath "${obj_path}"
             echo "refresh cdn $region ${obj_path}"
             echo "$get_result" >"$temp_file"
         fi
@@ -585,7 +585,7 @@ Parameters:
     zsh                 Install zsh.
     gitlab              Install gitlab.
     acme                Install acme.sh.
-    cdn                 Refresh CDN: [cdn oss-name domain cn-hangzhou]
+    cdn                 Refresh CDN: [cdn oss-name domain.com/ cn-hangzhou]
 EOF
     exit 1
 }
