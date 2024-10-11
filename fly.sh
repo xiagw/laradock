@@ -78,7 +78,7 @@ _check_docker_compose() {
 }
 
 _check_docker() {
-    _msg step "check docker and docker compose"
+    _msg step "Check docker and docker compose"
     if _check_cmd docker; then
         _check_docker_compose
         _msg time "docker is already installed."
@@ -136,7 +136,7 @@ _check_docker() {
 _check_timezone() {
     ## change UTC to CST
     time_zone='Asia/Shanghai'
-    _msg step "check timezone $time_zone."
+    _msg step "Check timezone $time_zone."
     if timedatectl | grep -q "$time_zone"; then
         _msg time "Timezone is already set to $time_zone."
     else
@@ -146,14 +146,13 @@ _check_timezone() {
 }
 
 _check_laradock() {
-    _msg step "check laradock"
+    _msg step "Check laradock"
     if [[ -d "$g_laradock_path" && -d "$g_laradock_path/.git" ]]; then
         _msg time "$g_laradock_path exist, git pull."
         (cd "$g_laradock_path" && git pull)
         return 0
     fi
-    ## clone laradock
-    _msg step "git clone laradock to $g_laradock_path/"
+    _msg step "Clone laradock to $g_laradock_path/"
     mkdir -p "$g_laradock_path"
     git clone -b in-china --depth 1 $g_url_laradock_git "$g_laradock_path"
 
@@ -175,7 +174,7 @@ _check_laradock_env() {
     if [[ -f "$g_laradock_env" && "${force_update_env:-0}" -eq 0 ]]; then
         return 0
     fi
-    _msg step "set laradock .env"
+    _msg step "Set laradock .env"
     ## change docker host ip
     docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
 
@@ -270,7 +269,7 @@ _set_file_mode() {
 }
 
 _install_zsh() {
-    _msg step "install oh my zsh"
+    _msg step "Install oh my zsh"
 
     _check_cmd install zsh
 
@@ -314,7 +313,7 @@ _install_trzsz() {
     if _check_cmd trz; then
         _msg warn "skip trzsz install"
     else
-        _msg step "install trzsz"
+        _msg step "Install trzsz"
         if command -v apt; then
             $cmd_pkg install -yq software-properties-common
             $use_sudo add-apt-repository --yes ppa:trzsz/ppa
@@ -330,7 +329,7 @@ _install_trzsz() {
 }
 
 _install_lsyncd() {
-    _msg step "install lsyncd"
+    _msg step "Install lsyncd"
     _check_cmd install lsyncd
 
     lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
@@ -425,7 +424,7 @@ _start_docker_service() {
 }
 
 _pull_image() {
-    _msg step "check docker image..."
+    _msg step "Check docker image..."
     local image_repo=registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5
     local docker_ver
     docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
@@ -562,7 +561,7 @@ _upgrade_php() {
 }
 
 _reset_laradock() {
-    _msg step "reset laradock service"
+    _msg step "Reset laradock service"
     cd "$g_laradock_path" && $dco stop && $dco rm -f
     $use_sudo rm -rf "$g_laradock_path" "$g_laradock_path/../../laradock-data/mysql"
 }
