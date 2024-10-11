@@ -340,7 +340,7 @@ _start_docker_service() {
     $dco up -d "${args[@]}"
     ## wait startup
     for arg in "${args[@]}"; do
-        for i in {1..10}; do
+        for i in {1..5}; do
             if $dco ps | grep "$arg"; then
                 break
             else
@@ -625,7 +625,7 @@ _parse_args() {
 
     args=()
     if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = key ]; }; then
-        _msg warn "not found any arguments, with default args \"redis mysql php-fpm spring nginx\"."
+        echo -e "\033[0;33mnot found any arguments, with default args \"redis mysql php-fpm spring nginx\".\033[0m"
         args+=(redis mysql php-fpm spring nginx)
         arg_group=1
     fi
