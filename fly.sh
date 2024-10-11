@@ -51,17 +51,6 @@ _check_dependence() {
     _msg time "Dependency check completed."
 }
 
-_install_wg() {
-    if [[ "${lsb_dist-}" =~ (centos|alinux|openEuler) ]]; then
-        ${cmd_pkg-} install -y epel-release elrepo-release
-        $cmd_pkg install -y yum-plugin-elrepo
-        $cmd_pkg install -y kmod-wireguard wireguard-tools
-    else
-        $cmd_pkg install -yqq wireguard wireguard-tools
-    fi
-    $use_sudo modprobe wireguard
-}
-
 _check_docker_compose() {
     dco="docker compose"
     if $dco version; then
@@ -90,7 +79,7 @@ _check_docker() {
         $use_sudo curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
         $use_sudo sed -i 's#https://download.docker.com#https://mirrors.tuna.tsinghua.edu.cn/docker-ce#' /etc/yum.repos.d/docker-ce.repo
         $use_sudo sed -i "s#\$releasever#7#g" /etc/yum.repos.d/docker-ce.repo
-        $cmd_pkg install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        ${cmd_pkg-} install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     else
         # Handle Aliyun Linux
         if grep -q -E '^ID=.*alinux.*' /etc/os-release; then
@@ -133,18 +122,6 @@ _check_docker() {
     _check_docker_compose
 }
 
-_check_timezone() {
-    ## change UTC to CST
-    time_zone='Asia/Shanghai'
-    _msg step "Check timezone $time_zone."
-    if timedatectl | grep -q "$time_zone"; then
-        _msg time "Timezone is already set to $time_zone."
-    else
-        _msg time "Set timezone to $time_zone."
-        $use_sudo timedatectl set-timezone $time_zone
-    fi
-}
-
 _check_laradock() {
     _msg step "Check laradock"
     if [[ -d "$g_laradock_path" && -d "$g_laradock_path/.git" ]]; then
@@ -166,10 +143,6 @@ _check_laradock() {
     fi
 }
 
-_rand_password() {
-    strings /dev/urandom | tr -dc A-Za-z0-9 | head -c12
-}
-
 _check_laradock_env() {
     if [[ -f "$g_laradock_env" && "${force_update_env:-0}" -eq 0 ]]; then
         return 0
@@ -182,11 +155,11 @@ _check_laradock_env() {
     cp -vf "$g_laradock_env".example "$g_laradock_env"
     ## change password
     sed -i \
-        -e "/^MYSQL_PASSWORD=/s/=.*/=$(_rand_password)/" \
-        -e "/^MYSQL_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
-        -e "/^REDIS_PASSWORD=/s/=.*/=$(_rand_password)/" \
-        -e "/^PHPREDISADMIN_PASS=/s/=.*/=$(_rand_password)/" \
-        -e "/^GITLAB_ROOT_PASSWORD=/s/=.*/=$(_rand_password)/" \
+        -e "/^MYSQL_PASSWORD=/s/=.*/=$(_get_random_password)/" \
+        -e "/^MYSQL_ROOT_PASSWORD=/s/=.*/=$(_get_random_password)/" \
+        -e "/^REDIS_PASSWORD=/s/=.*/=$(_get_random_password)/" \
+        -e "/^PHPREDISADMIN_PASS=/s/=.*/=$(_get_random_password)/" \
+        -e "/^GITLAB_ROOT_PASSWORD=/s/=.*/=$(_get_random_password)/" \
         -e "/^MYSQL_VERSION=/s/=.*/=${g_mysql_ver}/" \
         -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
         -e "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" \
@@ -274,7 +247,7 @@ _install_zsh() {
     _check_cmd install zsh
 
     ## fzf
-    if [[ "$lsb_dist" =~ (alinux|centos|openEuler) ]]; then
+    if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler) ]]; then
         if [[ -d "$HOME"/.fzf ]]; then
             _msg warn "Found $HOME/.fzf, skip git clone fzf."
         else
@@ -568,10 +541,11 @@ _reset_laradock() {
 
 _refresh_cdn() {
     set +e
-    oss_name="${1}"
-    obj_path="${2%/}/"
-    region="${3:-cn-hangzhou}"
-    temp_file=/tmp/cdn.txt
+    local oss_name="${1}"
+    local obj_path="${2%/}/"
+    local region="${3:-cn-hangzhou}"
+    local temp_file="/tmp/cdn.txt"
+    local get_result local_saved
 
     while true; do
         get_result=$(aliyun oss cat "oss://$oss_name/cdn.txt" 2>/dev/null | head -n1)
