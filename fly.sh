@@ -753,9 +753,9 @@ main() {
     fi
     echo "$g_me_env $g_me_log $g_url_laradock_raw" >/dev/null
     # Download and source include.sh
-    $g_curl_opt -sS "$g_deploy_raw/bin/include.sh" >include.sh
+    $g_curl_opt -sS "$g_deploy_raw/bin/include.sh" >/tmp/include.sh
     # shellcheck disable=SC1091
-    source include.sh
+    source /tmp/include.sh
 
     g_laradock_home="$HOME"/docker/laradock
     g_laradock_current="$g_me_path"
