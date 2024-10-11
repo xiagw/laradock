@@ -696,8 +696,8 @@ _parse_args() {
             arg_insert_key=true
             ;;
         cdn | refresh)
-            arg_refresh_cdn=true
             shift
+            _refresh_cdn "$@"
             return
             ;;
         *)
@@ -771,11 +771,6 @@ main() {
 
     g_laradock_env="$g_laradock_path"/.env
 
-    if ${arg_refresh_cdn:-false}; then
-        shift
-        _refresh_cdn "$@"
-        return
-    fi
     if ${arg_install_acme:-false}; then
         _install_acme "$arg_domain"
         return
