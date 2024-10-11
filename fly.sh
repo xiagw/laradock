@@ -779,7 +779,7 @@ main() {
     fi
     echo "$g_me_env $g_me_log $g_url_laradock_raw" >/dev/null
     # Download and source include.sh
-    $g_curl_opt "$g_deploy_raw/bin/include.sh" >include.sh
+    $g_curl_opt -sS "$g_deploy_raw/bin/include.sh" >include.sh
     # shellcheck disable=SC1091
     source include.sh
 
