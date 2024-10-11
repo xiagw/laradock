@@ -329,6 +329,80 @@ _install_trzsz() {
     fi
 }
 
+_install_lsyncd() {
+    _msg step "install lsyncd"
+    _check_cmd install lsyncd
+
+    lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
+    [ -d /etc/lsyncd/ ] || $use_sudo mkdir /etc/lsyncd
+    if [ -f $lsyncd_conf ]; then
+        _msg time "found $lsyncd_conf"
+    else
+        _msg time "new lsyncd.conf.lua"
+        $use_sudo cp -vf "$g_laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
+    fi
+    [[ "$USER" == "root" ]] || $use_sudo sed -i "s@/root/docker@$HOME/docker@g" $lsyncd_conf
+
+    id_file="$HOME/.ssh/id_ed25519"
+    if [ -f "$id_file" ]; then
+        _msg time "found $id_file"
+    else
+        _msg time "new key, ssh-keygen"
+        ssh-keygen -t ed25519 -f "$id_file" -N ''
+    fi
+
+    _msg time "config $lsyncd_conf"
+    while read -rp "[$((++count))] Enter ssh host IP (enter q break): " ssh_host_ip; do
+        [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
+        _msg time "ssh-copy-id -i $id_file root@$ssh_host_ip"
+        ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
+        _msg time "add $ssh_host_ip to $lsyncd_conf"
+        $use_sudo sed -i -e "/^htmlhosts/ a '$ssh_host_ip:$g_laradock_path/../html/'," $lsyncd_conf
+        $use_sudo sed -i -e "/^nginxhosts/ a '$ssh_host_ip:$g_laradock_path/nginx/'," $lsyncd_conf
+        echo
+    done
+}
+
+_install_acme() {
+    _msg step "Install acme.sh."
+    local acme_home="$HOME/.acme.sh"
+    local key="$g_laradock_home/nginx/sites/ssl/default.key"
+    local pem="$g_laradock_home/nginx/sites/ssl/default.pem"
+    local html="$HOME"/docker/html
+    if [ -f "$acme_home/acme.sh" ]; then
+        _msg time "found $acme_home/acme.sh, skip install acme.sh"
+    else
+        if ${IN_CHINA:-true}; then
+            git clone --depth 1 https://gitee.com/neilpang/acme.sh.git
+            cd acme.sh && ./acme.sh --install -m fly@laradock.com
+        else
+            curl https://get.acme.sh | bash -s email=fly@laradock.com
+        fi
+    fi
+    domain="${1}"
+    _msg time "your domain is: ${domain:-api.xxx.com}"
+    case "$domain" in
+    *.*.*)
+        cd "$acme_home" || return 1
+        ./acme.sh --issue -w "$html" -d "$domain"
+        ./acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
+        ;;
+    *)
+        echo
+        echo "Single host domain:"
+        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com}"
+        echo "Wildcard domain:"
+        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com} -d '${domain:-*.xxx.com}' "
+        echo "DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]"
+        echo "  cd $acme_home && ./acme.sh --issue --dns dns_cf -d ${domain:-api.xxx.com} -d '${domain:-*.xxx.com}' "
+        echo "Deploy cert"
+        echo "  cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-api.xxx.com}"
+        ;;
+    esac
+    # openssl x509 -noout -text -in xxx.pem
+    # openssl x509 -noout -dates -in xxx.pem
+}
+
 _start_docker_service() {
     if [ "${#args[@]}" -gt 0 ]; then
         _msg step "Start docker service automatically..."
@@ -474,79 +548,6 @@ _redis_cli() {
     cd "$g_laradock_path"
     source <(grep '^REDIS_PASSWORD=' "$g_laradock_env")
     docker compose exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
-}
-
-_install_lsyncd() {
-    _msg time "install lsyncd"
-    _check_cmd install lsyncd
-
-    lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
-    [ -d /etc/lsyncd/ ] || $use_sudo mkdir /etc/lsyncd
-    if [ -f $lsyncd_conf ]; then
-        _msg time "found $lsyncd_conf"
-    else
-        _msg time "new lsyncd.conf.lua"
-        $use_sudo cp -vf "$g_laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
-    fi
-    [[ "$USER" == "root" ]] || $use_sudo sed -i "s@/root/docker@$HOME/docker@g" $lsyncd_conf
-
-    id_file="$HOME/.ssh/id_ed25519"
-    if [ -f "$id_file" ]; then
-        _msg time "found $id_file"
-    else
-        _msg time "new key, ssh-keygen"
-        ssh-keygen -t ed25519 -f "$id_file" -N ''
-    fi
-
-    _msg time "config $lsyncd_conf"
-    while read -rp "[$((++count))] Enter ssh host IP (enter q break): " ssh_host_ip; do
-        [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
-        _msg time "ssh-copy-id -i $id_file root@$ssh_host_ip"
-        ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
-        _msg time "add $ssh_host_ip to $lsyncd_conf"
-        $use_sudo sed -i -e "/^htmlhosts/ a '$ssh_host_ip:$g_laradock_path/../html/'," $lsyncd_conf
-        $use_sudo sed -i -e "/^nginxhosts/ a '$ssh_host_ip:$g_laradock_path/nginx/'," $lsyncd_conf
-        echo
-    done
-}
-
-_install_acme() {
-    local acme_home="$HOME/.acme.sh"
-    local key="$g_laradock_home/nginx/sites/ssl/default.key"
-    local pem="$g_laradock_home/nginx/sites/ssl/default.pem"
-    local html="$HOME"/docker/html
-    if [ -f "$acme_home/acme.sh" ]; then
-        _msg time "found $acme_home/acme.sh, skip install acme.sh"
-    else
-        if ${IN_CHINA:-true}; then
-            git clone --depth 1 https://gitee.com/neilpang/acme.sh.git
-            cd acme.sh && ./acme.sh --install -m fly@laradock.com
-        else
-            curl https://get.acme.sh | bash -s email=fly@laradock.com
-        fi
-    fi
-    domain="${1}"
-    _msg time "your domain is: ${domain:-api.xxx.com}"
-    case "$domain" in
-    *.*.*)
-        cd "$acme_home" || return 1
-        ./acme.sh --issue -w "$html" -d "$domain"
-        ./acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
-        ;;
-    *)
-        echo
-        echo "Single host domain:"
-        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com}"
-        echo "Wildcard domain:"
-        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com} -d '${domain:-*.xxx.com}' "
-        echo "DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]"
-        echo "  cd $acme_home && ./acme.sh --issue --dns dns_cf -d ${domain:-api.xxx.com} -d '${domain:-*.xxx.com}' "
-        echo "Deploy cert"
-        echo "  cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-api.xxx.com}"
-        ;;
-    esac
-    # openssl x509 -noout -text -in xxx.pem
-    # openssl x509 -noout -dates -in xxx.pem
 }
 
 _upgrade_java() {
