@@ -87,16 +87,19 @@ _check_docker() {
             fake_os=true
         fi
     fi
+
+    # Install Docker using Aliyun mirror
+    local url="$g_url_get_docker"
     if ${aliyun_mirror:-true}; then
         echo "${version_id-}"
-        if [[ "${version_id%%.*}" -eq 7 ]]; then
-            $g_curl_opt "$g_url_get_docker" | $use_sudo bash -s - --mirror Aliyun
-        else
-            $g_curl_opt "$g_url_get_docker2" | $use_sudo bash -s - --mirror Aliyun
+        if [[ "${version_id%%.*}" -ne 7 ]]; then
+            url="$g_url_get_docker2"
         fi
-    else
-        $g_curl_opt "$g_url_get_docker" | $use_sudo bash
     fi
+    # shellcheck disable=2046
+    $g_curl_opt "$url" | $use_sudo bash $(${aliyun_mirror:-true} && echo '-s - --mirror Aliyun')
+
+    # Add user to docker group if not root
     if ! _check_root; then
         _msg time "Add user \"$USER\" to group docker."
         $use_sudo usermod -aG docker "$USER"
