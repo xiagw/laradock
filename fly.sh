@@ -719,6 +719,16 @@ _parse_args() {
     fi
 }
 
+_include_sh() {
+    include_sh="$g_me_path/include.sh"
+    if [ ! -f "$include_sh" ]; then
+        include_sh='/tmp/include.sh'
+        include_url="$g_deploy_raw/bin/include.sh"
+        [ -f "$include_sh" ] || curl -fsSL "$include_url" >"$include_sh"
+    fi
+    . "$include_sh"
+}
+
 main() {
     SECONDS=0
 
@@ -755,10 +765,8 @@ main() {
         g_url_ohmyzsh="https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     fi
     echo "$g_me_env $g_me_log $g_url_laradock_raw" >/dev/null
-    # Download and source include.sh
-    $g_curl_opt -sS "$g_deploy_raw/bin/include.sh" >/tmp/include.sh
-    # shellcheck disable=SC1091
-    source /tmp/include.sh
+
+    _include_sh
 
     g_laradock_home="$HOME"/docker/laradock
     g_laradock_current="$g_me_path"
