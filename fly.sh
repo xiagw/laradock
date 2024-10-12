@@ -147,16 +147,19 @@ _check_laradock() {
 }
 
 _check_laradock_env() {
+    # Skip if env file exists and force update not enabled
     if [[ -f "$g_laradock_env" && "${force_update_env:-0}" -eq 0 ]]; then
         return 0
     fi
     _msg step "Set laradock .env"
-    ## change docker host ip
+
+    # Get docker host IP
     docker_host_ip=$(/sbin/ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
 
     _msg time "copy .env.example to .env, and set random password"
     cp -vf "$g_laradock_env".example "$g_laradock_env"
-    ## change password
+
+    # Update .env file with new values
     sed -i \
         -e "/^MYSQL_PASSWORD=/s/=.*/=$(_get_random_password)/" \
         -e "/^MYSQL_ROOT_PASSWORD=/s/=.*/=$(_get_random_password)/" \
@@ -171,7 +174,8 @@ _check_laradock_env() {
         -e "/^DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/^GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
         "$g_laradock_env"
-    ## change listen port
+
+    # Update listen ports
     for p in 80 443 3306 6379; do
         local listen_port=$p
         while ss -lntu4 | grep "LISTEN.*:$listen_port\ "; do
@@ -179,68 +183,70 @@ _check_laradock_env() {
             listen_port=$((listen_port + 2))
             _msg yellow "try next port: $listen_port ..."
         done
-        if [[ "$p" -eq 80 ]]; then
-            sed -i -e "/^NGINX_HOST_HTTP_PORT=/s/=.*/=$listen_port/" "$g_laradock_env"
-        fi
-        if [[ "$p" -eq 443 ]]; then
-            sed -i -e "/^NGINX_HOST_HTTPS_PORT=/s/=.*/=$listen_port/" "$g_laradock_env"
-        fi
-        if [[ "$p" -eq 3306 ]]; then
-            sed -i -e "/^MYSQL_PORT=/s/=.*/=$listen_port/" "$g_laradock_env"
-        fi
-        if [[ "$p" -eq 6379 ]]; then
-            sed -i -e "/^REDIS_PORT=/s/=.*/=$listen_port/" "$g_laradock_env"
-        fi
+        case $p in
+        80) sed -i -e "/^NGINX_HOST_HTTP_PORT=/s/=.*/=$listen_port/" "$g_laradock_env" ;;
+        443) sed -i -e "/^NGINX_HOST_HTTPS_PORT=/s/=.*/=$listen_port/" "$g_laradock_env" ;;
+        3306) sed -i -e "/^MYSQL_PORT=/s/=.*/=$listen_port/" "$g_laradock_env" ;;
+        6379) sed -i -e "/^REDIS_PORT=/s/=.*/=$listen_port/" "$g_laradock_env" ;;
+        esac
     done
 
     ## set SHELL_OH_MY_ZSH=true
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$g_laradock_env" || return 0
 }
-
 _reload_nginx() {
     pushd "$g_laradock_path" || exit 1
-    for i in {1..10}; do
+    local max_attempts=5
+    local attempt=1
+    while [ $attempt -le $max_attempts ]; do
         if $dco exec -T nginx nginx -t; then
             $dco exec -T nginx nginx -s reload
             break
         else
-            _msg time "[$((i * 2))] reload nginx err."
+            _msg time "[$((attempt * 2))] reload nginx err."
         fi
+        ((attempt++))
         sleep 2
     done
+    popd || return
 }
-
 _set_nginx_php() {
     ## setup php upstream
-    sed -i -e 's/127\.0\.0\.1/php-fpm/g' "$g_laradock_path/nginx/sites/router.inc"
+    sed -i 's/127\.0\.0\.1/php-fpm/g' "$g_laradock_path/nginx/sites/router.inc"
 }
 
 _set_env_php_ver() {
-    sed -i -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
+    sed -i \
+        -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
         -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
 }
 
 _set_env_node_ver() {
-    sed -i -e "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
+    sed -i "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
     source <(grep '^NODE_VERSION=' "$g_laradock_env")
 }
 
 _set_env_java_ver() {
-    sed -i -e "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
-    source <(grep '^JDK_VERSION=.*' "$g_laradock_env")
+    sed -i "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
+    source <(grep '^JDK_VERSION=' "$g_laradock_env")
 }
 
 _set_file_mode() {
+    local d line
     for d in "$g_laradock_path"/../*/; do
         [[ "$d" == *laradock/ ]] && continue
-        find "$d" | while read -r line; do
-            if [[ "$line" == *config/app.php ]]; then
+        while IFS= read -r line; do
+            case "$line" in
+            *config/app.php)
+                # Set app_debug to false in app.php
                 grep -q 'app_debug.*true' "$line" && $use_sudo sed -i -e '/app_debug/s/true/false/' "$line"
-            fi
-            if [[ "$line" == *config/log.php ]]; then
+                ;;
+            *config/log.php)
+                # Add 'warning' to log levels in log.php
                 grep -q "'level'.*\[\]\," "$line" && $use_sudo sed -i -e "/'level'/s/\[/\['warning'/" "$line"
-            fi
-        done
+                ;;
+            esac
+        done < <(find "$d")
     done
 }
 
@@ -404,11 +410,9 @@ _pull_image() {
     local image_repo=registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5
     local docker_ver
     docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
-    if ((docker_ver <= 19)); then
-        local image_prefix="laradock_"
-    else
-        local image_prefix="laradock-"
-    fi
+    local image_prefix
+    image_prefix="$((docker_ver <= 19 ? "laradock_" : "laradock-"))"
+
     for i in "${args[@]}"; do
         _msg time "docker pull image $i ..."
         case $i in
@@ -448,7 +452,7 @@ _pull_image() {
             _set_env_php_ver
             arg_test_php=true
             docker pull -q "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null
-            docker tag "$image_repo:laradock-php-fpm-${g_php_ver}" ${image_prefix}php-fpm
+            docker tag "$image_repo:laradock-php-fpm-${g_php_ver}" "${image_prefix}php-fpm"
             ;;
         esac
     done
@@ -459,8 +463,7 @@ _pull_image() {
 _test_nginx() {
     _reload_nginx
     source <(grep 'NGINX_HOST_HTTP_PORT' "$g_laradock_env")
-    $dco stop nginx
-    $dco up -d nginx
+    $dco stop nginx && $dco up -d nginx
     [ -f "$g_laradock_path/../html/favicon.ico" ] || $g_curl_opt -s -o "$g_laradock_path/../html/favicon.ico" $g_url_fly_ico
     _msg time "test nginx $1 ..."
     for i in {1..5}; do
