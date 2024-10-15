@@ -409,14 +409,10 @@ _pull_image() {
     _msg step "Check docker image..."
     local image_repo=registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5
     local docker_ver
-    docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
     local image_prefix
+    docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
 
-    if [ "$docker_ver" -le 19 ]; then
-        image_prefix="laradock_"
-    else
-        image_prefix="laradock-"
-    fi
+    [ "$docker_ver" -le 19 ] && image_prefix="laradock_" || image_prefix="laradock-"
 
     for i in "${args[@]}"; do
         _msg time "docker pull image $i ..."
@@ -508,8 +504,8 @@ _test_java() {
 
 _get_env_info() {
     set +e
-    echo "####  代码内端口写标准端口 mysql 3306 / redis 6379 ####"
-    echo "####  此处显示端口只用于 SSH 端口转发映射            ####"
+    echo "####  代码内写标准端口 mysql:3306 / redis:6379"
+    echo "####  此处显示端口只用于SSH端口转发映射(可能不同于标准端口)"
     grep -E '^REDIS_' "$g_laradock_env" | sed -n '1,3p'
     echo
     grep -E '^DB_HOST|^MYSQL_' "$g_laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
