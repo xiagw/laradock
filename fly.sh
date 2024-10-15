@@ -411,7 +411,12 @@ _pull_image() {
     local docker_ver
     docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
     local image_prefix
-    image_prefix="$((docker_ver <= 19 ? "laradock_" : "laradock-"))"
+
+    if [ "$docker_ver" -le 19 ]; then
+        image_prefix="laradock_"
+    else
+        image_prefix="laradock-"
+    fi
 
     for i in "${args[@]}"; do
         _msg time "docker pull image $i ..."
