@@ -505,14 +505,14 @@ _test_nginx() {
     $dco stop nginx && $dco up -d nginx
     [ -f "$g_laradock_path/../html/favicon.ico" ] || $g_curl_opt -s -o "$g_laradock_path/../html/favicon.ico" $g_url_fly_ico
     _msg time "test nginx $1 ..."
-    for i in {1..5}; do
-        if $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
-            break
-        else
-            _msg time "test nginx error...[$((i * 2))]"
-            sleep 2
-        fi
+
+    _incremental_wait &
+    pid=$!
+    until ((i > 8)) || $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; do
+        ((i++))
+        sleep 1
     done
+    kill -USR1 $pid 2>/dev/null || true
 }
 
 _test_php() {
