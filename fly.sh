@@ -419,7 +419,7 @@ _start_docker_service() {
             ((i++))
             sleep 1
         done
-        kill -USR1 $pid || true
+        kill -USR1 $pid 2>/dev/null || true
     done
 }
 
@@ -443,14 +443,14 @@ _pull_image() {
             pid=$!
             $cmd_pull "$image_repo:laradock-nginx" >/dev/null
             $cmd_tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
-            kill -USR1 $pid || true
+            kill -USR1 $pid 2>/dev/null || true
             ;;
         redis)
             _incremental_wait &
             pid=$!
             $cmd_pull "$image_repo:laradock-redis" >/dev/null
             $cmd_tag "$image_repo:laradock-redis" "${image_prefix}redis"
-            kill -USR1 $pid || true
+            kill -USR1 $pid 2>/dev/null || true
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
@@ -465,7 +465,7 @@ _pull_image() {
             $use_sudo chown 1000:1000 "$g_laradock_path"/../../laradock-data/mysqlbak
             $cmd_pull "$image_repo:laradock-mysqlbak" >/dev/null
             $cmd_tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
-            kill -USR1 $pid || true
+            kill -USR1 $pid 2>/dev/null || true
             ;;
         spring)
             _set_env_java_ver
@@ -474,7 +474,7 @@ _pull_image() {
             pid=$!
             $cmd_pull "$image_repo:laradock-spring-${g_java_ver}" >/dev/null
             $cmd_tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
-            kill -USR1 $pid || true
+            kill -USR1 $pid 2>/dev/null || true
             ;;
         nodejs)
             _set_env_node_ver
@@ -482,7 +482,7 @@ _pull_image() {
             pid=$!
             $cmd_pull "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null
             $cmd_tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
-            kill -USR1 $pid || true
+            kill -USR1 $pid 2>/dev/null || true
             ;;
         php*)
             _set_env_php_ver
@@ -491,7 +491,7 @@ _pull_image() {
             pid=$!
             $cmd_pull "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null
             $cmd_tag "$image_repo:laradock-php-fpm-${g_php_ver}" "${image_prefix}php-fpm"
-            kill -USR1 $pid || true
+            kill -USR1 $pid 2>/dev/null || true
             ;;
         esac
     done
