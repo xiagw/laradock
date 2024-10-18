@@ -385,7 +385,7 @@ _install_acme() {
 }
 
 # 递增等待显示函数，使用 '#' 符号
-show_incremental_wait() {
+_incremental_wait() {
     local counter=0
     local should_exit=0
 
@@ -414,13 +414,13 @@ _start_docker_service() {
     $dco up -d "${args[@]}"
     ## wait startup
     for arg in "${args[@]}"; do
-        show_incremental_wait &
+        _incremental_wait &
         pid=$!
         until ((i > 8)) || $dco ps | grep -q "$arg"; do
             ((i++))
             sleep 1
         done
-        kill -USR1 $pid
+        kill -USR1 $pid || true
 
         wait $pid
     done
@@ -442,15 +442,24 @@ _pull_image() {
         case $i in
         nginx)
             arg_test_nginx=true
+            _incremental_wait &
+            pid=$!
             $cmd_pull "$image_repo:laradock-nginx" >/dev/null
+            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
+            # wait $pid
             ;;
         redis)
+            _incremental_wait &
+            pid=$!
             $cmd_pull "$image_repo:laradock-redis" >/dev/null
+            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-redis" "${image_prefix}redis"
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
+            _incremental_wait &
+            pid=$!
             $cmd_pull "$image_repo:laradock-mysql-${MYSQL_VERSION}" >/dev/null
             $cmd_tag "$image_repo:laradock-mysql-${MYSQL_VERSION}" "${image_prefix}mysql"
             ## mysqlbak
@@ -459,23 +468,33 @@ _pull_image() {
             fi
             $use_sudo chown 1000:1000 "$g_laradock_path"/../../laradock-data/mysqlbak
             $cmd_pull "$image_repo:laradock-mysqlbak" >/dev/null
+            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         spring)
             _set_env_java_ver
             arg_test_java=true
+            _incremental_wait &
+            pid=$!
             $cmd_pull "$image_repo:laradock-spring-${g_java_ver}" >/dev/null
+            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
             ;;
         nodejs)
             _set_env_node_ver
+            _incremental_wait &
+            pid=$!
             $cmd_pull "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null
+            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
             ;;
         php*)
             _set_env_php_ver
             arg_test_php=true
+            _incremental_wait &
+            pid=$!
             $cmd_pull "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null
+            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-php-fpm-${g_php_ver}" "${image_prefix}php-fpm"
             ;;
         esac
