@@ -420,9 +420,6 @@ _start_docker_service() {
             ((i++))
             sleep 1
         done
-        kill -USR1 $pid || true
-
-        wait $pid
     done
 }
 
@@ -445,15 +442,12 @@ _pull_image() {
             _incremental_wait &
             pid=$!
             $cmd_pull "$image_repo:laradock-nginx" >/dev/null
-            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
-            # wait $pid
             ;;
         redis)
             _incremental_wait &
             pid=$!
             $cmd_pull "$image_repo:laradock-redis" >/dev/null
-            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-redis" "${image_prefix}redis"
             ;;
         mysql)
@@ -468,7 +462,6 @@ _pull_image() {
             fi
             $use_sudo chown 1000:1000 "$g_laradock_path"/../../laradock-data/mysqlbak
             $cmd_pull "$image_repo:laradock-mysqlbak" >/dev/null
-            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         spring)
@@ -477,7 +470,6 @@ _pull_image() {
             _incremental_wait &
             pid=$!
             $cmd_pull "$image_repo:laradock-spring-${g_java_ver}" >/dev/null
-            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
             ;;
         nodejs)
@@ -485,7 +477,6 @@ _pull_image() {
             _incremental_wait &
             pid=$!
             $cmd_pull "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null
-            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
             ;;
         php*)
@@ -494,7 +485,6 @@ _pull_image() {
             _incremental_wait &
             pid=$!
             $cmd_pull "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null
-            kill -USR1 $pid || true
             $cmd_tag "$image_repo:laradock-php-fpm-${g_php_ver}" "${image_prefix}php-fpm"
             ;;
         esac
