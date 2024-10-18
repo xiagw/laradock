@@ -384,24 +384,6 @@ _install_acme() {
     # openssl x509 -noout -dates -in xxx.pem
 }
 
-# 递增等待显示函数，使用 '#' 符号
-_incremental_wait() {
-    local counter=0
-    local should_exit=0
-
-    # 定义信号处理函数
-    trap 'should_exit=1' USR1
-
-    while [ $should_exit -eq 0 ]; do
-        printf "#"
-        ((counter++))
-        sleep 1
-    done
-
-    # 在退出时打印换行，以便下一行输出正常显示
-    echo " Total duration: $counter seconds"
-}
-
 _start_docker_service() {
     if [ "${#args[@]}" -gt 0 ]; then
         _msg step "Start docker service automatically..."
@@ -413,13 +395,13 @@ _start_docker_service() {
     $dco up -d "${args[@]}"
     ## wait startup
     for arg in "${args[@]}"; do
-        _incremental_wait &
-        pid=$!
-        until ((i > 8)) || $dco ps | grep -q "$arg"; do
-            ((i++))
-            sleep 1
+        for i in {1..5}; do
+            if $dco ps | grep "$arg"; then
+                break
+            else
+                sleep 2
+            fi
         done
-        kill -USR1 $pid 2>/dev/null || true
     done
 }
 
@@ -431,67 +413,47 @@ _pull_image() {
     docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
 
     [ "$docker_ver" -le 19 ] && image_prefix="laradock_" || image_prefix="laradock-"
-    cmd_pull="docker pull -q"
-    cmd_tag="docker tag"
 
     for i in "${args[@]}"; do
         _msg time "docker pull image $i ..."
         case $i in
         nginx)
             arg_test_nginx=true
-            _incremental_wait &
-            pid=$!
-            $cmd_pull "$image_repo:laradock-nginx" >/dev/null
-            $cmd_tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
-            kill -USR1 $pid 2>/dev/null || true
+            docker pull -q "$image_repo:laradock-nginx" >/dev/null
+            docker tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
             ;;
         redis)
-            _incremental_wait &
-            pid=$!
-            $cmd_pull "$image_repo:laradock-redis" >/dev/null
-            $cmd_tag "$image_repo:laradock-redis" "${image_prefix}redis"
-            kill -USR1 $pid 2>/dev/null || true
+            docker pull -q "$image_repo:laradock-redis" >/dev/null
+            docker tag "$image_repo:laradock-redis" "${image_prefix}redis"
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
-            _incremental_wait &
-            pid=$!
-            $cmd_pull "$image_repo:laradock-mysql-${MYSQL_VERSION}" >/dev/null
-            $cmd_tag "$image_repo:laradock-mysql-${MYSQL_VERSION}" "${image_prefix}mysql"
+            docker pull -q "$image_repo:laradock-mysql-${MYSQL_VERSION}" >/dev/null
+            docker tag "$image_repo:laradock-mysql-${MYSQL_VERSION}" "${image_prefix}mysql"
             ## mysqlbak
             if [ ! -d "$g_laradock_path"/../../laradock-data/mysqlbak ]; then
                 $use_sudo mkdir -p "$g_laradock_path"/../../laradock-data/mysqlbak
             fi
             $use_sudo chown 1000:1000 "$g_laradock_path"/../../laradock-data/mysqlbak
-            $cmd_pull "$image_repo:laradock-mysqlbak" >/dev/null
-            $cmd_tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
-            kill -USR1 $pid 2>/dev/null || true
+            docker pull -q "$image_repo:laradock-mysqlbak" >/dev/null
+            docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         spring)
             _set_env_java_ver
             arg_test_java=true
-            _incremental_wait &
-            pid=$!
-            $cmd_pull "$image_repo:laradock-spring-${g_java_ver}" >/dev/null
-            $cmd_tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
-            kill -USR1 $pid 2>/dev/null || true
+            docker pull -q "$image_repo:laradock-spring-${g_java_ver}" >/dev/null
+            docker tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
             ;;
         nodejs)
             _set_env_node_ver
-            _incremental_wait &
-            pid=$!
-            $cmd_pull "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null
-            $cmd_tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
-            kill -USR1 $pid 2>/dev/null || true
+            docker pull -q "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null
+            docker tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
             ;;
         php*)
             _set_env_php_ver
             arg_test_php=true
-            _incremental_wait &
-            pid=$!
-            $cmd_pull "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null
-            $cmd_tag "$image_repo:laradock-php-fpm-${g_php_ver}" "${image_prefix}php-fpm"
-            kill -USR1 $pid 2>/dev/null || true
+            docker pull -q "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null
+            docker tag "$image_repo:laradock-php-fpm-${g_php_ver}" "${image_prefix}php-fpm"
             ;;
         esac
     done
@@ -505,14 +467,14 @@ _test_nginx() {
     $dco stop nginx && $dco up -d nginx
     [ -f "$g_laradock_path/../html/favicon.ico" ] || $g_curl_opt -s -o "$g_laradock_path/../html/favicon.ico" $g_url_fly_ico
     _msg time "test nginx $1 ..."
-
-    _incremental_wait &
-    pid=$!
-    until ((i > 8)) || $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; do
-        ((i++))
-        sleep 1
+    for i in {1..5}; do
+        if $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
+            break
+        else
+            _msg time "test nginx error...[$((i * 2))]"
+            sleep 2
+        fi
     done
-    kill -USR1 $pid 2>/dev/null || true
 }
 
 _test_php() {
