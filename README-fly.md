@@ -8,15 +8,15 @@
 | Disk 系统硬盘 | >= 50 GB                                             |
 | Net 网络带宽  | >= 50M(按量付费) >= 10M(固定带宽付费)                |
 | 私有云        | 带宽请自行根据实际业务情况配置网络带宽               |
-| 公有云费用    | 初期： 建议所有采购使用“按量付费”观察时间(一周/一月) |
-| 公有云费用    | 初期后： 根据账单决定采购“固定消费”套餐(一月/一年)   |
-| 域名2个       | 前/后端各一个域名                                    |
+| 公有云费用    | 初期：建议使用“按量付费”观察时间(一周/一月)         |
+| 公有云费用    | 初期后：根据账单决定采购“固定消费”套餐(一月/一年)   |
+| 域名数量      | 前/后端各一个域名                                    |
 | 防火墙/安全组 | 开放TCP端口 22/80/443                                |
-| 业务并发量 | 服务器套餐推荐（CPU/MEM/DISK/NETWORK）               |
-| 最低配置    | 2C/8G/50G/50M   应用程序+数据库+缓存，单台           |
-| 1000 tps   | 2C/8G/100G/100M 应用程序2台，数据库2台，缓存redis1台 |
-| 3000 tps   | 2C/8G/100G/100M 应用程序4台，数据库2台，缓存redis1台 |
-| 5000 tps   | 2C/8G/100G/100M 应用程序6台，数据库2台，缓存redis1台 |
+| 业务并发量    | 服务器套餐推荐（CPU/MEM/DISK/NETWORK）               |
+| 最低配置      | 2C/8G/50G/50M 应用程序+数据库+缓存，单台（t6/u1系列）  |
+| 1000 tps      | 2C/8G/100G/100M 应用程序2台，数据库2台，缓存redis1台 |
+| 3000 tps      | 2C/8G/100G/100M 应用程序4台，数据库2台，缓存redis1台 |
+| 5000 tps      | 2C/8G/100G/100M 应用程序6台，数据库2台，缓存redis1台 |
 
 
 
@@ -32,7 +32,7 @@
 | OS/集群   | Kubernetes (根据云厂商自动推荐的OS/lifseaOS等/或自行安排)            |
 
 
-## 方式一/单机/多机docker-compose部署文档
+## 部署方式一：单机/多机docker-compose部署文档
 ```sh
 ## 假如服务器需要代理访问公网，则设置环境变量
 # export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
@@ -93,6 +93,7 @@ cd $HOME/docker/laradock && bash fly.sh info
 cd $HOME/docker/laradock && docker compose stop redis mysql php-fpm nginx      ## 停止服务 php-fpm
 cd $HOME/docker/laradock && docker compose stop redis mysql spring nginx       ## 停止服务 Java (spring)
 cd $HOME/docker/laradock && docker compose stop redis mysql nodejs nginx       ## 停止服务 nodejs
+
 cd $HOME/docker/laradock && docker compose up -d redis mysql php-fpm nginx      ## 启动服务 php-fpm
 cd $HOME/docker/laradock && docker compose up -d redis mysql spring nginx       ## 启动服务 Java (spring)
 cd $HOME/docker/laradock && docker compose up -d redis mysql nodejs nginx       ## 启动服务 Nodejs
@@ -107,7 +108,7 @@ cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload     ## ngi
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
 
 ## 新增 spring 或 nodejs 容器
-## 1. copy 文件夹 spring 到新文件夹，例如 spring3（nodejs 同理）
+## 1. 复制文件夹 spring 到新文件夹，例如 spring3（nodejs 同理）
 ## 2. 修改 docker-compose.override.yml，复制 spring 段落到新段落，改名，例如 spring3（nodejs 同理）
 ## 3. 修改 nginx 配置文件 router.inc（nodejs 同理）
 
@@ -129,12 +130,12 @@ sudo chown -R 1000:1000 $HOME/docker/html/uploads       ## Java 容器内 uid=10
 sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=1000
 
 ## 如果有负载均衡，单台或多台服务器
-1. 设置负载均衡监听端口 80/443，指向服务器组服务器组（单台/多台）
+1. 设置负载均衡监听端口 80/443，指向服务器组（单台/多台）
 2. 若有安全组或防火墙则需设置安全组开放 80/443
 
 ```
 
-## 方式二/K8S集群kubectl/helm部署参考
+## 部署方式二：K8S集群kubectl/helm部署参考
 ```sh
 ## 1. 前提条件，确保命令 kubectl / helm 工作正常，可以正常操作 k8s 集群
 ## 2. 使用命令 helm create <your_app_name> 生成 helm 文件
