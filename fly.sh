@@ -723,14 +723,14 @@ _parse_args() {
     fi
 }
 
-_include_sh() {
-    include_sh="$g_me_path/include.sh"
-    if [ ! -f "$include_sh" ]; then
-        include_sh='/tmp/include.sh'
-        include_url="$g_deploy_raw/bin/include.sh"
-        [ -f "$include_sh" ] || curl -fsSL "$include_url" >"$include_sh"
+_common_lib() {
+    common_lib="$g_me_path/common.sh"
+    if [ ! -f "$common_lib" ]; then
+        common_lib='/tmp/common.sh'
+        include_url="$g_deploy_raw/lib/common.sh"
+        [ -f "$common_lib" ] || curl -fsSL "$include_url" >"$common_lib"
     fi
-    . "$include_sh"
+    . "$common_lib"
 }
 
 main() {
@@ -770,7 +770,7 @@ main() {
     fi
     echo "$g_me_env $g_me_log $g_url_laradock_raw" >/dev/null
 
-    _include_sh
+    _common_lib
 
     g_laradock_home="$HOME"/docker/laradock
     g_laradock_current="$g_me_path"
