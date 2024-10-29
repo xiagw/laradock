@@ -156,35 +156,6 @@ kubectl -n dev get all
 
 ## 不建议部署于Windows服务器
 1. Windows 服务器不适合安装redis，Windows 兼容性较差，以及与docker兼容性较差，不建议使用Windows服务器
-1. 以下为套装环境集成包，不能保证可以成功部署
-1. Download URL: http://oss.flyh6.com/d/xampp.zip
-1. Windows 服务器一般使用 xampp 部署 PHP 项目和前端静态文件
-
-| 站点 URL 目录                  | 对应服务器文件系统目录                        |
-|:-------------------------------|:----------------------------------------------|
-| http://xxx.yyy.com/            | C:\xampp\htdocs\                              |
-| http://xxx.yyy.com/tp/         | C:\xampp\htdocs\tp\ (PHP 代码文件)            |
-| http://xxx.yyy.com/s/          | C:\xampp\htdocs\s\ (前端静态资源文件)         |
-| http://xxx.yyy.com/spring-xxx/ | C:\xampp\spring\ （安装 JDK， 部署 jar 文件） |
-
-
-```powershell
-cd .\Downloads
-
-# irm https://gitee.com/xiagw/deploy.sh/raw/main/docs/bin/win.ssh.ps1 | iex
-
-# Import-Module BitsTransfer
-# Start-BitsTransfer -Source http://oss.flyh6.com/d/xampp.zip -Description .\xampp.zip
-
-curl.exe -LO http://oss.flyh6.com/d/xampp.zip
-Expand-Archive .\xampp.zip C:\
-# powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive .\xampp.zip C:\"
-
-curl.exe -LO https://corretto.aws/downloads/latest/amazon-corretto-8-x64-windows-jdk.msi
-Start-Process .\amazon-corretto-8-x64-windows-jdk.msi
-# curl.exe -LO https://corretto.aws/downloads/latest/amazon-corretto-17-x64-windows-jdk.msi
-# Start-Process .\amazon-corretto-17-x64-windows-jdk.msi
-```
 
 
 ## 公网传送临时文件-非加密传输
@@ -195,7 +166,7 @@ Start-Process .\amazon-corretto-8-x64-windows-jdk.msi
 | 站点                       | 网址                      |
 |:---------------------------|:--------------------------|
 | 奶牛快传免费               | https://cowtransfer.com/  |
-| Wormhole简单私密的文件共享 | https://wormhole.app/     |
+| Wormhole简单私密的文件共享  | https://wormhole.app/     |
 | 文叔叔                     | https://www.wenshushu.cn/ |
 
 
