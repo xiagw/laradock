@@ -120,7 +120,7 @@ cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql
 ## mysql 进入命令行操作(远程)
 cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql -h'xxxxx' -u'yyyyyy' -p'zzzzzz'"
 ## redis 进入命令行操作(本机)
-cd $HOME/docker/laradock && docker compose exec redis redis-cli
+cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -a'zzzzzz'"
 ## redis 进入命令行操作(远程)
 cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -h'xxxxx' -a'zzzzzz'"
 
