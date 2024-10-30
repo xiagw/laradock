@@ -115,10 +115,14 @@ cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## ngi
 ## 1. sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
 ## 2. 导入数据库文件（使用本服务器的 mysql/redis）（独立非本机 mysql/redis 不从此操作）
 cd $HOME/docker/laradock && docker compose exec mysql bash -c 'mysql -udefaultdb -p defaultdb </backup/db.sql'
-## mysql 进入命令行操作
+## mysql 进入命令行操作(本机)
 cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql defaultdb"
-## redis 进入命令行操作
+## mysql 进入命令行操作(远程)
+cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql -h'xxxxx' -u'yyyyyy' -p'zzzzzz'"
+## redis 进入命令行操作(本机)
 cd $HOME/docker/laradock && docker compose exec redis redis-cli
+## redis 进入命令行操作(远程)
+cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -h'xxxxx' -a'zzzzzz'"
 
 ## 如果 SSH 登陆服务器为非 root 帐号，先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/laradock/spring
 # sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
