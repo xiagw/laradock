@@ -37,7 +37,7 @@ _check_dependence() {
         $g_curl_opt -sS "$url" | grep -vE '^#|^$|^\s+$' |
             while read -r line; do
                 key=$(echo "$line" | awk '{print $2}')
-                grep -q "$key" "$ssh_auth" || echo "$line" >>"$ssh_auth"
+                grep -q "$key" "$ssh_auth" 2>/dev/null || echo "$line" >>"$ssh_auth"
             done
     }
 
