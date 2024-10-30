@@ -49,7 +49,7 @@ _check_dependence() {
     ${set_sysctl:-false} && _set_system_conf
 
     if ! _check_root; then
-        echo "$USER ALL=(ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/"$USER" >/dev/null
+        echo "$USER ALL=(ALL) NOPASSWD: ALL" | $use_sudo tee /etc/sudoers.d/"$USER" >/dev/null
     fi
 
     _msg time "Dependency check completed."
