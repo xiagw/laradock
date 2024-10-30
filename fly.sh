@@ -51,6 +51,9 @@ _check_dependence() {
     if ! _check_root; then
         echo "$USER ALL=(ALL) NOPASSWD: ALL" | $use_sudo tee /etc/sudoers.d/"$USER" >/dev/null
     fi
+    $use_sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+    $use_sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+    $use_sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
 
     _msg time "Dependency check completed."
 }
