@@ -367,6 +367,14 @@ _install_acme() {
             curl https://get.acme.sh | bash -s email=fly@laradock.com
         fi
     fi
+
+    if ! _check_root; then
+        _check_sudo
+        $use_sudo chown -R "$USER:$USER" "$(dirname "$key")"
+        $use_sudo chgrp "$USER" "$key" "$pem"
+        $use_sudo chmod g+w "$key" "$pem"
+    fi
+
     domain="${1}"
     _msg time "your domain is: ${domain:-api.xxx.com}"
     case "$domain" in
