@@ -370,7 +370,7 @@ _install_acme() {
 
     if ! _check_root; then
         _check_sudo
-        $use_sudo chown -R "$USER:$USER" "$(dirname "$key")"
+        $use_sudo chown "$USER:$USER" "$(dirname "$key")"
         $use_sudo chgrp "$USER" "$key" "$pem"
         $use_sudo chmod g+w "$key" "$pem"
     fi
