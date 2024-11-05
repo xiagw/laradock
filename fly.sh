@@ -155,7 +155,14 @@ _check_laradock() {
 
 _check_laradock_env() {
     # Skip if env file exists and force update not enabled
-    if [[ -f "$g_laradock_env" && "${force_update_env:-0}" -eq 0 ]]; then
+    if [[ -f "$g_laradock_env" ]]; then
+        # Update .env file with new values
+        sed -i \
+            -e "/^MYSQL_VERSION=/s/=.*/=${g_mysql_ver}/" \
+            -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
+            -e "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" \
+            -e "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" \
+            "$g_laradock_env"
         return 0
     fi
     _msg step "Set laradock .env"
