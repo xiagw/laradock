@@ -780,7 +780,7 @@ main() {
         g_url_get_docker="$g_url_fly_cdn/get-docker.sh"
         g_url_get_docker2="$g_url_fly_cdn/get-docker2.sh"
         g_url_fzf="https://gitee.com/mirrors/fzf.git"
-        g_url_fzf_release=$g_url_fly_cdn/fzf-0.53.0-linux_amd64.tgz
+        g_url_fzf_release=$g_url_fly_cdn/fzf-0.56.0-linux_amd64.tgz
         g_url_ohmyzsh="https://gitee.com/mirrors/ohmyzsh.git"
     else
         g_url_laradock_git=https://github.com/xiagw/laradock.git
