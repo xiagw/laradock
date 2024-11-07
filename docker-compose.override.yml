@@ -831,3 +831,22 @@ services:
       command: python3 deploy_api.py
       ports:
         - '8080:8080'
+
+    macos-ventura:
+      image: sickcodes/docker-osx:ventura
+      privileged: true
+      network_mode: "host"
+      devices:
+        - /dev:/dev
+      cap_add:
+        - ALL
+      ports:
+        - 50922:10022
+      volumes:
+        - /tmp/.X11-unix:/tmp/.X11-unix
+        - /lib/modules:/lib/modules
+        - ${DATA_PATH_HOST}/macos_ventura:/home
+      environment:
+        - DISPLAY=${DISPLAY:-:0.0}
+        - GENERATE_UNIQUE=true
+        - MASTER_PLIST_URL='https://raw.githubusercontent.com/sickcodes/osx-serial-generator/master/config-custom.plist'
