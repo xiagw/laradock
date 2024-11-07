@@ -369,7 +369,7 @@ _install_acme() {
     else
         if ${IN_CHINA:-true}; then
             git clone --depth 1 https://gitee.com/neilpang/acme.sh.git
-            cd acme.sh && ./acme.sh --install -m fly@laradock.com
+            cd acme.sh && ./acme.sh --install --accountemail fly@laradock.com
         else
             curl https://get.acme.sh | bash -s email=fly@laradock.com
         fi
