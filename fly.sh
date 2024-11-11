@@ -359,21 +359,12 @@ _install_lsyncd() {
 }
 
 _install_acme() {
-    _msg step "Install acme.sh."
+    _install_acme_official
     local acme_home="$HOME/.acme.sh"
+
     local key="$g_laradock_home/nginx/sites/ssl/default.key"
     local pem="$g_laradock_home/nginx/sites/ssl/default.pem"
     local html="$HOME"/docker/html
-    if [ -f "$acme_home/acme.sh" ]; then
-        _msg time "found $acme_home/acme.sh, skip install acme.sh"
-    else
-        if ${IN_CHINA:-true}; then
-            git clone --depth 1 https://gitee.com/neilpang/acme.sh.git
-            cd acme.sh && ./acme.sh --install --accountemail fly@laradock.com
-        else
-            curl https://get.acme.sh | bash -s email=fly@laradock.com
-        fi
-    fi
 
     if ! _check_root; then
         _check_sudo
@@ -383,7 +374,7 @@ _install_acme() {
     fi
 
     domain="${1}"
-    _msg time "your domain is: ${domain:-api.xxx.com}"
+    _msg time "your domain is: ${domain:-api.example.com}"
     case "$domain" in
     *.*.*)
         cd "$acme_home" || return 1
@@ -393,17 +384,21 @@ _install_acme() {
     *)
         echo
         echo "Single host domain:"
-        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com}"
+        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.example.com}"
         echo "Wildcard domain:"
-        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.xxx.com} -d '${domain:-*.xxx.com}' "
+        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-example.com} -d '*.${domain:-example.com}'"
         echo "DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]"
-        echo "  cd $acme_home && ./acme.sh --issue --dns dns_cf -d ${domain:-api.xxx.com} -d '${domain:-*.xxx.com}' "
+        echo "  cd $acme_home && ./acme.sh --issue --dns dns_cf -d ${domain:-example.com} -d '*.${domain:-example.com}'"
         echo "Deploy cert"
-        echo "  cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-api.xxx.com}"
+        echo "  cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-example.com}"
         ;;
     esac
-    # openssl x509 -noout -text -in xxx.pem
-    # openssl x509 -noout -dates -in xxx.pem
+    # openssl x509 -noout -text -in "$pem"
+    local p
+    for p in "$(dirname "$pem")"/*.pem; do
+        echo "Found $p"
+        openssl x509 -noout -dates -in "$pem"
+    done
 }
 
 _start_docker_service() {
