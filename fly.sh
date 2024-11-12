@@ -266,7 +266,9 @@ _set_file_mode() {
 
 _install_zsh() {
     _msg step "Install oh my zsh"
-
+    if ${IN_CHINA:-true}; then
+        _set_mirror os
+    fi
     _check_cmd install zsh
 
     ## fzf
