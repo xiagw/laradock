@@ -282,6 +282,9 @@ _install_zsh() {
         "$HOME"/.fzf/install
     else
         _check_cmd install fzf
+        local file=/usr/share/doc/fzf/examples/key-bindings.zsh
+        [ ! -f $file ] &&
+            $use_sudo $g_curl_opt -Lo $file $g_url_fly_cdn/"$(basename $file)"
     fi
 
     ## install oh-my-zsh
