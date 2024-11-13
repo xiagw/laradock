@@ -25,11 +25,13 @@ skip-name-resolve
 
 ######## M2M replication (master)
 server_id = 1
-## 主键奇数列
 auto_increment_offset = 1
+auto_increment_increment = 1
+
+## 主键奇数列
+# auto_increment_offset = 1
 ## 递增步长 2
 # auto_increment_increment = 2
-auto_increment_increment = 1
 
 ######## M2M replication (slave)
 # server_id = 2

@@ -37,15 +37,11 @@ main() {
     ## check mysql version
     mysql_bin="mysql $mysql_conf"
     mysql_dump="mysqldump $mysql_conf --set-gtid-purged=OFF -E -R --triggers"
-    if mysql --version | grep -q "mysql.*Ver.*Distrib"; then
-        mysql_ver=$(mysql --version | awk '{print int($5)}')
-    elif mysql --version | grep -q "mysql.*Ver.*Linux.*Community"; then
-        mysql_ver=$(mysql --version | awk '{print int($3)}')
-    fi
-    if [[ $mysql_ver -lt 8 ]]; then
-        mysql_dump="$mysql_dump --master-data=2"
-    else
+
+    if mysqldump --master-data=2 | grep -q 'WARNING.*master-data.*source-data'; then
         mysql_dump="$mysql_dump --source-data=2"
+    else
+        mysql_dump="$mysql_dump --master-data=2"
     fi
 
     ## backup user and grants
