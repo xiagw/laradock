@@ -12,12 +12,13 @@ me_path="$(dirname "$(readlink -f "$0")")"
 # me_log="$me_path/${me_name}.log"
 
 my_cnf=/etc/mysql/conf.d/my.cnf
-chmod 0644 $my_cnf
 if mysqld --version | grep '8\..\.'; then
     cp -f "$me_path"/my.8.0.cnf $my_cnf
 else
     cp -f "$me_path"/my.5.7.cnf $my_cnf
 fi
+
+chmod 0644 $my_cnf
 
 if [ "$MYSQL_SLAVE" = 'true' ]; then
     sed -i \
