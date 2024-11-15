@@ -265,13 +265,14 @@ _set_file_mode() {
 }
 
 _install_zsh() {
-    _msg step "Install oh my zsh"
+    _msg step "Install zsh"
     if ${IN_CHINA:-true}; then
         _set_mirror os
     fi
     _check_cmd install zsh
 
     ## fzf
+    _msg time "Install fzf"
     if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler) ]]; then
         if [[ -d "$HOME"/.fzf ]]; then
             _msg warn "Found $HOME/.fzf, skip git clone fzf."
@@ -287,7 +288,7 @@ _install_zsh() {
             $use_sudo $g_curl_opt -Lo $file $g_url_fly_cdn/"$(basename $file)"
     fi
 
-    ## install oh-my-zsh
+    _msg time "Install oh-my-zsh"
     if [[ -d "$HOME"/.oh-my-zsh ]]; then
         _msg warn "Found $HOME/.oh-my-zsh, skip."
     else
@@ -306,8 +307,9 @@ _install_zsh() {
             echo "omz plugin enable z extract docker docker-compose"
         fi
     fi
-    ## install byobu
-    _check_cmd install byobu || true
+    _msg time "Install byobu"
+    _check_cmd install byobu
+    _msg time "End install zsh and byobu"
 }
 
 _install_trzsz() {
