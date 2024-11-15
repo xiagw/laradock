@@ -563,8 +563,11 @@ _get_env_info() {
 
 _mysql_cli() {
     cd "$g_laradock_path"
-    source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=' "$g_laradock_env")
-    docker compose exec mysql bash -c "LANG=C.UTF-8 MYSQL_PWD=$MYSQL_PASSWORD mysql -u $MYSQL_USER $MYSQL_DATABASE"
+    source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=|^MYSQL_ROOT_PASSWORD=' "$g_laradock_env")
+    local mysql_user=${1:-$MYSQL_USER}
+    local mysql_password
+    mysql_password=$([ "$mysql_user" = root ] && echo "$MYSQL_ROOT_PASSWORD" || echo "$MYSQL_PASSWORD")
+    docker compose exec mysql bash -c "LANG=C.UTF-8 MYSQL_PWD=$mysql_password mysql --no-defaults -u$mysql_user $MYSQL_DATABASE"
 }
 
 _redis_cli() {
@@ -732,6 +735,8 @@ _parse_args() {
             ;;
         mysql-cli)
             arg_mysql_cli=true
+            arg_mysql_user="$2"
+            [ -z "$2" ] || shift
             ;;
         redis-cli)
             arg_redis_cli=true
@@ -836,7 +841,7 @@ main() {
         return
     fi
     if ${arg_mysql_cli:-false}; then
-        _mysql_cli
+        _mysql_cli "$arg_mysql_user"
         return
     fi
     if ${arg_redis_cli:-false}; then
