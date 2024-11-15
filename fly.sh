@@ -427,6 +427,19 @@ _start_docker_service() {
     done
 }
 
+_show_loading() {
+    local pid=$1
+    local message=${2:-"waiting"}
+    local start_time=$SECONDS
+    printf "%s " "$message"
+    while kill -0 "$pid" 2>/dev/null; do
+        printf "."
+        sleep 1
+    done
+    local duration=$((SECONDS - start_time))
+    echo " done (${duration}s)"
+}
+
 _pull_image() {
     _msg step "Check docker image..."
     local image_repo=registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5
@@ -441,40 +454,47 @@ _pull_image() {
         case $i in
         nginx)
             arg_test_nginx=true
-            docker pull -q "$image_repo:laradock-nginx" >/dev/null
+            docker pull -q "$image_repo:laradock-nginx" >/dev/null 2>&1 &
+            _show_loading $! "Pulling nginx image"
             docker tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
             ;;
         redis)
-            docker pull -q "$image_repo:laradock-redis" >/dev/null
+            docker pull -q "$image_repo:laradock-redis" >/dev/null 2>&1 &
+            _show_loading $! "Pulling redis image"
             docker tag "$image_repo:laradock-redis" "${image_prefix}redis"
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
-            docker pull -q "$image_repo:laradock-mysql-${MYSQL_VERSION}" >/dev/null
+            docker pull -q "$image_repo:laradock-mysql-${MYSQL_VERSION}" >/dev/null 2>&1 &
+            _show_loading $! "Pulling mysql image"
             docker tag "$image_repo:laradock-mysql-${MYSQL_VERSION}" "${image_prefix}mysql"
             ## mysqlbak
             if [ ! -d "$g_laradock_path"/../../laradock-data/mysqlbak ]; then
                 $use_sudo mkdir -p "$g_laradock_path"/../../laradock-data/mysqlbak
             fi
             $use_sudo chown 1000:1000 "$g_laradock_path"/../../laradock-data/mysqlbak
-            docker pull -q "$image_repo:laradock-mysqlbak" >/dev/null
+            docker pull -q "$image_repo:laradock-mysqlbak" >/dev/null 2>&1 &
+            _show_loading $! "Pulling mysqlbak image"
             docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         spring)
             _set_env_java_ver
             arg_test_java=true
-            docker pull -q "$image_repo:laradock-spring-${g_java_ver}" >/dev/null
+            docker pull -q "$image_repo:laradock-spring-${g_java_ver}" >/dev/null 2>&1 &
+            _show_loading $! "Pulling spring image"
             docker tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
             ;;
         nodejs)
             _set_env_node_ver
-            docker pull -q "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null
+            docker pull -q "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null 2>&1 &
+            _show_loading $! "Pulling nodejs image"
             docker tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
             ;;
         php*)
             _set_env_php_ver
             arg_test_php=true
-            docker pull -q "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null
+            docker pull -q "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null 2>&1 &
+            _show_loading $! "Pulling php-fpm image"
             docker tag "$image_repo:laradock-php-fpm-${g_php_ver}" "${image_prefix}php-fpm"
             ;;
         esac
