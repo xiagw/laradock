@@ -60,7 +60,7 @@ _check_dependence() {
 
 _check_docker_compose() {
     dco="docker compose"
-    if $dco version; then
+    if $dco version 2>/dev/null; then
         _msg green "$dco ready."
     else
         if _check_cmd docker-compose; then
@@ -74,7 +74,7 @@ _check_docker_compose() {
 }
 
 _check_docker() {
-    _msg step "Check docker and docker compose"
+    _msg step "Check docker and docker-compose"
     if _check_cmd docker; then
         _check_docker_compose
         _msg time "docker is already installed."
@@ -567,13 +567,13 @@ _mysql_cli() {
     local mysql_user=${1:-$MYSQL_USER}
     local mysql_password
     mysql_password=$([ "$mysql_user" = root ] && echo "$MYSQL_ROOT_PASSWORD" || echo "$MYSQL_PASSWORD")
-    docker compose exec mysql bash -c "LANG=C.UTF-8 MYSQL_PWD=$mysql_password mysql --no-defaults -u$mysql_user $MYSQL_DATABASE"
+    $dco exec mysql bash -c "LANG=C.UTF-8 MYSQL_PWD=$mysql_password mysql --no-defaults -u$mysql_user $MYSQL_DATABASE"
 }
 
 _redis_cli() {
     cd "$g_laradock_path"
     source <(grep '^REDIS_PASSWORD=' "$g_laradock_env")
-    docker compose exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
+    $dco exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
 }
 
 _upgrade_java() {
@@ -840,6 +840,9 @@ main() {
         _install_acme "$arg_domain"
         return
     fi
+
+    _check_docker_compose
+
     if ${arg_mysql_cli:-false}; then
         _mysql_cli "$arg_mysql_user"
         return
