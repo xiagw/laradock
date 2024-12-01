@@ -850,3 +850,25 @@ services:
         - DISPLAY=${DISPLAY:-:0.0}
         - GENERATE_UNIQUE=true
         - MASTER_PLIST_URL='https://raw.githubusercontent.com/sickcodes/osx-serial-generator/master/config-custom.plist'
+
+    gitea:
+      image: gitea/gitea:${GITEA_VERSION}
+      environment:
+        - USER_UID=1000
+        - USER_GID=1000
+        - GITEA__database__DB_TYPE=mysql
+        - GITEA__database__HOST=${GITEA_DB_HOST}
+        - GITEA__database__NAME=${GITEA_DB_NAME}
+        - GITEA__database__USER=${GITEA_DB_USER}
+        - GITEA__database__PASSWD=${GITEA_DB_PASSWORD}
+      restart: always
+      networks:
+        - frontend
+        - backend
+      volumes:
+        - ${DATA_PATH_HOST}/gitea:/data
+        - /etc/timezone:/etc/timezone:ro
+        - /etc/localtime:/etc/localtime:ro
+      ports:
+        - "3000:3000"
+        - "222:22"

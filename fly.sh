@@ -449,6 +449,7 @@ _pull_image() {
     local image_prefix
     docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
 
+    ## docker version 24 以下使用 laradock_ 前缀
     [ "$docker_ver" -le 19 ] && image_prefix="laradock_" || image_prefix="laradock-"
 
     for i in "${args[@]}"; do
