@@ -279,7 +279,7 @@ _install_zsh() {
         else
             git clone --depth 1 "$g_url_fzf" "$HOME"/.fzf
         fi
-        sed -i -e "/url=https:/s/=.*/=$g_url_fzf_release/" "$HOME"/.fzf/install
+        sed -i -e "#url=https:#s#=.*#=$g_url_fzf_release#" "$HOME"/.fzf/install
         "$HOME"/.fzf/install
     else
         _check_cmd install fzf
