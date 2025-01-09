@@ -11,14 +11,14 @@ _kill() {
 [ "$DEBUG" ] && set -x
 ## 安装禅道 / 升级禅道
 if [ -f /app/zentaopms/VERSION ]; then
-    ver_app=$(cat /app/zentaopms/VERSION)
+    zt_ver=$(cat /app/zentaopms/VERSION)
 else
     upgrade=true
 fi
 if [ -f /var/www/zentaopms/VERSION ]; then
     ver_docker=$(cat /var/www/zentaopms/VERSION)
 fi
-if [ "${ver_app:-app}" != "${ver_docker:-docker}" ]; then
+if [ "${zt_ver:-app}" != "${ver_docker:-docker}" ]; then
     upgrade=true
 fi
 if [ "$upgrade" = true ]; then
