@@ -46,7 +46,8 @@ EOF
 
 # https://www.zentao.net/dl/zentao/18.9/ZenTaoPMS-18.9-php7.2_7.4.zip
 # https://www.zentao.net/dl/zentao/18.12/ZenTaoPMS-18.12-php8.1.zip
-download_url="https://www.zentao.net/dl/zentao/${ZENTAO_VERSION}/ZenTaoPMS-${ZENTAO_VERSION}-php8.1.zip"
-curl -Lo zentao.zip "$download_url"
+download_url="https://www.zentao.net/dl/zentao/${ZT_VERSION}/ZenTaoPMS-${ZT_VERSION}-php8.1.zip"
+curl -fLo zentao.zip "$download_url"
 unzip -q zentao.zip
 rm -f zentao.zip
+php -v
