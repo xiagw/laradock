@@ -73,11 +73,36 @@ _check_docker_compose() {
     fi
 }
 
+_add_user_to_docker_group() {
+    # Add user to docker group if not root
+    if ! _check_root; then
+        _msg time "Add user \"$USER\" to group docker."
+        $use_sudo usermod -aG docker "$USER"
+        echo '############################################'
+        _msg red "!!!! Please logout $USER, and login again. !!!!"
+        _msg red "!!!! Please logout $USER, and login again. !!!!"
+        _msg red "!!!! Please logout $USER, and login again. !!!!"
+        _msg red "And re-execute the above command."
+        echo '############################################'
+        need_logout=true
+    fi
+
+    # Add other users to docker group
+    for u in ubuntu centos ops; do
+        [[ "$USER" != "$u" ]] && id "$u" &>/dev/null && $use_sudo usermod -aG docker "$u"
+    done
+}
+
 _check_docker() {
     _msg step "Check docker and docker-compose"
     if _check_cmd docker; then
         _check_docker_compose
         _msg time "docker is already installed."
+        # Check if current user is in docker group
+        if ! groups "$USER" | grep -q docker; then
+            _msg warn "User $USER is not in docker group."
+            _add_user_to_docker_group
+        fi
         return
     fi
 
@@ -106,23 +131,7 @@ _check_docker() {
     # shellcheck disable=2046
     $g_curl_opt "$url" | $use_sudo bash $(${aliyun_mirror:-true} && echo '-s - --mirror Aliyun')
 
-    # Add user to docker group if not root
-    if ! _check_root; then
-        _msg time "Add user \"$USER\" to group docker."
-        $use_sudo usermod -aG docker "$USER"
-        echo '############################################'
-        _msg red "!!!! Please logout $USER, and login again. !!!!"
-        _msg red "!!!! Please logout $USER, and login again. !!!!"
-        _msg red "!!!! Please logout $USER, and login again. !!!!"
-        _msg red "And re-execute the above command."
-        echo '############################################'
-        need_logout=true
-    fi
-
-    # Add other users to docker group
-    for u in ubuntu centos ops; do
-        [[ "$USER" != "$u" ]] && id "$u" &>/dev/null && $use_sudo usermod -aG docker "$u"
-    done
+    _add_user_to_docker_group
 
     # Revert Aliyun Linux fake Centos
     ${fake_os:-false} && $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
@@ -531,8 +540,8 @@ _test_php() {
         source "$g_laradock_env" 2>/dev/null
         sed -i \
             -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
-            -e "s/ENV_MYSQL_USER/$MYSQL_USER/" \
-            -e "s/ENV_MYSQL_PASSWORD/$MYSQL_PASSWORD/" \
+            -e "s/ENV_MYSQL_USER/${MYSQL_USER-}/" \
+            -e "s/ENV_MYSQL_PASSWORD/${MYSQL_PASSWORD-}/" \
             "$path_nginx_root/test.php"
     fi
     _test_nginx "test.php"
