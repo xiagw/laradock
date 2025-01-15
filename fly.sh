@@ -98,10 +98,12 @@ _check_docker() {
     if _check_cmd docker; then
         _check_docker_compose
         _msg time "docker is already installed."
-        # Check if current user is in docker group
-        if ! groups "$USER" | grep -q docker; then
-            _msg warn "User $USER is not in docker group."
-            _add_user_to_docker_group
+        # Check if current user is in docker group (skip for root)
+        if [ "$USER" != "root" ] && [ "$EUID" -ne 0 ]; then
+            if ! groups "$USER" | grep -q docker; then
+                _msg warn "User $USER is not in docker group."
+                _add_user_to_docker_group
+            fi
         fi
         return
     fi
