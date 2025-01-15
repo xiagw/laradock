@@ -98,6 +98,7 @@ _check_docker() {
     if _check_cmd docker; then
         _check_docker_compose
         _msg time "docker is already installed."
+        $use_sudo systemctl enable --now docker
         # Check if current user is in docker group (skip for root)
         if [ "$USER" != "root" ] && [ "$EUID" -ne 0 ]; then
             if ! groups "$USER" | grep -q docker; then
