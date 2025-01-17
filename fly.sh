@@ -659,7 +659,7 @@ EOF
 
 _parse_args() {
     IN_CHINA=true
-    g_php_ver=7.4
+    g_php_ver=8.1
     g_java_ver=8
     g_mysql_ver=8.0
     g_node_ver=18
