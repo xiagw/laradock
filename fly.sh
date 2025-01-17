@@ -106,7 +106,7 @@ _check_docker() {
                 _add_user_to_docker_group
             fi
         fi
-        return
+        return 0
     fi
 
     # Handle OpenEuler distribution
@@ -134,7 +134,7 @@ _check_docker() {
     # shellcheck disable=2046
     $g_curl_opt "$url" | $use_sudo bash $(${aliyun_mirror:-true} && echo '-s - --mirror Aliyun')
 
-    _add_user_to_docker_group
+    _add_user_to_docker_group || true
 
     # Revert Aliyun Linux fake Centos
     ${fake_os:-false} && $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
