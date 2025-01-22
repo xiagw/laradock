@@ -6,14 +6,13 @@
 | CPU 处理器    | >= 4 core(核) (支持AMD/Intel/ARM64)                      |
 | MEM 内存      | >= 8 GB                                              |
 | Disk 系统硬盘 | >= 50 GB                                             |
-| Net 网络带宽  | >= 50M(按量付费) >= 10M(固定带宽付费)                |
-| 私有云        | 自行根据实际业务情况配置网络带宽               |
+| Net 网络带宽  | >= 50M(按量付费) >= 10M(固定带宽付费)（私有云自行根据实际业务情况配置网络带宽） |
 | 公有云费用    | 初始部署：建议充值200-500元使用“按量付费”观察时间(三天/一周/一月)         |
 | 公有云费用    | 持续运行：根据账单决定采购“固定”套餐(一月/一年)    |
-| 域名数量      | 前/后端各一个共2个域名                                |
+| 域名数量      | 前/后端各一个，共2个域名                                |
 | 防火墙/安全组 | 开放TCP端口 22/80/443                                |
-| 最低要求配置  | 2C/8G/50G/50M 应用程序+数据库+缓存，单台（t6/u1系列便宜）  |
-| 业务并发量    | 服务器套餐推荐（CPU/MEM/DISK/NETWORK）               |
+| 最低单机配置  | 2C/8G/50G/50M 应用程序+数据库+缓存，单机（Aliyun ECS t6/u1系列便宜）  |
+| 业务并发量    | 多个服务器"套餐"推荐（CPU/MEM/DISK/NETWORK）               |
 | 1000 tps      | 2C/8G/100G/100M 应用程序2台，数据库2台，缓存redis1台 |
 | 3000 tps      | 2C/8G/100G/100M 应用程序4台，数据库2台，缓存redis1台 |
 | 5000 tps      | 2C/8G/100G/100M 应用程序6台，数据库2台，缓存redis1台 |
@@ -38,7 +37,7 @@
 # export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
 
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
-## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-7.4/openjdk-8
+## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-8.1/openjdk-8
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
 ## 套装LNMP nginx/php/redis/mysql 请执行
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php redis mysql nginx
@@ -110,7 +109,10 @@ cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## ngi
 ## 新增 spring 或 nodejs 容器
 ## 1. 复制文件夹 spring 到新文件夹，例如 spring3（nodejs 同理）
 ## 2. 修改 docker-compose.override.yml，复制 spring 段落到新段落，改名，例如 spring3（nodejs 同理）
-## 3. 修改 nginx 配置文件 router.inc（nodejs 同理）
+## 3. 复制镜像: docker tag laradock-spring laradock-spring3
+## 4. 修改 nginx 配置文件 router.inc（nodejs 同理）
+## 修改 java 启动参数
+## 1. 创建 spring/.java_opts 文件，内容: export JAVA_OPTS=“java -Xms1g -Xmx1g”
 
 ## 1. sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
 ## 2. 导入数据库文件（使用本服务器的 mysql/redis）（独立非本机 mysql/redis 不从此操作）
