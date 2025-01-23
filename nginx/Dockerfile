@@ -1,5 +1,5 @@
-# FROM nginx:stable-alpine
-FROM registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5:nginx-stable-alpine
+FROM nginx:stable-alpine
+# FROM registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5:nginx-stable-alpine
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
