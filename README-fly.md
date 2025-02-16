@@ -176,11 +176,14 @@ kubectl -n dev get all
 | 文叔叔                     | https://www.wenshushu.cn/ |
 
 
-## 查询域名备案
-1. 公共查询备案： https://beian.miit.gov.cn/#/Integrated/recordQuery
+## 域名和域名备案
+1. 域名公共查询备案： https://beian.miit.gov.cn/#/Integrated/recordQuery
 1. 阿里云ICP备案： https://beian.aliyun.com/ （建议下载它的App进行备案速度更快）
 1. “备案提供商”和“服务器提供商”必须一致，例如“阿里云备案”则必须是“阿里云服务器”，例如腾讯云服务器+阿里云备案是无效的。（域名在哪里和备案无关）
 1. 服务器在中国内地需要域名备案，港澳台和外国无需域名备案，【如果没有备案必须先去“**服务器提供商**”备案】
+1. dns解析需要指向服务器IP
+1. 需要提供域名的Nginx SSL证书文件
+
 
 # Bitvise教程/下载/安装软件/登录服务器/拷贝文件到服务器目录
 1. 下载方式一， [BvSshClient http://oss.flyh6.com/d/BvSshClient-Inst.zip](http://oss.flyh6.com/d/BvSshClient-Inst.zip)
