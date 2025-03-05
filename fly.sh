@@ -47,7 +47,7 @@ _check_dependence() {
     chmod 600 "$ssh_auth"
 
     # 3. 需要 sudo 的系统配置操作
-    _check_sudo  # 移到这里，因为后面的操作都需要 sudo
+    _check_sudo # 移到这里，因为后面的操作都需要 sudo
 
     # 系统配置更改
     ${set_sysctl:-false} && _set_system_conf
@@ -80,24 +80,54 @@ _check_docker_compose() {
     fi
 }
 
+_force_user_logout() {
+    local user="$1"
+    _msg warn "Forcing logout for user: $user"
+
+    # 1. Try loginctl first (systemd)
+    if command -v loginctl >/dev/null 2>&1; then
+        $use_sudo loginctl terminate-user "$user"
+        return
+    fi
+
+    # 2. Fallback: find and terminate user sessions using pgrep
+    $use_sudo pgrep -f "sshd:.*$user@pts" |
+        while read -r pid; do
+            _msg warn "Terminating session pid: $pid"
+            # 先发送 TERM 信号
+            $use_sudo kill -TERM "$pid"
+            sleep 2
+            # 如果进程还在，再用 HUP 信号
+            $use_sudo kill -HUP "$pid"
+        done
+}
+
 _add_user_to_docker_group() {
-    # Add user to docker group if not root
-    if ! _check_root; then
-        _msg time "Add user \"$USER\" to group docker."
-        $use_sudo usermod -aG docker "$USER"
-        echo '############################################'
-        _msg red "!!!! Please logout $USER, and login again. !!!!"
-        _msg red "!!!! Please logout $USER, and login again. !!!!"
-        _msg red "!!!! Please logout $USER, and login again. !!!!"
-        _msg red "And re-execute the above command."
-        echo '############################################'
-        need_logout=true
+    # Skip for root user or if user already in docker group
+    if _check_root || groups "$USER" | grep -q docker; then
+        return 0
     fi
 
     # Add other users to docker group
     for u in ubuntu centos ops; do
-        [[ "$USER" != "$u" ]] && id "$u" &>/dev/null && $use_sudo usermod -aG docker "$u"
+        if [[ "$USER" != "$u" ]] && id "$u" &>/dev/null; then
+            $use_sudo usermod -aG docker "$u"
+            _force_user_logout "$u"
+        fi
     done
+
+    # Add user to docker group
+    _msg time "Add user \"$USER\" to group docker."
+    $use_sudo usermod -aG docker "$USER"
+    echo '############################################'
+    _msg red "!!!! Adding user to docker group requires logout !!!!"
+    _msg yellow "System will force logout in 5 seconds..."
+    # _msg yellow "Please save your work and press Ctrl+C to cancel if needed."
+    echo '############################################'
+    sleep 5
+    _force_user_logout "$USER"
+    need_logout=true
+    exit 0
 }
 
 _check_docker() {
@@ -106,13 +136,7 @@ _check_docker() {
         _check_docker_compose
         _msg time "docker is already installed."
         $use_sudo systemctl enable --now docker
-        # Check if current user is in docker group (skip for root)
-        if [ "$USER" != "root" ] && [ "$EUID" -ne 0 ]; then
-            if ! groups "$USER" | grep -q docker; then
-                _msg warn "User $USER is not in docker group."
-                _add_user_to_docker_group
-            fi
-        fi
+        _add_user_to_docker_group
         return 0
     fi
 
@@ -133,13 +157,14 @@ _check_docker() {
     # Install Docker using Aliyun mirror
     local url="$g_url_get_docker"
     if ${aliyun_mirror:-true}; then
+        cmd_arg='-s - --mirror Aliyun'
         echo "${version_id-}"
         if [[ "${version_id%%.*}" -ne 7 ]]; then
             url="$g_url_get_docker2"
         fi
     fi
-    # shellcheck disable=2046
-    $g_curl_opt "$url" | $use_sudo bash $(${aliyun_mirror:-true} && echo '-s - --mirror Aliyun')
+    # shellcheck disable=2046,2086
+    $g_curl_opt "$url" | $use_sudo bash ${cmd_arg}
 
     _add_user_to_docker_group || true
 
@@ -227,10 +252,10 @@ _check_laradock_env() {
     ## set SHELL_OH_MY_ZSH=true
     echo "$SHELL" | grep -q zsh && sed -i -e "/SHELL_OH_MY_ZSH=/s/false/true/" "$g_laradock_env" || return 0
 }
+
 _reload_nginx() {
     pushd "$g_laradock_path" || exit 1
-    local max_attempts=5
-    local attempt=1
+    local max_attempts=5 attempt=1
     while [ $attempt -le $max_attempts ]; do
         if $dco exec -T nginx nginx -t; then
             $dco exec -T nginx nginx -s reload
@@ -243,44 +268,18 @@ _reload_nginx() {
     done
     popd || return
 }
-_set_nginx_php() {
-    ## setup php upstream
-    sed -i 's/127\.0\.0\.1/php-fpm/g' "$g_laradock_path/nginx/sites/router.inc"
-}
-
-_set_env_php_ver() {
-    sed -i \
-        -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
-        -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
-}
-
-_set_env_node_ver() {
-    sed -i "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
-    source <(grep '^NODE_VERSION=' "$g_laradock_env")
-}
-
-_set_env_java_ver() {
-    sed -i "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
-    source <(grep '^JDK_VERSION=' "$g_laradock_env")
-}
 
 _set_file_mode() {
-    local d line
-    for d in "$g_laradock_path"/../*/; do
-        [[ "$d" == *laradock/ ]] && continue
-        while IFS= read -r line; do
-            case "$line" in
-            *config/app.php)
-                # Set app_debug to false in app.php
-                grep -q 'app_debug.*true' "$line" && $use_sudo sed -i -e '/app_debug/s/true/false/' "$line"
-                ;;
-            *config/log.php)
-                # Add 'warning' to log levels in log.php
-                grep -q "'level'.*\[\]\," "$line" && $use_sudo sed -i -e "/'level'/s/\[/\['warning'/" "$line"
-                ;;
+    # 使用更精确的路径排除
+    local parent
+    parent="$(dirname "$g_laradock_path")"
+    find "$parent"/* -type f \( -name "app.php" -o -name "log.php" \) -not -path "$parent/laradock/*" |
+        while read -r file; do
+            case "$file" in
+            */config/app.php) $use_sudo sed -i '/app_debug/s/true/false/' "$file" ;;
+            */config/log.php) $use_sudo sed -i "/'level'/s/\[\]/\['warning']/" "$file" ;;
             esac
-        done < <(find "$d")
-    done
+        done
 }
 
 _install_zsh() {
@@ -500,20 +499,24 @@ _pull_image() {
             docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         spring)
-            _set_env_java_ver
+            sed -i "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
+            source <(grep '^JDK_VERSION=' "$g_laradock_env")
             arg_test_java=true
             docker pull -q "$image_repo:laradock-spring-${g_java_ver}" >/dev/null 2>&1 &
             _show_loading $! "Pulling spring image"
             docker tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
             ;;
         nodejs)
-            _set_env_node_ver
+            sed -i "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
+            source <(grep '^NODE_VERSION=' "$g_laradock_env")
             docker pull -q "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null 2>&1 &
             _show_loading $! "Pulling nodejs image"
             docker tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
             ;;
         php*)
-            _set_env_php_ver
+            sed -i \
+                -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
+                -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
             arg_test_php=true
             docker pull -q "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null 2>&1 &
             _show_loading $! "Pulling php-fpm image"
