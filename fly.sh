@@ -2,7 +2,7 @@
 # shellcheck disable=SC1090
 
 _set_system_conf() {
-    ## redis-server 安装在服务器本机，非docker
+    ## redis-server 安装在服务器本机时告警修复，（非docker）
     # grep -q 'transparent_hugepage/enabled' /etc/rc.local ||
     #     echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' | $use_sudo tee -a /etc/rc.local
     # $use_sudo source /etc/rc.local
@@ -22,11 +22,12 @@ _set_system_conf() {
 }
 
 _check_dependence() {
-    _check_sudo
+    # 1. 基本命令检查
     _check_distribution
     _msg step "Checking commands: curl, git, binutils."
     _check_cmd install curl git strings
 
+    # 2. SSH 配置 (不需要 sudo)
     _msg time "Checking SSH configuration."
     dot_ssh="$HOME/.ssh"
     ssh_auth="$dot_ssh/authorized_keys"
@@ -43,14 +44,20 @@ _check_dependence() {
 
     update_ssh_keys "$g_url_keys"
     ${arg_insert_key:-false} && update_ssh_keys "$g_url_fly_keys"
-
     chmod 600 "$ssh_auth"
 
+    # 3. 需要 sudo 的系统配置操作
+    _check_sudo  # 移到这里，因为后面的操作都需要 sudo
+
+    # 系统配置更改
     ${set_sysctl:-false} && _set_system_conf
 
+    # Sudoers 配置
     if ! _check_root; then
         echo "$USER ALL=(ALL) NOPASSWD: ALL" | $use_sudo tee /etc/sudoers.d/"$USER" >/dev/null
     fi
+
+    # IPv6 配置
     $use_sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
     $use_sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
     $use_sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1

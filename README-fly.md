@@ -179,18 +179,20 @@ kubectl -n dev get all
 ## 域名和域名备案
 1. 域名公共查询备案： https://beian.miit.gov.cn/#/Integrated/recordQuery
 1. 阿里云ICP备案： https://beian.aliyun.com/ （建议下载它的App进行备案速度更快）
-1. “备案提供商”和“服务器提供商”必须一致，例如“阿里云备案”则必须是“阿里云服务器”，例如腾讯云服务器+阿里云备案是无效的。（域名在哪里和备案无关）
-1. 服务器在中国内地需要域名备案，港澳台和外国无需域名备案，【如果没有备案必须先去“**服务器提供商**”备案】
+1. 必须在服务器所在的供应商处备案才有效（域名在哪个服务商和备案无关）
+1. 有效备案：例如“阿里云服务器”+“阿里云备案”
+1. 无效备案：例如“腾讯云服务器”+“阿里云备案”
+1. 需要备案只限服务器在中国内地，港澳台和外国无需域名备案，【如果没有备案必须先去“**服务器提供商**”备案】
 1. 需要设置域名解析，dns解析需要指向服务器IP
 1. 需要提供域名的 https SSL (Nginx类型) 证书文件
 
 
-# Bitvise教程/下载/安装软件/登录服务器/拷贝文件到服务器目录
-1. 下载方式一， [BvSshClient http://oss.flyh6.com/d/BvSshClient-Inst.zip](http://oss.flyh6.com/d/BvSshClient-Inst.zip)
+## Bitvise教程/下载/安装软件/登录服务器/拷贝文件到服务器目录
+1. 下载方式一， [BvSshClient Flyh6 OSS](http://oss.flyh6.com/d/BvSshClient-Inst.zip)
 1. 下载方式二， [BvSshClient https://www.putty.org/](https://www.putty.org/)
-1. 假如无法使用密码，则需用SSH Key登录
-1. 从管理员/客户处获取服务器IP/帐号/密码，
-1. 输入 `Host:` IP ，输入 `Username:`  帐号
+1. 服务器登录如果不支持使用密码登录，则需用 SSH Key 登录
+1. Bitvise 登录方式，从管理员/客户处获取服务器IP/帐号/密码，
+1. 点击输入 `Host:` IP ，输入 `Username:`  帐号
 1. 点左下角 `login` , （点击 `Accept and Save`），`输入密码`登录
 1. 点击左侧 `New Terminal console` 进入命令行界面
 1. 点击左侧 `New SFTP window` 进入文件夹管理界面，可以直接上传/下载文件
