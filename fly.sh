@@ -254,19 +254,15 @@ _check_laradock_env() {
 }
 
 _reload_nginx() {
-    pushd "$g_laradock_path" || exit 1
-    local max_attempts=5 attempt=1
-    while [ $attempt -le $max_attempts ]; do
-        if $dco exec -T nginx nginx -t; then
-            $dco exec -T nginx nginx -s reload
+    cd "$g_laradock_path" || return 1
+    for ((i=1; i<=5; i++)); do
+        if $dco exec -T nginx nginx -t && $dco exec -T nginx nginx -s reload; then
             break
-        else
-            _msg time "[$((attempt * 2))] reload nginx err."
         fi
-        ((attempt++))
+        _msg time "nginx reload failed, attempt $i/5"
         sleep 2
     done
-    popd || return
+    cd - >/dev/null || return 1
 }
 
 _set_file_mode() {
@@ -284,47 +280,38 @@ _set_file_mode() {
 
 _install_zsh() {
     _msg step "Install zsh"
-    if ${IN_CHINA:-true}; then
-        _set_mirror os
-    fi
+    ${IN_CHINA:-true} && _set_mirror os
     _check_cmd install zsh
 
-    ## fzf
+    # Install and configure fzf
     _msg time "Install fzf"
     if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler) ]]; then
-        if [[ -d "$HOME"/.fzf ]]; then
-            _msg warn "Found $HOME/.fzf, skip git clone fzf."
-        else
-            git clone --depth 1 "$g_url_fzf" "$HOME"/.fzf
-        fi
-        sed -i -e "#url=https:#s#=.*#=$g_url_fzf_release#" "$HOME"/.fzf/install
-        "$HOME"/.fzf/install
+        [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
+        sed -i -e "#url=https:#s#=.*#=$g_url_fzf_release#" "$HOME/.fzf/install"
+        "$HOME/.fzf/install"
     else
         _check_cmd install fzf
         local file=/usr/share/doc/fzf/examples/key-bindings.zsh
-        [ ! -f $file ] &&
-            $use_sudo $g_curl_opt -Lo $file $g_url_fly_cdn/"$(basename $file)"
+        [ ! -f "$file" ] && $use_sudo $g_curl_opt -Lo "$file" "$g_url_fly_cdn/$(basename "$file")"
     fi
 
+    # Install and configure oh-my-zsh
     _msg time "Install oh-my-zsh"
-    if [[ -d "$HOME"/.oh-my-zsh ]]; then
-        _msg warn "Found $HOME/.oh-my-zsh, skip."
-    else
+    if [ ! -d "$HOME/.oh-my-zsh" ]; then
         if ${IN_CHINA:-true}; then
-            git clone --depth 1 "$g_url_ohmyzsh" "$HOME"/.oh-my-zsh
+            git clone --depth 1 "$g_url_ohmyzsh" "$HOME/.oh-my-zsh"
         else
             bash -c "$($g_curl_opt "$g_url_ohmyzsh")"
         fi
-        cp -vf "$HOME"/.oh-my-zsh/templates/zshrc.zsh-template "$HOME"/.zshrc
-        sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME"/.zshrc
-        if _check_cmd fzf; then
-            sed -i -e '/^plugins=.*git/s/git/git z fzf extract docker docker-compose/' "$HOME"/.zshrc
-            echo "omz plugin enable z fzf extract docker docker-compose"
-        else
-            sed -i -e '/^plugins=.*git/s/git/git z extract docker docker-compose/' "$HOME"/.zshrc
-            echo "omz plugin enable z extract docker docker-compose"
-        fi
+        cp -f "$HOME/.oh-my-zsh/templates/zshrc.zsh-template" "$HOME/.zshrc"
+        sed -i -e "/^ZSH_THEME/s/robbyrussell/ys/" "$HOME/.zshrc"
+
+        local plugins="git z extract docker docker-compose"
+        _check_cmd fzf && plugins="$plugins fzf"
+        sed -i -e "/^plugins=.*git/s/git/$plugins/" "$HOME/.zshrc"
     fi
+
+    # Install byobu
     _msg time "Install byobu"
     _check_cmd install byobu
     _msg time "End install zsh and byobu"
