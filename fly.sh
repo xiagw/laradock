@@ -318,21 +318,18 @@ _install_zsh() {
 }
 
 _install_trzsz() {
-    if _check_cmd trz; then
-        _msg warn "skip trzsz install"
+    _check_cmd trz && { _msg warn "skip trzsz install"; return 0; }
+
+    _msg step "Install trzsz"
+    if command -v apt; then
+        $cmd_pkg install -yq software-properties-common
+        $use_sudo add-apt-repository --yes ppa:trzsz/ppa
+        $cmd_pkg update -yq && $cmd_pkg install -yq trzsz
+    elif command -v rpm; then
+        $use_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm || true
+        $cmd_pkg install -y trzsz
     else
-        _msg step "Install trzsz"
-        if command -v apt; then
-            $cmd_pkg install -yq software-properties-common
-            $use_sudo add-apt-repository --yes ppa:trzsz/ppa
-            $cmd_pkg update -yq
-            $cmd_pkg install -yq trzsz
-        elif command -v rpm; then
-            $use_sudo rpm -ivh https://mirrors.wlnmp.com/centos/wlnmp-release-centos.noarch.rpm || true
-            $cmd_pkg install -y trzsz
-        else
-            _msg warn "not support install trzsz"
-        fi
+        _msg warn "not support install trzsz"
     fi
 }
 
@@ -340,33 +337,33 @@ _install_lsyncd() {
     _msg step "Install lsyncd"
     _check_cmd install lsyncd
 
-    lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
-    [ -d /etc/lsyncd/ ] || $use_sudo mkdir /etc/lsyncd
-    if [ -f $lsyncd_conf ]; then
-        _msg time "found $lsyncd_conf"
-    else
-        _msg time "new lsyncd.conf.lua"
-        $use_sudo cp -vf "$g_laradock_path"/usvn/root$lsyncd_conf $lsyncd_conf
-    fi
-    [[ "$USER" == "root" ]] || $use_sudo sed -i "s@/root/docker@$HOME/docker@g" $lsyncd_conf
+    local lsyncd_conf=/etc/lsyncd/lsyncd.conf.lua
+    local id_file="$HOME/.ssh/id_ed25519"
 
-    id_file="$HOME/.ssh/id_ed25519"
-    if [ -f "$id_file" ]; then
-        _msg time "found $id_file"
-    else
+    # Setup lsyncd config
+    [ -d /etc/lsyncd ] || $use_sudo mkdir /etc/lsyncd
+    [ -f "$lsyncd_conf" ] || {
+        _msg time "new lsyncd.conf.lua"
+        $use_sudo cp -vf "$g_laradock_path/usvn/root$lsyncd_conf" "$lsyncd_conf"
+    }
+    _check_root || $use_sudo sed -i "s@/root/docker@$HOME/docker@g" "$lsyncd_conf"
+
+    # Setup SSH key
+    [ -f "$id_file" ] || {
         _msg time "new key, ssh-keygen"
         ssh-keygen -t ed25519 -f "$id_file" -N ''
-    fi
+    }
 
+    # Configure hosts
     _msg time "config $lsyncd_conf"
     while read -rp "[$((++count))] Enter ssh host IP (enter q break): " ssh_host_ip; do
         [[ -z "$ssh_host_ip" || "$ssh_host_ip" == q ]] && break
-        _msg time "ssh-copy-id -i $id_file root@$ssh_host_ip"
+
         ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
-        _msg time "add $ssh_host_ip to $lsyncd_conf"
-        $use_sudo sed -i -e "/^htmlhosts/ a '$ssh_host_ip:$g_laradock_path/../html/'," $lsyncd_conf
-        $use_sudo sed -i -e "/^nginxhosts/ a '$ssh_host_ip:$g_laradock_path/nginx/'," $lsyncd_conf
-        echo
+        $use_sudo sed -i \
+            -e "/^htmlhosts/ a '$ssh_host_ip:$g_laradock_path/../html/'," \
+            -e "/^nginxhosts/ a '$ssh_host_ip:$g_laradock_path/nginx/'," \
+            "$lsyncd_conf"
     done
 }
 
@@ -414,22 +411,17 @@ _install_acme() {
 }
 
 _start_docker_service() {
-    if [ "${#args[@]}" -gt 0 ]; then
-        _msg step "Start docker service automatically..."
-    else
-        _msg warn "no arguments for docker service"
-        return
-    fi
+    [ "${#args[@]}" -eq 0 ] && { _msg warn "no arguments for docker service"; return 0; }
+
+    _msg step "Start docker service automatically..."
     cd "$g_laradock_path" || exit 1
     $dco up -d "${args[@]}"
-    ## wait startup
+
+    # Wait for services to start
     for arg in "${args[@]}"; do
-        for i in {1..5}; do
-            if $dco ps | grep "$arg"; then
-                break
-            else
-                sleep 2
-            fi
+        for ((i=1; i<=5; i++)); do
+            $dco ps | grep -q "$arg" && break
+            sleep 2
         done
     done
 }
@@ -516,34 +508,43 @@ _pull_image() {
 }
 
 _test_nginx() {
+    local path=${1:-""}
+
     _reload_nginx
     source <(grep 'NGINX_HOST_HTTP_PORT' "$g_laradock_env")
     $dco stop nginx && $dco up -d nginx
-    [ -f "$g_laradock_path/../html/favicon.ico" ] || $g_curl_opt -s -o "$g_laradock_path/../html/favicon.ico" $g_url_fly_ico
-    _msg time "test nginx $1 ..."
-    for i in {1..5}; do
-        if $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${1}"; then
-            break
-        else
-            _msg time "test nginx error...[$((i * 2))]"
-            sleep 2
-        fi
+
+    # Ensure favicon exists
+    local favicon="$g_laradock_path/../html/favicon.ico"
+    [ -f "$favicon" ] || $g_curl_opt -s -o "$favicon" "$g_url_fly_ico"
+
+    # Test nginx connection
+    _msg time "test nginx $path ..."
+    for ((i=1; i<=5; i++)); do
+        $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${path}" && break
+        _msg time "test nginx error...[$((i * 2))]s"
+        sleep 2
     done
 }
 
 _test_php() {
-    path_nginx_root="$g_laradock_path/../html"
-    $use_sudo chown "$USER:$USER" "$path_nginx_root"
-    if [[ ! -f "$path_nginx_root/test.php" ]]; then
+    local html
+    html="$(dirname "$g_laradock_path")/html"
+    local test_file="$html/test.php"
+
+    $use_sudo chown "$USER:$USER" "$html"
+
+    if [ ! -f "$test_file" ]; then
         _msg time "Create test.php"
-        $use_sudo cp -avf "$g_laradock_path/php-fpm/test.php" "$path_nginx_root/test.php"
+        $use_sudo cp -avf "$g_laradock_path/php-fpm/test.php" "$test_file"
         source "$g_laradock_env" 2>/dev/null
         sed -i \
             -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
             -e "s/ENV_MYSQL_USER/${MYSQL_USER-}/" \
             -e "s/ENV_MYSQL_PASSWORD/${MYSQL_PASSWORD-}/" \
-            "$path_nginx_root/test.php"
+               "$test_file"
     fi
+
     _test_nginx "test.php"
 }
 
