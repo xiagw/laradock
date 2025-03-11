@@ -255,7 +255,7 @@ _check_laradock_env() {
 
 _reload_nginx() {
     cd "$g_laradock_path" || return 1
-    for ((i=1; i<=5; i++)); do
+    for ((i = 1; i <= 5; i++)); do
         if $dco exec -T nginx nginx -t && $dco exec -T nginx nginx -s reload; then
             break
         fi
@@ -318,7 +318,10 @@ _install_zsh() {
 }
 
 _install_trzsz() {
-    _check_cmd trz && { _msg warn "skip trzsz install"; return 0; }
+    _check_cmd trz && {
+        _msg warn "skip trzsz install"
+        return 0
+    }
 
     _msg step "Install trzsz"
     if command -v apt; then
@@ -411,7 +414,10 @@ _install_acme() {
 }
 
 _start_docker_service() {
-    [ "${#args[@]}" -eq 0 ] && { _msg warn "no arguments for docker service"; return 0; }
+    [ "${#args[@]}" -eq 0 ] && {
+        _msg warn "no arguments for docker service"
+        return 0
+    }
 
     _msg step "Start docker service automatically..."
     cd "$g_laradock_path" || exit 1
@@ -419,7 +425,7 @@ _start_docker_service() {
 
     # Wait for services to start
     for arg in "${args[@]}"; do
-        for ((i=1; i<=5; i++)); do
+        for ((i = 1; i <= 5; i++)); do
             $dco ps | grep -q "$arg" && break
             sleep 2
         done
@@ -520,7 +526,7 @@ _test_nginx() {
 
     # Test nginx connection
     _msg time "test nginx $path ..."
-    for ((i=1; i<=5; i++)); do
+    for ((i = 1; i <= 5; i++)); do
         $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${path}" && break
         _msg time "test nginx error...[$((i * 2))]s"
         sleep 2
@@ -542,7 +548,7 @@ _test_php() {
             -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
             -e "s/ENV_MYSQL_USER/${MYSQL_USER-}/" \
             -e "s/ENV_MYSQL_PASSWORD/${MYSQL_PASSWORD-}/" \
-               "$test_file"
+            "$test_file"
     fi
 
     _test_nginx "test.php"
@@ -663,11 +669,8 @@ _parse_args() {
     g_node_ver=18
 
     args=()
-    if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = key ]; }; then
-        echo -e "\033[0;33mnot found any arguments, with default args \"redis mysql php-fpm spring nginx\".\033[0m"
-        args+=(redis mysql php-fpm spring nginx)
-        arg_group=1
-    fi
+    [ "$#" -eq 0 ] && default_arg=1
+
     while [ "$#" -gt 0 ]; do
         case "${1}" in
         redis)
@@ -717,6 +720,8 @@ _parse_args() {
         not-china | not-cn | ncn)
             IN_CHINA=false
             aliyun_mirror=false
+            arg_group=1
+            default_arg=1
             ;;
         install-docker-without-aliyun)
             aliyun_mirror=false
@@ -761,6 +766,7 @@ _parse_args() {
             ;;
         key)
             arg_insert_key=true
+            default_arg=1
             ;;
         cdn | refresh)
             shift
@@ -773,6 +779,13 @@ _parse_args() {
         esac
         shift
     done
+    if [ "${default_arg:-0}" -eq 1 ]; then
+        arg_group=1
+        if [ ${#args[@]} -eq 0 ]; then
+            args+=(redis mysql php-fpm spring nginx)
+            echo -e "\033[0;33mNot found any arguments, with default args ${args[*]}.\033[0m"
+        fi
+    fi
     # unique_array=($(printf "%s\n" "${args[@]}" | awk '!seen[$0]++'))
     if [ "${arg_group:-0}" -eq 1 ]; then
         arg_check_docker=true
