@@ -730,6 +730,7 @@ _parse_args() {
         install-zsh | zsh)
             arg_install_zsh=true
             arg_check_timezone=true
+            default_arg=0
             ;;
         install-acme | acme)
             arg_install_acme=true
