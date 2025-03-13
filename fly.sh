@@ -21,7 +21,7 @@ _set_system_conf() {
     $use_sudo sysctl -p
 }
 
-_check_dependence() {
+check_dependence() {
     # 1. 基本命令检查
     _check_distribution
     _msg step "Checking commands: curl, git, binutils."
@@ -65,7 +65,7 @@ _check_dependence() {
     _msg time "Dependency check completed."
 }
 
-_check_docker_compose() {
+check_docker_compose() {
     dco="docker compose"
     if $dco version 2>/dev/null; then
         _msg green "$dco ready."
@@ -102,7 +102,7 @@ _force_user_logout() {
         done
 }
 
-_add_user_to_docker_group() {
+add_to_docker_group() {
     # Skip for root user or if user already in docker group
     if _check_root || groups "$USER" | grep -q docker; then
         return 0
@@ -130,13 +130,13 @@ _add_user_to_docker_group() {
     exit 0
 }
 
-_check_docker() {
+check_docker() {
     _msg step "Check docker and docker-compose"
     if _check_cmd docker; then
-        _check_docker_compose
+        check_docker_compose
         _msg time "docker is already installed."
         $use_sudo systemctl enable --now docker
-        _add_user_to_docker_group
+        add_to_docker_group
         return 0
     fi
 
@@ -166,17 +166,17 @@ _check_docker() {
     # shellcheck disable=2046,2086
     $g_curl_opt "$url" | $use_sudo bash ${cmd_arg}
 
-    _add_user_to_docker_group || true
+    add_to_docker_group || true
 
     # Revert Aliyun Linux fake Centos
     ${fake_os:-false} && $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
 
     # Enable and start Docker
     $use_sudo systemctl enable --now docker
-    _check_docker_compose
+    check_docker_compose
 }
 
-_check_laradock() {
+check_laradock() {
     _msg step "Check laradock"
     if [[ -d "$g_laradock_path" && -d "$g_laradock_path/.git" ]]; then
         _msg time "$g_laradock_path exist, git pull."
@@ -197,7 +197,7 @@ _check_laradock() {
     fi
 }
 
-_check_laradock_env() {
+check_laradock_env() {
     # Skip if env file exists and force update not enabled
     if [[ -f "$g_laradock_env" ]]; then
         # Update .env file with new values
@@ -317,7 +317,7 @@ _install_zsh() {
     _msg time "End install zsh and byobu"
 }
 
-_install_trzsz() {
+install_trzsz() {
     _check_cmd trz && {
         _msg warn "skip trzsz install"
         return 0
@@ -336,7 +336,7 @@ _install_trzsz() {
     fi
 }
 
-_install_lsyncd() {
+install_lsyncd() {
     _msg step "Install lsyncd"
     _check_cmd install lsyncd
 
@@ -400,6 +400,7 @@ _install_acme() {
         echo "Wildcard domain:"
         echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-example.com} -d '*.${domain:-example.com}'"
         echo "DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]"
+        echo "export Ali_Key= ; export Ali_Secret="
         echo "  cd $acme_home && ./acme.sh --issue --dns dns_cf -d ${domain:-example.com} -d '*.${domain:-example.com}'"
         echo "Deploy cert"
         echo "  cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-example.com}"
@@ -413,7 +414,7 @@ _install_acme() {
     done
 }
 
-_start_docker_service() {
+docker_service() {
     [ "${#args[@]}" -eq 0 ] && {
         _msg warn "no arguments for docker service"
         return 0
@@ -432,7 +433,7 @@ _start_docker_service() {
     done
 }
 
-_show_loading() {
+show_loading() {
     local pid=$1
     local message=${2:-"waiting"}
     local start_time=$SECONDS
@@ -445,7 +446,7 @@ _show_loading() {
     echo " done (${duration}s)"
 }
 
-_pull_image() {
+get_image() {
     _msg step "Check docker image..."
     local image_repo=registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5
     local docker_ver
@@ -459,20 +460,20 @@ _pull_image() {
         _msg time "docker pull image $i ..."
         case $i in
         nginx)
-            arg_test_nginx=true
+            arg_check_nginx=true
             docker pull -q "$image_repo:laradock-nginx" >/dev/null 2>&1 &
-            _show_loading $! "Pulling nginx image"
+            show_loading $! "Pulling nginx image"
             docker tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
             ;;
         redis)
             docker pull -q "$image_repo:laradock-redis" >/dev/null 2>&1 &
-            _show_loading $! "Pulling redis image"
+            show_loading $! "Pulling redis image"
             docker tag "$image_repo:laradock-redis" "${image_prefix}redis"
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
             docker pull -q "$image_repo:laradock-mysql-${MYSQL_VERSION}" >/dev/null 2>&1 &
-            _show_loading $! "Pulling mysql image"
+            show_loading $! "Pulling mysql image"
             docker tag "$image_repo:laradock-mysql-${MYSQL_VERSION}" "${image_prefix}mysql"
             ## mysqlbak
             if [ ! -d "$g_laradock_path"/../../laradock-data/mysqlbak ]; then
@@ -480,7 +481,7 @@ _pull_image() {
             fi
             $use_sudo chown 1000:1000 "$g_laradock_path"/../../laradock-data/mysqlbak
             docker pull -q "$image_repo:laradock-mysqlbak" >/dev/null 2>&1 &
-            _show_loading $! "Pulling mysqlbak image"
+            show_loading $! "Pulling mysqlbak image"
             docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
             ;;
         spring)
@@ -488,23 +489,23 @@ _pull_image() {
             source <(grep '^JDK_VERSION=' "$g_laradock_env")
             arg_test_java=true
             docker pull -q "$image_repo:laradock-spring-${g_java_ver}" >/dev/null 2>&1 &
-            _show_loading $! "Pulling spring image"
+            show_loading $! "Pulling spring image"
             docker tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
             ;;
         nodejs)
             sed -i "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
             source <(grep '^NODE_VERSION=' "$g_laradock_env")
             docker pull -q "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null 2>&1 &
-            _show_loading $! "Pulling nodejs image"
+            show_loading $! "Pulling nodejs image"
             docker tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
             ;;
         php*)
             sed -i \
                 -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
                 -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
-            arg_test_php=true
+            arg_check_php=true
             docker pull -q "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null 2>&1 &
-            _show_loading $! "Pulling php-fpm image"
+            show_loading $! "Pulling php-fpm image"
             docker tag "$image_repo:laradock-php-fpm-${g_php_ver}" "${image_prefix}php-fpm"
             ;;
         esac
@@ -513,7 +514,7 @@ _pull_image() {
     docker image ls | grep "$image_repo" | awk '{print $1":"$2}' | xargs docker rmi -f >/dev/null
 }
 
-_test_nginx() {
+check_nginx() {
     local path=${1:-""}
 
     _reload_nginx
@@ -533,7 +534,7 @@ _test_nginx() {
     done
 }
 
-_test_php() {
+check_php_fpm() {
     local html
     html="$(dirname "$g_laradock_path")/html"
     local test_file="$html/test.php"
@@ -551,10 +552,10 @@ _test_php() {
             "$test_file"
     fi
 
-    _test_nginx "test.php"
+    check_nginx "test.php"
 }
 
-_test_java() {
+check_spring() {
     _msg time "check spring..."
     if $dco ps | grep "spring.*Up"; then
         _msg green "container spring is up"
@@ -563,7 +564,7 @@ _test_java() {
     fi
 }
 
-_get_env_info() {
+get_env_info() {
     set +e
     echo "####  代码内写标准端口 mysql:3306 / redis:6379"
     echo "####  此处显示端口只用于SSH端口转发映射(可能不同于标准端口)"
@@ -578,7 +579,7 @@ _get_env_info() {
     grep -E '^NODE_VERSION' "$g_laradock_env"
 }
 
-_mysql_cli() {
+mysql_shell() {
     cd "$g_laradock_path"
     source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=|^MYSQL_ROOT_PASSWORD=' "$g_laradock_env")
     local mysql_user=${1:-$MYSQL_USER}
@@ -587,7 +588,7 @@ _mysql_cli() {
     $dco exec mysql bash -c "LANG=C.UTF-8 MYSQL_PWD=$mysql_password mysql --no-defaults -u$mysql_user $MYSQL_DATABASE"
 }
 
-_redis_cli() {
+redis_shell() {
     cd "$g_laradock_path"
     source <(grep '^REDIS_PASSWORD=' "$g_laradock_env")
     $dco exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
@@ -604,7 +605,7 @@ _upgrade_php() {
     $g_curl_opt $g_url_fly_cdn/tp.tar.gz | tar -C "$g_laradock_path"/../html/ vzx
 }
 
-_reset_laradock() {
+reset_laradock() {
     _msg step "Reset laradock service"
     cd "$g_laradock_path" && $dco stop && $dco rm -f
     $use_sudo rm -rf "$g_laradock_path" "$g_laradock_path/../../laradock-data/mysql"
@@ -612,14 +613,14 @@ _reset_laradock() {
 
 _refresh_cdn() {
     set +e
-    local oss_name="${1}"
-    local obj_path="${2}"
+    local bucket_name="${1:?need OSS bucket name}"
+    local obj_path="${2:?need OSS path}"
     local region="${3:-cn-hangzhou}"
     local temp_file="/tmp/cdn.txt"
     local get_result local_saved object_type
 
     while true; do
-        get_result=$(aliyun oss cat "oss://$oss_name/cdn.txt" 2>/dev/null | head -n1)
+        get_result=$(aliyun oss cat "oss://$bucket_name/cdn.txt" 2>/dev/null | head -n1)
         local_saved=$(cat "$temp_file" 2>/dev/null)
         if [[ "$get_result" != "$local_saved" ]]; then
             echo "get_result: $get_result, local_saved: $local_saved"
@@ -656,42 +657,36 @@ Parameters:
     zsh                 Install zsh.
     gitlab              Install gitlab.
     acme                Install acme.sh.
-    cdn                 Refresh CDN: [cdn oss-name domain.com/ cn-hangzhou]
+    cdn                 Refresh CDN: [bucket-name domain.com/ cn-hangzhou]
 EOF
     exit 1
 }
 
-_parse_args() {
-    IN_CHINA=true
-    g_php_ver=8.1
-    g_java_ver=8
-    g_mysql_ver=8.0
-    g_node_ver=18
+parse_command_args() {
 
     args=()
-    [ "$#" -eq 0 ] && default_arg=1
+    if [ "$#" -eq 0 ]; then
+        auto_mode=true
+        arg_need_docker=true
+    fi
 
     while [ "$#" -gt 0 ]; do
         case "${1}" in
         redis)
             args+=(redis)
             set_sysctl=true
-            arg_group=1
             ;;
         mysql | mysql-[0-9]*)
             args+=(mysql)
-            arg_group=1
             [[ "${1}" == mysql-[0-9]* ]] && g_mysql_ver=${1#mysql-}
             ;;
         java | jdk | spring | java-[0-9]* | jdk-[0-9]* | spring-[0-9]*)
             args+=(spring)
-            arg_group=1
             [[ "${1}" == java-[0-9]* ]] && g_java_ver=${1#java-}
             [[ "${1}" == jdk-[0-9]* ]] && g_java_ver=${1#jdk-}
             ;;
-        php | fpm | php-[0-9]* | php-fpm-[0-9]*)
+        php | fpm | fpm-[0-9]* | php-[0-9]* | php-fpm-[0-9]*)
             args+=(php-fpm)
-            arg_group=1
             [[ "${1}" == php-[0-9]* ]] && g_php_ver=${1#php-}
             [[ "${1}" == php-fpm-[0-9]* ]] && g_php_ver=${1#php-fpm-}
             ;;
@@ -699,78 +694,90 @@ _parse_args() {
             args+=(nodejs)
             [[ "${1}" == node-[0-9]* ]] && g_node_ver=${1#node-}
             [[ "${1}" == nodejs-[0-9]* ]] && g_node_ver=${1#nodejs-}
-            arg_group=1
             ;;
         nginx)
             args+=(nginx)
-            arg_group=1
             ;;
         gitlab | git)
             args+=(gitlab)
-            arg_group=1
             ;;
         svn | usvn)
             args+=(usvn)
-            arg_group=1
             ;;
         upgrade)
             [[ "${args[*]}" == *php-fpm* ]] && arg_upgrade_php=true
             [[ "${args[*]}" == *spring* ]] && arg_upgrade_java=true
+            auto_mode=false
+            arg_need_docker=false
             ;;
         not-china | not-cn | ncn)
             IN_CHINA=false
             aliyun_mirror=false
-            arg_group=1
-            default_arg=1
             ;;
         install-docker-without-aliyun)
             aliyun_mirror=false
             arg_check_docker=true
             ;;
-        install-zsh | zsh)
+        zsh | install-zsh)
             arg_install_zsh=true
             arg_check_timezone=true
-            default_arg=0
+            auto_mode=false
+            arg_need_docker=false
             ;;
-        install-acme | acme)
+        acme | install-acme)
             arg_install_acme=true
             arg_domain="$2"
-            [ -z "$2" ] || shift
+            auto_mode=false
+            arg_need_docker=false
+            [ -n "$2" ] && shift
             ;;
-        install-trzsz | trzsz)
+        trzsz | install-trzsz)
             arg_install_trzsz=true
             arg_check_timezone=true
+            auto_mode=false
+            arg_need_docker=false
             ;;
-        install-lsyncd | lsync | lsyncd)
+        lsync | lsyncd | install-lsyncd)
             arg_install_lsyncd=true
+            auto_mode=false
+            arg_need_docker=false
             ;;
-        install-wg | wg | wireguard)
+        wg | wireguard | install-wg)
             arg_install_wg=true
+            auto_mode=false
+            arg_need_docker=false
             ;;
         info)
             arg_env_info=true
+            auto_mode=false
+            arg_need_docker=false
             ;;
         mysql-cli)
             arg_mysql_cli=true
             arg_mysql_user="$2"
+            auto_mode=false
             [ -z "$2" ] || shift
             ;;
         redis-cli)
             arg_redis_cli=true
+            auto_mode=false
             ;;
         test)
-            arg_test_nginx=true
-            arg_test_php=true
+            arg_check_nginx=true
+            arg_check_php=true
+            auto_mode=false
             ;;
         reset | clean | clear)
             arg_reset_laradock=true
+            auto_mode=false
             ;;
         key)
             arg_insert_key=true
-            default_arg=1
             ;;
         cdn | refresh)
             shift
+            arg_need_docker=false
+            auto_mode=false
             _refresh_cdn "$@"
             return
             ;;
@@ -780,39 +787,49 @@ _parse_args() {
         esac
         shift
     done
-    if [ "${default_arg:-0}" -eq 1 ]; then
-        arg_group=1
+
+    # auto mode
+    if [ "${auto_mode:-true}" = true ]; then
         if [ ${#args[@]} -eq 0 ]; then
             args+=(redis mysql php-fpm spring nginx)
-            echo -e "\033[0;33mNot found any arguments, with default args ${args[*]}.\033[0m"
+            echo -e "\033[0;33mUsing default args: [${args[*]}]\033[0m"
         fi
     fi
-    # unique_array=($(printf "%s\n" "${args[@]}" | awk '!seen[$0]++'))
-    if [ "${arg_group:-0}" -eq 1 ]; then
+
+    ## need docker provider
+    if [ "${arg_need_docker:-true}" = true ]; then
         arg_check_docker=true
         arg_check_laradock=true
         arg_check_laradock_env=true
         arg_start_docker_service=true
         arg_pull_image=true
     fi
+
+    IN_CHINA=${IN_CHINA:-true}
+    g_php_ver=${g_php_ver:-8.1}
+    g_java_ver=${g_java_ver:-8}
+    g_mysql_ver=${g_mysql_ver:-8.0}
+    g_node_ver=${g_node_ver:-20}
+
+    echo "Using args: ${args[*]}" && exit
 }
 
-_common_lib() {
-    common_lib="$g_me_path/common.sh"
-    if [ ! -f "$common_lib" ]; then
-        common_lib='/tmp/common.sh'
+get_common() {
+    local common_file="$g_me_path/common.sh" include_url
+    if [ ! -f "$common_file" ]; then
+        common_file='/tmp/common.sh'
         include_url="$g_deploy_raw/lib/common.sh"
-        [ -f "$common_lib" ] || curl -fsSL "$include_url" >"$common_lib"
+        [ ! -f "$common_file" ] && curl -fsSL "$include_url" >"$common_file"
     fi
-    . "$common_lib"
+    . "$common_file"
 }
 
 main() {
     SECONDS=0
+    set -Eeo pipefail
 
-    _parse_args "$@"
+    parse_command_args "$@"
 
-    set -e
     ## global variables g_* / 全局变量
     g_me_path="$(dirname "$(readlink -f "$0")")"
     g_me_name="$(basename "$0")"
@@ -845,7 +862,7 @@ main() {
     fi
     echo "$g_me_env $g_me_log $g_url_laradock_raw" >/dev/null
 
-    _common_lib
+    get_common
 
     g_laradock_home="$HOME"/docker/laradock
     g_laradock_current="$g_me_path"
@@ -866,18 +883,18 @@ main() {
         return
     fi
 
-    _check_docker_compose
+    check_docker_compose
 
     if ${arg_mysql_cli:-false}; then
-        _mysql_cli "$arg_mysql_user"
+        mysql_shell "$arg_mysql_user"
         return
     fi
     if ${arg_redis_cli:-false}; then
-        _redis_cli
+        redis_shell
         return
     fi
     if ${arg_env_info:-false}; then
-        _get_env_info
+        get_env_info
         return
     fi
     if ${arg_upgrade_java:-false}; then
@@ -889,15 +906,15 @@ main() {
         return
     fi
 
-    ${arg_check_dependence:-true} && _check_dependence
+    ${arg_check_dependence:-true} && check_dependence
 
-    ${arg_install_trzsz:-false} && _install_trzsz
+    ${arg_install_trzsz:-false} && install_trzsz
     if ${arg_install_zsh:-false}; then
         _install_zsh
         return
     fi
     if ${arg_install_lsyncd:-false}; then
-        _install_lsyncd
+        install_lsyncd
         return
     fi
     if ${arg_install_wg:-false}; then
@@ -905,30 +922,30 @@ main() {
         return
     fi
 
-    ${arg_check_docker:-true} && _check_docker
+    ${arg_check_docker:-true} && check_docker
     ## install docker, add normal user (not root) to group "docker", re-login
     ${need_logout:-false} && return
 
     if ${arg_reset_laradock:-false}; then
-        _reset_laradock
+        reset_laradock
         return
     fi
 
     ${arg_check_timezone:-false} && _check_timezone
 
-    ${arg_check_laradock:-false} && _check_laradock
+    ${arg_check_laradock:-false} && check_laradock
 
-    ${arg_check_laradock_env:-false} && _check_laradock_env
+    ${arg_check_laradock_env:-false} && check_laradock_env
 
-    ${arg_pull_image:-false} && _pull_image
+    ${arg_pull_image:-false} && get_image
 
-    ${arg_start_docker_service:-false} && _start_docker_service
+    ${arg_start_docker_service:-false} && docker_service
 
-    ${arg_test_nginx:-false} && _test_nginx
+    ${arg_check_nginx:-false} && check_nginx
 
-    ${arg_test_php:-false} && _test_php
+    ${arg_check_php:-false} && check_php_fpm
 
-    ${arg_test_java:-false} && _test_java
+    ${arg_test_java:-false} && check_spring
 }
 
 main "$@"
