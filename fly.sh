@@ -495,18 +495,18 @@ get_image() {
         nodejs)
             sed -i "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
             source <(grep '^NODE_VERSION=' "$g_laradock_env")
-            docker pull -q "$image_repo:laradock-nodejs-${g_node_ver}" >/dev/null 2>&1 &
+            docker pull -q "${image_repo%/flyh5}/node:${g_node_ver}-slim" >/dev/null 2>&1 &
             show_loading $! "Pulling nodejs image"
-            docker tag "$image_repo:laradock-nodejs-${g_node_ver}" "${image_prefix}nodejs"
+            docker tag "${image_repo%/flyh5}/node:${g_node_ver}-slim" "${image_prefix}nodejs"
             ;;
         php*)
             sed -i \
                 -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
                 -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
             arg_check_php=true
-            docker pull -q "$image_repo:laradock-php-fpm-${g_php_ver}" >/dev/null 2>&1 &
+            docker pull -q "${image_repo%/flyh5}/php:${g_php_ver}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling php-fpm image"
-            docker tag "$image_repo:laradock-php-fpm-${g_php_ver}" "${image_prefix}php-fpm"
+            docker tag "${image_repo%/flyh5}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
             ;;
         esac
     done
