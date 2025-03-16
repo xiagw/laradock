@@ -24,5 +24,5 @@ grant2table() {
     rm -f "$tmp_sql"
 }
 
-printf "[client]\npassword=%s\n" "${MYSQL_ROOT_PASSWORD}" >/root/.my.cnf
-chmod 600 /root/.my.cnf
+## 启动时自定义授权指定表
+# grant2table

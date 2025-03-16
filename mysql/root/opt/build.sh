@@ -32,7 +32,13 @@ if [ -f /etc/my.cnf ]; then
     sed -i '/skip-host-cache/d' /etc/my.cnf
 fi
 
-printf "[client]\npassword=%s\n" "${MYSQL_ROOT_PASSWORD}" >/root/.my.cnf
-printf "export LANG=C.UTF-8" >/root/.bashrc
+# sed -i '/docker_create_db_directories "$@"/a echo root-here' /usr/local/bin/docker-entrypoint.sh
+cat >>/root/.bashrc <<'EOF'
+export LANG=C.UTF-8
+echo "[client]" >/root/.my.cnf
+echo "password=${MYSQL_ROOT_PASSWORD}" >>/root/.my.cnf
+chmod 600 /root/.my.cnf
+EOF
 
 chmod +x /opt/*.sh
+
