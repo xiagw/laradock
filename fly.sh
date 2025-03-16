@@ -448,9 +448,8 @@ show_loading() {
 
 get_image() {
     _msg step "Check docker image..."
-    local image_repo=registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5
-    local docker_ver
-    local image_prefix
+    local image_new=registry.cn-hangzhou.aliyuncs.com/flyh5
+    local docker_ver image_prefix
     docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
 
     ## docker version 24 以下使用 laradock_ 前缀
@@ -461,57 +460,57 @@ get_image() {
         case $i in
         nginx)
             arg_check_nginx=true
-            docker pull -q "$image_repo:laradock-nginx" >/dev/null 2>&1 &
+            docker pull -q "${image_new}/nginx:laradock" >/dev/null 2>&1 &
             show_loading $! "Pulling nginx image"
-            docker tag "$image_repo:laradock-nginx" "${image_prefix}nginx"
+            docker tag "${image_new}/nginx:laradock" "${image_prefix}nginx"
             ;;
         redis)
-            docker pull -q "$image_repo:laradock-redis" >/dev/null 2>&1 &
+            docker pull -q "${image_new}/redis:laradock" >/dev/null 2>&1 &
             show_loading $! "Pulling redis image"
-            docker tag "$image_repo:laradock-redis" "${image_prefix}redis"
+            docker tag "${image_new}/redis:laradock" "${image_prefix}redis"
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
-            docker pull -q "$image_repo:laradock-mysql-${MYSQL_VERSION}" >/dev/null 2>&1 &
+            docker pull -q "${image_new}/mysql:${MYSQL_VERSION}-laradock" >/dev/null 2>&1 &
             show_loading $! "Pulling mysql image"
-            docker tag "$image_repo:laradock-mysql-${MYSQL_VERSION}" "${image_prefix}mysql"
-            ## mysqlbak
+            docker tag "${image_new}/mysql:${MYSQL_VERSION}-laradock" "${image_prefix}mysql"
+
             if [ ! -d "$g_laradock_path"/../../laradock-data/mysqlbak ]; then
                 $use_sudo mkdir -p "$g_laradock_path"/../../laradock-data/mysqlbak
             fi
             $use_sudo chown 1000:1000 "$g_laradock_path"/../../laradock-data/mysqlbak
-            docker pull -q "$image_repo:laradock-mysqlbak" >/dev/null 2>&1 &
+            docker pull -q "${image_new}/mysql:bak" >/dev/null 2>&1 &
             show_loading $! "Pulling mysqlbak image"
-            docker tag "$image_repo:laradock-mysqlbak" "${image_prefix}mysqlbak"
+            docker tag "${image_new}/mysql:bak" "${image_prefix}mysqlbak"
             ;;
         spring)
             sed -i "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
             source <(grep '^JDK_VERSION=' "$g_laradock_env")
             arg_test_java=true
-            docker pull -q "$image_repo:laradock-spring-${g_java_ver}" >/dev/null 2>&1 &
+            docker pull -q "${image_new}/amazoncorretto:${g_java_ver}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling spring image"
-            docker tag "$image_repo:laradock-spring-${g_java_ver}" "${image_prefix}spring"
+            docker tag "${image_new}/amazoncorretto:${g_java_ver}-base" "${image_prefix}spring"
             ;;
         nodejs)
             sed -i "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
             source <(grep '^NODE_VERSION=' "$g_laradock_env")
-            docker pull -q "${image_repo%/flyh5}/node:${g_node_ver}-slim" >/dev/null 2>&1 &
+            docker pull -q "${image_new}/node:${g_node_ver}-slim" >/dev/null 2>&1 &
             show_loading $! "Pulling nodejs image"
-            docker tag "${image_repo%/flyh5}/node:${g_node_ver}-slim" "${image_prefix}nodejs"
+            docker tag "${image_new}/node:${g_node_ver}-slim" "${image_prefix}nodejs"
             ;;
         php*)
             sed -i \
                 -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
                 -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
             arg_check_php=true
-            docker pull -q "${image_repo%/flyh5}/php:${g_php_ver}-base" >/dev/null 2>&1 &
+            docker pull -q "${image_new}/php:${g_php_ver}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling php-fpm image"
-            docker tag "${image_repo%/flyh5}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
+            docker tag "${image_new}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
             ;;
         esac
     done
     ## remove image
-    docker image ls | grep "$image_repo" | awk '{print $1":"$2}' | xargs docker rmi -f >/dev/null
+    docker image ls --format json | jq -r '"\(.Repository):\(.Tag)"' | grep "${image_new}" | xargs docker rmi -f >/dev/null
 }
 
 check_nginx() {

@@ -12,7 +12,8 @@ me_path="$(dirname "$(readlink -f "$0")")"
 # me_log="$me_path/${me_name}.log"
 
 my_cnf=/etc/mysql/conf.d/my.cnf
-if mysqld --version | grep '[8-9]\..\.'; then
+my_ver=$(mysqld --version | awk '{print $3}' | cut -d. -f1)
+if [ "$my_ver" -gt 8 ]; then
     cp -f "$me_path"/my.8.0.cnf $my_cnf
 else
     cp -f "$me_path"/my.5.7.cnf $my_cnf
