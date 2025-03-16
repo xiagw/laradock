@@ -1574,13 +1574,12 @@ services:
       environment:
         GITLAB_OMNIBUS_CONFIG: |
           external_url "${GITLAB_DOMAIN_NAME}"
-          registry_external_url "${GITLAB_DOMAIN_NAME}:5050"
+          # registry_external_url "${GITLAB_DOMAIN_NAME}:5050"
           # external_url 'http://gitlab.example.com:8929'
           # gitlab_rails['gitlab_shell_ssh_port'] = 2224
           # redis['enable'] = false
           nginx['listen_https'] = ${NGINX_LISTEN_HTTPS}
           nginx['redirect_http_to_https'] = ${NGINX_REDIRECT_HTTP_TO_HTTPS}
-          sidekiq['concurrency'] = 64
           letsencrypt['enable'] = "${GITLAB_LETSENCRYPT}"
           letsencrypt['auto_renew'] = "${GITLAB_LETSENCRYPT_RENEW}"
           gitlab_rails['lfs_enabled'] = true
@@ -1600,8 +1599,52 @@ services:
           # /opt/gitlab/embedded/sbin/nginx -c /var/opt/gitlab/nginx/conf/nginx.conf -t
           nginx['custom_gitlab_server_config'] = "location /jmeter/ {\n  root /var/opt/gitlab/;\n  autoindex on;\n}\n"
           nginx['custom_nginx_config'] = "include /var/opt/gitlab/nginx/conf/nginx.ext.conf;"
+          ## 关闭pages
+          gitlab_pages['enable'] = false
+          pages_nginx['enable'] = false
+          ## 包仓库、依赖管理
+          gitlab_rails['packages_enabled'] = false
+          gitlab_rails['dependency_proxy_enabled'] = false
+          ## 关闭容器仓库功能
+          gitlab_rails['gitlab_default_projects_features_container_registry'] = false
+          gitlab_rails['registry_enabled'] = false
+          registry['enable'] = false
+          registry_nginx['enable'] = false
+          # 关闭监控和性能基准相关功能
           prometheus_monitoring['enable'] = false
           prometheus['flags'] = { 'storage.tsdb.retention.time' => "7d"}
+          alertmanager['enable'] = false
+          node_exporter['enable'] = false
+          redis_exporter['enable'] = false
+          postgres_exporter['enable'] = false
+          pgbouncer_exporter['enable'] = false
+          gitlab_exporter['enable'] = false
+          grafana['enable'] = false
+          sidekiq['metrics_enabled'] = false
+          # Usage Statistics
+          gitlab_rails['usage_ping_enabled'] = false
+          gitlab_rails['sentry_enabled'] = false
+          grafana['reporting_enabled'] = fals# GitLab KAS
+          gitlab_kas['enable'] = false
+          gitlab_rails['gitlab_kas_enabled'] = false
+          # Terraform
+          gitlab_rails['terraform_state_enabled'] = false
+          # Kerberos 文档说EE only，但是默认值为 true
+          gitlab_rails['kerberos_enabled'] = false
+          # Sentinel
+          sentinel['enable'] = false
+          # Mattermost
+          mattermost['enable'] = false
+          mattermost_nginx['enable'] = false
+          # 禁用 PUMA 集群模式
+          puma['worker_processes'] = 0
+          puma['min_threads'] = 1
+          puma['max_threads'] = 3
+          sidekiq['concurrency'] = 16
+          # 关闭电子邮件相关功能
+          gitlab_rails['smtp_enable'] = false
+          gitlab_rails['gitlab_email_enabled'] = false
+          gitlab_rails['incoming_email_enabled'] = false
       volumes:
         - ${DATA_PATH_HOST}/gitlab/config:/etc/gitlab
         - ${DATA_PATH_HOST}/gitlab/data:/var/opt/gitlab
