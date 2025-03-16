@@ -1619,12 +1619,10 @@ services:
           postgres_exporter['enable'] = false
           pgbouncer_exporter['enable'] = false
           gitlab_exporter['enable'] = false
-          grafana['enable'] = false
           sidekiq['metrics_enabled'] = false
           ## Usage Statistics
           gitlab_rails['usage_ping_enabled'] = false
           gitlab_rails['sentry_enabled'] = false
-          grafana['reporting_enabled'] = false
           ## GitLab KAS
           gitlab_kas['enable'] = false
           gitlab_rails['gitlab_kas_enabled'] = false
