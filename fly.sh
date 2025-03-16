@@ -810,7 +810,7 @@ parse_command_args() {
     g_mysql_ver=${g_mysql_ver:-8.0}
     g_node_ver=${g_node_ver:-20}
 
-    echo "Using args: ${args[*]}" && exit
+    echo "Using args: ${args[*]}"
 }
 
 get_common() {
