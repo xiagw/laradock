@@ -1600,6 +1600,12 @@ services:
           # /opt/gitlab/embedded/sbin/nginx -c /var/opt/gitlab/nginx/conf/nginx.conf -t
           nginx['custom_gitlab_server_config'] = "location /jmeter/ {\n  root /var/opt/gitlab/;\n  autoindex on;\n}\n"
           nginx['custom_nginx_config'] = "include /var/opt/gitlab/nginx/conf/nginx.ext.conf;"
+          ## Nginx 配置
+          nginx['access_log_path'] = "/dev/null"    # 关闭所有 access log
+          # nginx['error_log_path'] = "/dev/null"     # 关闭 error log
+          # nginx['proxy_connect_timeout'] = 600      # 增加超时时间
+          # nginx['proxy_read_timeout'] = 600
+          # nginx['proxy_send_timeout'] = 600
           ## 关闭pages
           gitlab_pages['enable'] = false
           pages_nginx['enable'] = false
@@ -1646,12 +1652,21 @@ services:
           gitlab_rails['gitlab_email_enabled'] = false
           gitlab_rails['incoming_email_enabled'] = false
           ## 日志配置
-          # logging['svlogd_size'] = 200 * 1024 * 1024  # 日志文件最大尺寸（200MB）
-          # logging['svlogd_num'] = 5  # 保留的日志文件数量
-          # logging['svlogd_timeout'] = 24 * 60 * 60  # 日志文件轮换时间（24小时）
-          # logging['svlogd_filter'] = "gzip"  # 使用gzip压缩日志
-          # logging['svlogd_udp'] = nil  # 禁用UDP日志
-          # logging['syslog_enabled'] = false  # 禁用系统日志
+          logging['svlogd_size'] = 200 * 1024 * 1024  # 日志文件最大尺寸（200MB）
+          logging['svlogd_num'] = 5  # 保留的日志文件数量
+          logging['svlogd_timeout'] = 24 * 60 * 60  # 日志文件轮换时间（24小时）
+          logging['svlogd_filter'] = "gzip"  # 使用gzip压缩日志
+          logging['svlogd_udp'] = nil  # 禁用UDP日志
+          logging['syslog_enabled'] = false  # 禁用系统日志
+          # logging['svlogd_prefix'] = nil # custom prefix for log messages
+          # logging['logrotate_frequency'] = "daily" # rotate logs daily
+          # logging['logrotate_maxsize'] = nil # rotate logs when they grow bigger than size bytes even before the specified time interval (daily, weekly, monthly, or yearly)
+          # logging['logrotate_size'] = nil # do not rotate by size by default
+          # logging['logrotate_rotate'] = 30 # keep 30 rotated logs
+          # logging['logrotate_compress'] = "compress" # see 'man logrotate'
+          # logging['logrotate_method'] = "copytruncate" # see 'man logrotate'
+          # logging['logrotate_postrotate'] = nil # no postrotate command by default
+          # logging['logrotate_dateformat'] = nil # use date extensions for rotated files rather than numbers e.g. a value of "-%Y-%m-%d" would give rotated files like production.log-2016-03-09.gz
       volumes:
         - ${DATA_PATH_HOST}/gitlab/config:/etc/gitlab
         - ${DATA_PATH_HOST}/gitlab/data:/var/opt/gitlab
