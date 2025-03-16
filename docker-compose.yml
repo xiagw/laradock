@@ -1572,6 +1572,7 @@ services:
       restart: always
       hostname: "${GITLAB_DOMAIN_NAME_GIT}"
       environment:
+        GITLAB_LOG_LEVEL: "ERROR"
         GITLAB_OMNIBUS_CONFIG: |
           external_url "${GITLAB_DOMAIN_NAME}"
           # registry_external_url "${GITLAB_DOMAIN_NAME}:5050"
@@ -1628,7 +1629,7 @@ services:
           gitlab_rails['gitlab_kas_enabled'] = false
           ## Terraform
           gitlab_rails['terraform_state_enabled'] = false
-          ## Kerberos 文档说EE only，但是默认值为 true
+          ## Kerberos 文档说EE only,但是默认值为 true
           gitlab_rails['kerberos_enabled'] = false
           ## Sentinel
           sentinel['enable'] = false
@@ -1644,6 +1645,19 @@ services:
           gitlab_rails['smtp_enable'] = false
           gitlab_rails['gitlab_email_enabled'] = false
           gitlab_rails['incoming_email_enabled'] = false
+          ## 日志配置
+          logging['svlogd_size'] = 200 * 1024 * 1024  # 日志文件最大尺寸（200MB）
+          logging['svlogd_num'] = 5  # 保留的日志文件数量
+          logging['svlogd_timeout'] = 24 * 60 * 60  # 日志文件轮换时间（24小时）
+          logging['svlogd_filter'] = "gzip"  # 使用gzip压缩日志
+          logging['svlogd_udp'] = nil  # 禁用UDP日志
+          logging['syslog_enabled'] = false  # 禁用系统日志
+          ## 各组件日志级别设置
+          gitlab_rails['log_level'] = "error"  # Rails 应用日志级别
+          unicorn['log_level'] = "error"      # Unicorn 日志级别
+          registry['log_level'] = "error"     # Container Registry 日志级别
+          gitlab_shell['log_level'] = "error" # GitLab Shell 日志级别
+          sidekiq['log_level'] = "error"     # Sidekiq 日志级别
       volumes:
         - ${DATA_PATH_HOST}/gitlab/config:/etc/gitlab
         - ${DATA_PATH_HOST}/gitlab/data:/var/opt/gitlab
