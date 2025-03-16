@@ -1624,13 +1624,13 @@ services:
           ## Usage Statistics
           gitlab_rails['usage_ping_enabled'] = false
           gitlab_rails['sentry_enabled'] = false
-          grafana['reporting_enabled'] = fals
+          grafana['reporting_enabled'] = false
           ## GitLab KAS
           gitlab_kas['enable'] = false
           gitlab_rails['gitlab_kas_enabled'] = false
           ## Terraform
           gitlab_rails['terraform_state_enabled'] = false
-          # Kerberos 文档说EE only，但是默认值为 true
+          ## Kerberos 文档说EE only，但是默认值为 true
           gitlab_rails['kerberos_enabled'] = false
           ## Sentinel
           sentinel['enable'] = false
