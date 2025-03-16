@@ -471,9 +471,9 @@ get_image() {
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
-            docker pull -q "${image_new}/mysql:${MYSQL_VERSION}-laradock" >/dev/null 2>&1 &
+            docker pull -q "${image_new}/mysql:${MYSQL_VERSION}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling mysql image"
-            docker tag "${image_new}/mysql:${MYSQL_VERSION}-laradock" "${image_prefix}mysql"
+            docker tag "${image_new}/mysql:${MYSQL_VERSION}-base" "${image_prefix}mysql"
 
             if [ ! -d "$g_laradock_path"/../../laradock-data/mysqlbak ]; then
                 $use_sudo mkdir -p "$g_laradock_path"/../../laradock-data/mysqlbak
@@ -862,16 +862,27 @@ main() {
     echo "$g_me_env $g_me_log $g_url_laradock_raw" >/dev/null
 
     get_common
+    ## 确定 laradock 的安装目录
+    ## 按以下优先级顺序选择:
 
+    ## 1. 默认安装目录 ($HOME/docker/laradock)
+    ## 支持 root 用户或普通用户
     g_laradock_home="$HOME"/docker/laradock
+
+    ## 2. 获取当前脚本所在目录
     g_laradock_current="$g_me_path"
+
+    ## 3. 检查当前目录是否已存在 laradock 安装
     if [[ -f "$g_laradock_current/fly.sh" && -f "$g_laradock_current/.env.example" ]]; then
-        ## 从本机已安装目录执行 fly.sh
+        ## 如果当前目录已安装，则使用当前目录
         g_laradock_path="$g_laradock_current"
+    ## 4. 检查默认目录是否已存在 laradock 安装
     elif [[ -f "$g_laradock_home/fly.sh" && -f "$g_laradock_home/.env.example" ]]; then
+        ## 如果默认目录已安装，则使用默认目录
         g_laradock_path=$g_laradock_home
     else
-        ## 从远程执行 fly.sh , curl "remote_url" | bash -s args
+        ## 5. 远程执行场景 (curl "remote_url" | bash -s args)
+        ## 在当前目录下创建新的安装路径
         g_laradock_path="$g_laradock_current"/docker/laradock
     fi
 
