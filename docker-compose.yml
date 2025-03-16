@@ -1610,7 +1610,7 @@ services:
           gitlab_rails['registry_enabled'] = false
           registry['enable'] = false
           registry_nginx['enable'] = false
-          # 关闭监控和性能基准相关功能
+          ## 关闭监控和性能基准相关功能
           prometheus_monitoring['enable'] = false
           prometheus['flags'] = { 'storage.tsdb.retention.time' => "7d"}
           alertmanager['enable'] = false
@@ -1621,27 +1621,28 @@ services:
           gitlab_exporter['enable'] = false
           grafana['enable'] = false
           sidekiq['metrics_enabled'] = false
-          # Usage Statistics
+          ## Usage Statistics
           gitlab_rails['usage_ping_enabled'] = false
           gitlab_rails['sentry_enabled'] = false
-          grafana['reporting_enabled'] = fals# GitLab KAS
+          grafana['reporting_enabled'] = fals
+          ## GitLab KAS
           gitlab_kas['enable'] = false
           gitlab_rails['gitlab_kas_enabled'] = false
-          # Terraform
+          ## Terraform
           gitlab_rails['terraform_state_enabled'] = false
           # Kerberos 文档说EE only，但是默认值为 true
           gitlab_rails['kerberos_enabled'] = false
-          # Sentinel
+          ## Sentinel
           sentinel['enable'] = false
           # Mattermost
           mattermost['enable'] = false
           mattermost_nginx['enable'] = false
-          # 禁用 PUMA 集群模式
+          ## 禁用 PUMA 集群模式
           puma['worker_processes'] = 0
           puma['min_threads'] = 1
           puma['max_threads'] = 3
           sidekiq['concurrency'] = 16
-          # 关闭电子邮件相关功能
+          ## 关闭电子邮件相关功能
           gitlab_rails['smtp_enable'] = false
           gitlab_rails['gitlab_email_enabled'] = false
           gitlab_rails['incoming_email_enabled'] = false
