@@ -589,8 +589,8 @@ mysql_shell() {
 
 redis_shell() {
     cd "$g_laradock_path"
-    source <(grep '^REDIS_PASSWORD=' "$g_laradock_env")
-    $dco exec redis bash -c "redis-cli --no-auth-warning -a $REDIS_PASSWORD"
+    redis_pass=$(awk -F= '/^REDIS_PASSWORD=/ {print $2}' "$g_laradock_env")
+    $dco exec redis bash -c "REDISCLI_AUTH=$redis_pass redis-cli --no-auth-warning"
 }
 
 _upgrade_java() {
@@ -662,7 +662,6 @@ EOF
 }
 
 parse_command_args() {
-
     args=()
     if [ "$#" -eq 0 ]; then
         auto_mode=true
@@ -720,6 +719,7 @@ parse_command_args() {
         zsh | install-zsh)
             arg_install_zsh=true
             arg_check_timezone=true
+            arg_check_dependence=true
             auto_mode=false
             arg_need_docker=false
             ;;
@@ -733,16 +733,19 @@ parse_command_args() {
         trzsz | install-trzsz)
             arg_install_trzsz=true
             arg_check_timezone=true
+            arg_check_dependence=true
             auto_mode=false
             arg_need_docker=false
             ;;
         lsync | lsyncd | install-lsyncd)
             arg_install_lsyncd=true
+            arg_check_dependence=true
             auto_mode=false
             arg_need_docker=false
             ;;
         wg | wireguard | install-wg)
             arg_install_wg=true
+            arg_check_dependence=true
             auto_mode=false
             arg_need_docker=false
             ;;
@@ -793,9 +796,9 @@ parse_command_args() {
             args+=(redis mysql php-fpm spring nginx)
             echo -e "\033[0;33mUsing default args: [${args[*]}]\033[0m"
         fi
-    else
-        echo "Using args: ${args[*]}"
+        arg_check_dependence=true  # Set to true for auto mode
     fi
+    echo "The final args: ${args[*]}"
 
     ## need docker provider
     if [ "${arg_need_docker:-true}" = true ]; then
@@ -804,6 +807,7 @@ parse_command_args() {
         arg_check_laradock_env=true
         arg_start_docker_service=true
         arg_pull_image=true
+        arg_check_dependence=true  # Set to true when docker is needed
     fi
 
     IN_CHINA=${IN_CHINA:-true}
@@ -894,31 +898,9 @@ main() {
         return
     fi
 
-    check_docker_compose
+    ${arg_check_dependence:-false} && check_dependence
 
-    if ${arg_mysql_cli:-false}; then
-        mysql_shell "$arg_mysql_user"
-        return
-    fi
-    if ${arg_redis_cli:-false}; then
-        redis_shell
-        return
-    fi
-    if ${arg_env_info:-false}; then
-        get_env_info
-        return
-    fi
-    if ${arg_upgrade_java:-false}; then
-        _upgrade_java
-        return
-    fi
-    if ${arg_upgrade_php:-false}; then
-        _upgrade_php
-        return
-    fi
-
-    ${arg_check_dependence:-true} && check_dependence
-
+    # These installations don't need docker compose, but need basic dependencies
     ${arg_install_trzsz:-false} && install_trzsz
     if ${arg_install_zsh:-false}; then
         _install_zsh
@@ -930,6 +912,34 @@ main() {
     fi
     if ${arg_install_wg:-false}; then
         _install_wg
+        return
+    fi
+    if ${arg_upgrade_php:-false}; then
+        _upgrade_php
+        return
+    fi
+
+    # Only check docker compose if we need docker functionality
+    if [ "${arg_need_docker:-true}" = true ]; then
+        check_docker_compose
+    fi
+
+    # Operations that need docker compose
+    if ${arg_upgrade_java:-false}; then
+        _upgrade_java
+        return
+    fi
+
+    if ${arg_mysql_cli:-false}; then
+        mysql_shell "$arg_mysql_user"
+        return
+    fi
+    if ${arg_redis_cli:-false}; then
+        redis_shell
+        return
+    fi
+    if ${arg_env_info:-false}; then
+        get_env_info
         return
     fi
 
