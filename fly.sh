@@ -474,14 +474,6 @@ get_image() {
             docker pull -q "${image_new}/mysql:${MYSQL_VERSION}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling mysql image"
             docker tag "${image_new}/mysql:${MYSQL_VERSION}-base" "${image_prefix}mysql"
-
-            if [ ! -d "$g_laradock_path"/../../laradock-data/mysqlbak ]; then
-                $use_sudo mkdir -p "$g_laradock_path"/../../laradock-data/mysqlbak
-            fi
-            $use_sudo chown 1000:1000 "$g_laradock_path"/../../laradock-data/mysqlbak
-            docker pull -q "${image_new}/mysql:bak" >/dev/null 2>&1 &
-            show_loading $! "Pulling mysqlbak image"
-            docker tag "${image_new}/mysql:bak" "${image_prefix}mysqlbak"
             ;;
         spring)
             sed -i "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
