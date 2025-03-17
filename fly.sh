@@ -510,7 +510,7 @@ get_image() {
         esac
     done
     ## remove image
-    docker image ls --format json | jq -r '"\(.Repository):\(.Tag)"' | grep "${image_new}" | xargs docker rmi -f >/dev/null
+    docker image ls | grep "$image_new" | awk '{print $1":"$2}' | xargs docker rmi -f >/dev/null
 }
 
 check_nginx() {
@@ -793,6 +793,8 @@ parse_command_args() {
             args+=(redis mysql php-fpm spring nginx)
             echo -e "\033[0;33mUsing default args: [${args[*]}]\033[0m"
         fi
+    else
+        echo "Using args: ${args[*]}"
     fi
 
     ## need docker provider
@@ -810,7 +812,6 @@ parse_command_args() {
     g_mysql_ver=${g_mysql_ver:-8.0}
     g_node_ver=${g_node_ver:-20}
 
-    echo "Using args: ${args[*]}"
 }
 
 get_common() {
