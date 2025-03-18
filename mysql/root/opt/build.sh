@@ -18,7 +18,7 @@ my_ver=$(mysqld --version | awk '{print $3}' | cut -d. -f1)
 cat >$my_cnf <<'EOF'
 [mysqld]
 host_cache_size=0
-initialize-insecure=FALSE
+# initialize-insecure=0
 explicit_defaults_for_timestamp
 tls_version=TLSv1.2,TLSv1.3
 character-set-server=utf8mb4

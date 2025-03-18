@@ -37,11 +37,12 @@ main() {
     ## check mysql version
     mysql_bin="mysql $mysql_conf"
     mysql_dump="mysqldump $mysql_conf --set-gtid-purged=OFF -E -R --triggers"
+    my_ver=$($mysql_bin --version | awk '{print $3}' | cut -d. -f1)
 
-    if mysqldump --master-data=2 | grep -q 'WARNING.*master-data.*source-data'; then
-        mysql_dump="$mysql_dump --source-data=2"
-    else
+    if [ "$my_ver" -lt 8 ]; then
         mysql_dump="$mysql_dump --master-data=2"
+    else
+        mysql_dump="$mysql_dump --source-data=2"
     fi
 
     ## backup user and grants
@@ -60,18 +61,18 @@ main() {
         ;;
     *)
         ## backup single/multiple databases
-        if [[ -z "$1" ]]; then
+        databases="$1"
+        if [[ -z "$databases" ]]; then
             databases="$(
                 $mysql_bin -Ne 'show databases' |
                     grep -vE 'information_schema|performance_schema|^sys$|^mysql$'
             )"
-        else
-            databases="$1"
         fi
         ;;
     esac
 
     backup_time="$(date +%s)"
+
     for db in $databases; do
         backup_file="$backup_path/${backup_time}.full.${db}.sql"
         if $mysql_bin "$db" -e 'select now()' >/dev/null; then

@@ -911,11 +911,6 @@ main() {
         return
     fi
 
-    # Only check docker compose if we need docker functionality
-    if [ "${arg_need_docker:-true}" = true ]; then
-        check_docker_compose
-    fi
-
     # Operations that need docker compose
     if ${arg_upgrade_java:-false}; then
         _upgrade_java
