@@ -370,6 +370,17 @@ install_lsyncd() {
     done
 }
 
+install_wg() {
+    if [[ "${lsb_dist-}" =~ (centos|alinux|openEuler) ]]; then
+        ${cmd_pkg-} install -y epel-release elrepo-release
+        $cmd_pkg install -y yum-plugin-elrepo
+        $cmd_pkg install -y kmod-wireguard wireguard-tools
+    else
+        $cmd_pkg install -yqq wireguard wireguard-tools
+    fi
+    $use_sudo modprobe wireguard
+}
+
 _install_acme() {
     _install_acme_official
     local acme_home="$HOME/.acme.sh"
@@ -788,7 +799,7 @@ parse_command_args() {
             args+=(redis mysql php-fpm spring nginx)
             echo -e "\033[0;33mUsing default args: [${args[*]}]\033[0m"
         fi
-        arg_check_dependence=true  # Set to true for auto mode
+        arg_check_dependence=true # Set to true for auto mode
     fi
     echo "The final args: ${args[*]}"
 
@@ -799,7 +810,7 @@ parse_command_args() {
         arg_check_laradock_env=true
         arg_start_docker_service=true
         arg_pull_image=true
-        arg_check_dependence=true  # Set to true when docker is needed
+        arg_check_dependence=true # Set to true when docker is needed
     fi
 
     IN_CHINA=${IN_CHINA:-true}
@@ -903,7 +914,7 @@ main() {
         return
     fi
     if ${arg_install_wg:-false}; then
-        _install_wg
+        install_wg
         return
     fi
     if ${arg_upgrade_php:-false}; then
