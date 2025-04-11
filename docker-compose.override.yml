@@ -872,3 +872,21 @@ services:
       ports:
         - "3000:3000"
         - "3001:22"
+
+    geoipupdate:
+      image: maxmindinc/geoipupdate
+      environment:
+        - GEOIPUPDATE_ACCOUNT_ID=${GEOIPUPDATE_ACCOUNT_ID}
+        - GEOIPUPDATE_LICENSE_KEY=${GEOIPUPDATE_LICENSE_KEY}
+        - GEOIPUPDATE_EDITION_IDS=${GEOIPUPDATE_EDITION_IDS}
+        # - GEOIPUPDATE_FREQUENCY
+        # - GEOIPUPDATE_HOST
+        # - GEOIPUPDATE_PROXY
+        # - GEOIPUPDATE_PROXY_USER_PASSWORD
+        # - GEOIPUPDATE_PRESERVE_FILE_TIMES
+        # - GEOIPUPDATE_VERBOSE
+      restart: always
+      networks:
+        - backend
+      volumes:
+        - ${DATA_PATH_HOST}/geoipupdate:/usr/share/GeoIP
