@@ -141,18 +141,32 @@ check_docker() {
     fi
 
     # Handle OpenEuler distribution
-    if grep -q -E '^ID=.*openEuler.*' /etc/os-release; then
+    os_id="$(grep -q -E '^ID=.*' /etc/os-release)"
+    case "$os_id" in
+    *openEuler*)
         $use_sudo curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
         $use_sudo sed -i 's#https://download.docker.com#https://mirrors.tuna.tsinghua.edu.cn/docker-ce#' /etc/yum.repos.d/docker-ce.repo
         $use_sudo sed -i "s#\$releasever#7#g" /etc/yum.repos.d/docker-ce.repo
         ${cmd_pkg-} install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    else
+        ;;
+    *kylin | *kylin*)
+        if command -v dnf; then
+            dnf install docker-engine
+        elif command -v yum; then
+            yum install docker-engine
+        else
+            echo "Unsupport install package"
+            return 1
+        fi
+        ;;
+    *)
         # Handle Aliyun Linux
         if grep -q -E '^ID=.*alinux.*' /etc/os-release; then
             $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
             fake_os=true
         fi
-    fi
+        ;;
+    esac
 
     # Install Docker using Aliyun mirror
     local url="$g_url_get_docker"
@@ -285,14 +299,14 @@ _install_zsh() {
 
     # Install and configure fzf
     _msg time "Install fzf"
-    if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler) ]]; then
+    if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler|kylin) ]]; then
         [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
         sed -i -e "#url=https:#s#=.*#=$g_url_fzf_release#" "$HOME/.fzf/install"
         "$HOME/.fzf/install"
     else
-        _check_cmd install fzf
+        _check_cmd install fzf || true
         local file=/usr/share/doc/fzf/examples/key-bindings.zsh
-        [ ! -f "$file" ] && $use_sudo $g_curl_opt -Lo "$file" "$g_url_fly_cdn/$(basename "$file")"
+        [ ! -f "$file" ] && $use_sudo $g_curl_opt -Lo "$file" "$g_url_fly_cdn/$(basename "$file")" || true
     fi
 
     # Install and configure oh-my-zsh
@@ -465,24 +479,25 @@ get_image() {
 
     ## docker version 24 以下使用 laradock_ 前缀
     [ "$docker_ver" -le 19 ] && image_prefix="laradock_" || image_prefix="laradock-"
+    [ "$docker_ver" -eq 18 ] && image_prefix="laradock-" || image_prefix="laradock-"
 
     for i in "${args[@]}"; do
         _msg time "docker pull image $i ..."
         case $i in
         nginx)
             arg_check_nginx=true
-            docker pull -q "${image_new}/nginx:laradock" >/dev/null 2>&1 &
+            docker pull "${image_new}/nginx:laradock" >/dev/null 2>&1 &
             show_loading $! "Pulling nginx image"
             docker tag "${image_new}/nginx:laradock" "${image_prefix}nginx"
             ;;
         redis)
-            docker pull -q "${image_new}/redis:laradock" >/dev/null 2>&1 &
+            docker pull "${image_new}/redis:laradock" >/dev/null 2>&1 &
             show_loading $! "Pulling redis image"
             docker tag "${image_new}/redis:laradock" "${image_prefix}redis"
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
-            docker pull -q "${image_new}/mysql:${MYSQL_VERSION}-base" >/dev/null 2>&1 &
+            docker pull "${image_new}/mysql:${MYSQL_VERSION}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling mysql image"
             docker tag "${image_new}/mysql:${MYSQL_VERSION}-base" "${image_prefix}mysql"
             ;;
@@ -490,14 +505,14 @@ get_image() {
             sed -i "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
             source <(grep '^JDK_VERSION=' "$g_laradock_env")
             arg_test_java=true
-            docker pull -q "${image_new}/amazoncorretto:${g_java_ver}-base" >/dev/null 2>&1 &
+            docker pull "${image_new}/amazoncorretto:${g_java_ver}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling spring image"
             docker tag "${image_new}/amazoncorretto:${g_java_ver}-base" "${image_prefix}spring"
             ;;
         nodejs)
             sed -i "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
             source <(grep '^NODE_VERSION=' "$g_laradock_env")
-            docker pull -q "${image_new}/node:${g_node_ver}-slim" >/dev/null 2>&1 &
+            docker pull "${image_new}/node:${g_node_ver}-slim" >/dev/null 2>&1 &
             show_loading $! "Pulling nodejs image"
             docker tag "${image_new}/node:${g_node_ver}-slim" "${image_prefix}nodejs"
             ;;
@@ -506,7 +521,7 @@ get_image() {
                 -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
                 -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
             arg_check_php=true
-            docker pull -q "${image_new}/php:${g_php_ver}-base" >/dev/null 2>&1 &
+            docker pull "${image_new}/php:${g_php_ver}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling php-fpm image"
             docker tag "${image_new}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
             ;;
