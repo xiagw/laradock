@@ -589,7 +589,7 @@ get_env_info() {
     echo
     grep -E '^DB_HOST|^MYSQL_' "$g_laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
     echo
-    grep -E '^JDK_IMAGE|^JDK_VERSION' "$g_laradock_env"
+    grep -E '^JDK_VERSION' "$g_laradock_env"
     echo
     grep -E '^PHP_VERSION' "$g_laradock_env"
     echo

@@ -569,7 +569,7 @@ services:
         context: ./spring
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
-          - JDK_IMAGE=${JDK_IMAGE}
+          - MIRROR=${MIRROR}
           - JDK_VERSION=${JDK_VERSION}
       restart: always
       volumes:
@@ -584,7 +584,7 @@ services:
         context: ./spring2
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
-          - JDK_IMAGE=${JDK_IMAGE}
+          - MIRROR=${MIRROR}
           - JDK_VERSION=${JDK_VERSION}
       restart: always
       volumes:
