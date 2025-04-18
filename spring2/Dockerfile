@@ -1,8 +1,6 @@
-ARG JDK_IMAGE=registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5
-ARG JDK_VERSION=amazoncorretto-8
-# ARG JDK_VERSION=amazoncorretto-17
-# ARG JDK_VERSION=amazoncorretto-21
-FROM ${JDK_IMAGE}:${JDK_VERSION}
+ARG MIRROR=
+ARG JDK_VERSION=8
+FROM ${MIRROR}amazoncorretto:${JDK_VERSION}
 
 ARG IN_CHINA=${CHANGE_SOURCE}
 ARG CHANGE_SOURCE=${CHANGE_SOURCE}
