@@ -837,13 +837,9 @@ parse_command_args() {
 }
 
 get_common() {
-    local common_file="$g_me_path/common.sh" include_url
-    if [ ! -f "$common_file" ]; then
-        common_file='/tmp/common.sh'
-        include_url="$g_deploy_raw/lib/common.sh"
-        [ ! -f "$common_file" ] && curl -fsSL "$include_url" >"$common_file"
-    fi
-    . "$common_file"
+    local file="$g_me_path/common.sh" url="$g_deploy_raw/lib/common.sh"
+    [ -f "$file" ] || curl -fsSLo "$file" "$url"
+    . "$file"
 }
 
 main() {
