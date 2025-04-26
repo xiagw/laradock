@@ -516,12 +516,12 @@ services:
 
     zentao:
       image: hub.zentao.net/app/zentao:${ZT_VERSION}
-      # build:
-      #   context: ./zentao
-      #   args:
-      #     - CHANGE_SOURCE=${CHANGE_SOURCE}
-      #     - TZ=${WORKSPACE_TIMEZONE}
-      #     - ZT_VERSION=${ZT_VERSION}
+      build:
+        context: ./zentao
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
+          - TZ=${WORKSPACE_TIMEZONE}
+          - ZT_VERSION=${ZT_VERSION}
       ports:
         - 8080:80
       volumes:
@@ -870,8 +870,8 @@ services:
         - /etc/timezone:/etc/timezone:ro
         - /etc/localtime:/etc/localtime:ro
       ports:
-        - "3000:3000"
-        - "3001:22"
+        - "${GITEA_HTTP_PORT}:3000"
+        - "${GITEA_SSH_PORT}:22"
 
     geoipupdate:
       build:
@@ -889,7 +889,8 @@ services:
         - GEOIPUPDATE_VERBOSE=1
       restart: unless-stopped
       networks:
+        - frontend
         - backend
       volumes:
         - ${DATA_PATH_HOST}/geoipupdate:/usr/share/GeoIP
-        - /etc/nginx/conf.d:/nginx
+        - ${GEOIPUPDATE_NGINX}:/nginx
