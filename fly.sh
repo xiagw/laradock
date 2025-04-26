@@ -459,16 +459,13 @@ docker_service() {
 }
 
 show_loading() {
-    local pid=$1
-    local message=${2:-"waiting"}
-    local start_time=$SECONDS
+    local pid=$1 message=${2:-"waiting"} start_time=$SECONDS
     printf "%s " "$message"
     while kill -0 "$pid" 2>/dev/null; do
         printf "."
         sleep 1
     done
-    local duration=$((SECONDS - start_time))
-    echo " done (${duration}s)"
+    echo " done ($((SECONDS - start_time))s)"
 }
 
 get_image() {
@@ -528,6 +525,9 @@ get_image() {
             docker tag "${image_new}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
             ;;
         esac
+        ## 休眠10秒缓解阿里云ACR限流
+        sleep 10 &
+        show_loading $!
     done
     ## remove image
     docker image ls | grep "$image_new" | awk '{print $1":"$2}' | xargs docker rmi -f >/dev/null
