@@ -469,14 +469,17 @@ show_loading() {
 }
 
 get_image() {
-    _msg step "Check docker image..."
-    local image_new=registry.cn-hangzhou.aliyuncs.com/flyh5
-    local docker_ver image_prefix
+    _msg step "Get docker image..."
+    local docker_ver image_prefix image_mirror=registry.cn-hangzhou.aliyuncs.com/flyh5
     docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
 
     ## docker version 24 以下使用 laradock_ 前缀
-    [ "$docker_ver" -le 19 ] && image_prefix="laradock_" || image_prefix="laradock-"
-    [ "$docker_ver" -eq 18 ] && image_prefix="laradock-" || image_prefix="laradock-"
+    if [ "$docker_ver" -le 19 ] ; then
+        image_prefix="laradock_"
+        [ "$docker_ver" -eq 18 ] && image_prefix="laradock-"
+    else
+        image_prefix="laradock-"
+    fi
 
     for i in "${args[@]}"; do
         _msg time "docker pull image $i ..."
@@ -484,53 +487,53 @@ get_image() {
         nginx)
             arg_check_nginx=true
             # $g_curl_opt -fLo - "$g_url_fly_cdn/laradock-nginx.tar" | docker load
-            docker pull "${image_new}/nginx:laradock" >/dev/null 2>&1 &
+            docker pull "${image_mirror}/nginx:laradock" >/dev/null 2>&1 &
             show_loading $! "Pulling nginx image"
-            docker tag "${image_new}/nginx:laradock" "${image_prefix}nginx"
+            docker tag "${image_mirror}/nginx:laradock" "${image_prefix}nginx"
             ;;
         redis)
             # $g_curl_opt -fLo - "$g_url_fly_cdn/laradock-redis.tar" | docker load
-            docker pull "${image_new}/redis:laradock" >/dev/null 2>&1 &
+            docker pull "${image_mirror}/redis:laradock" >/dev/null 2>&1 &
             show_loading $! "Pulling redis image"
-            docker tag "${image_new}/redis:laradock" "${image_prefix}redis"
+            docker tag "${image_mirror}/redis:laradock" "${image_prefix}redis"
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
-            docker pull "${image_new}/mysql:${MYSQL_VERSION}-base" >/dev/null 2>&1 &
+            docker pull "${image_mirror}/mysql:${MYSQL_VERSION}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling mysql image"
-            docker tag "${image_new}/mysql:${MYSQL_VERSION}-base" "${image_prefix}mysql"
+            docker tag "${image_mirror}/mysql:${MYSQL_VERSION}-base" "${image_prefix}mysql"
             ;;
         spring)
             sed -i "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
             source <(grep '^JDK_VERSION=' "$g_laradock_env")
             arg_test_java=true
-            docker pull "${image_new}/amazoncorretto:${g_java_ver}-base" >/dev/null 2>&1 &
+            docker pull "${image_mirror}/amazoncorretto:${g_java_ver}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling spring image"
-            docker tag "${image_new}/amazoncorretto:${g_java_ver}-base" "${image_prefix}spring"
+            docker tag "${image_mirror}/amazoncorretto:${g_java_ver}-base" "${image_prefix}spring"
             ;;
         nodejs)
             sed -i "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
             source <(grep '^NODE_VERSION=' "$g_laradock_env")
-            docker pull "${image_new}/node:${g_node_ver}-slim" >/dev/null 2>&1 &
+            docker pull "${image_mirror}/node:${g_node_ver}-slim" >/dev/null 2>&1 &
             show_loading $! "Pulling nodejs image"
-            docker tag "${image_new}/node:${g_node_ver}-slim" "${image_prefix}nodejs"
+            docker tag "${image_mirror}/node:${g_node_ver}-slim" "${image_prefix}nodejs"
             ;;
         php*)
             sed -i \
                 -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
                 -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
             arg_check_php=true
-            docker pull "${image_new}/php:${g_php_ver}-base" >/dev/null 2>&1 &
+            docker pull "${image_mirror}/php:${g_php_ver}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling php-fpm image"
-            docker tag "${image_new}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
+            docker tag "${image_mirror}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
             ;;
         esac
         ## 休眠10秒缓解阿里云ACR限流
         sleep 10 &
         show_loading $! "Waiting for 10 seconds"
     done
-    ## remove image
-    docker image ls | grep "$image_new" | awk '{print $1":"$2}' | xargs docker rmi -f >/dev/null
+    ## remove image mirror
+    docker image ls | grep "$image_mirror" | awk '{print $1":"$2}' | xargs docker rmi -f >/dev/null
 }
 
 check_nginx() {
