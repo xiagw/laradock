@@ -527,7 +527,7 @@ get_image() {
         esac
         ## 休眠10秒缓解阿里云ACR限流
         sleep 10 &
-        show_loading $!
+        show_loading $! "Waiting for 10 seconds"
     done
     ## remove image
     docker image ls | grep "$image_new" | awk '{print $1":"$2}' | xargs docker rmi -f >/dev/null
