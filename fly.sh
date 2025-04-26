@@ -486,11 +486,13 @@ get_image() {
         case $i in
         nginx)
             arg_check_nginx=true
+            # $g_curl_opt -fLo - "$g_url_fly_cdn/laradock-nginx.tar" | docker load
             docker pull "${image_new}/nginx:laradock" >/dev/null 2>&1 &
             show_loading $! "Pulling nginx image"
             docker tag "${image_new}/nginx:laradock" "${image_prefix}nginx"
             ;;
         redis)
+            # $g_curl_opt -fLo - "$g_url_fly_cdn/laradock-redis.tar" | docker load
             docker pull "${image_new}/redis:laradock" >/dev/null 2>&1 &
             show_loading $! "Pulling redis image"
             docker tag "${image_new}/redis:laradock" "${image_prefix}redis"

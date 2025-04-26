@@ -890,3 +890,4 @@ services:
         - backend
       volumes:
         - ${DATA_PATH_HOST}/geoipupdate:/usr/share/GeoIP
+        - /etc/nginx/conf.d:/nginx
