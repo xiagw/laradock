@@ -816,7 +816,7 @@ services:
 
     hivision_idphotos:
       build:
-        context: .
+        context: ./hivision_idphotos
         dockerfile: Dockerfile
       image: linzeyi/hivision_idphotos
       command: python3 -u app.py --host 0.0.0.0 --port 7860
@@ -874,6 +874,8 @@ services:
         - "3001:22"
 
     geoipupdate:
+      build:
+        context: ./geoipupdate
       image: maxmindinc/geoipupdate
       environment:
         - GEOIPUPDATE_ACCOUNT_ID=${GEOIPUPDATE_ACCOUNT_ID}
