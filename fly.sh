@@ -30,7 +30,7 @@ check_dependence() {
     # 2. SSH 配置 (不需要 sudo)
     _msg time "Checking SSH configuration."
     dot_ssh="$HOME/.ssh"
-    ssh_auth="$dot_ssh/authorized_keys"
+    auth_keys="$dot_ssh/authorized_keys"
     [ -d "$dot_ssh" ] || mkdir -m 700 "$dot_ssh"
 
     update_ssh_keys() {
@@ -38,13 +38,13 @@ check_dependence() {
         $g_curl_opt -sS "$url" | grep -vE '^#|^$|^\s+$' |
             while read -r line; do
                 key=$(echo "$line" | awk '{print $2}')
-                grep -q "$key" "$ssh_auth" 2>/dev/null || echo "$line" >>"$ssh_auth"
+                grep -q "$key" "$auth_keys" 2>/dev/null || echo "$line" >>"$auth_keys"
             done
     }
 
     update_ssh_keys "$g_url_keys"
-    ${arg_insert_key:-false} && update_ssh_keys "$g_url_fly_keys"
-    chmod 600 "$ssh_auth"
+    ${arg_insert_key:-false} && update_ssh_keys "$g_url_keys_fly"
+    chmod 600 "$auth_keys"
 
     # 3. 需要 sudo 的系统配置操作
     _check_sudo # 移到这里，因为后面的操作都需要 sudo
@@ -70,11 +70,11 @@ check_docker_compose() {
     if $dco version 2>/dev/null; then
         _msg green "$dco ready."
     else
-        if _check_cmd docker-compose; then
-            dco="docker-compose"
-            dco_ver=$(docker-compose -v | awk '{gsub(/[,\.]/,""); print int($3)}')
+        dco="docker-compose"
+        if _check_cmd $dco; then
+            dco_ver=$($dco -v | awk '{gsub(/[,\.]/,""); print int($3)}')
             if [[ "$dco_ver" -lt 1190 ]]; then
-                _msg warn "docker-compose version is too old."
+                _msg warn "$dco version is too old."
             fi
         fi
     fi
@@ -141,6 +141,7 @@ check_docker() {
     fi
 
     # Handle OpenEuler distribution
+    local os_id fake_os
     os_id="$(grep -q -E '^ID=.*' /etc/os-release)"
     case "$os_id" in
     *openEuler*)
@@ -159,17 +160,15 @@ check_docker() {
             return 1
         fi
         ;;
-    *)
+    *alinux | *alinux*)
         # Handle Aliyun Linux
-        if grep -q -E '^ID=.*alinux.*' /etc/os-release; then
-            $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
-            fake_os=true
-        fi
+        $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
+        fake_os=true
         ;;
     esac
 
     # Install Docker using Aliyun mirror
-    local url="$g_url_get_docker"
+    local url="$g_url_get_docker" cmd_arg
     if ${aliyun_mirror:-true}; then
         cmd_arg='-s - --mirror Aliyun'
         echo "${version_id-}"
@@ -817,7 +816,8 @@ parse_command_args() {
     if [ "${auto_mode:-true}" = true ]; then
         if [ ${#args[@]} -eq 0 ]; then
             args+=(redis mysql php-fpm spring nginx)
-            echo -e "\033[0;33mUsing default args: [${args[*]}]\033[0m"
+            echo -e "\033[0;33mEN: Using default args: [${args[*]}]\033[0m"
+            echo "CN: 没有提供任何参数，将使用默认参数: [${args[*]}]"
         fi
         arg_check_dependence=true # Set to true for auto mode
     fi
@@ -861,7 +861,7 @@ main() {
 
     g_curl_opt='curl --connect-timeout 10 -fL'
     g_url_fly_cdn="http://oss.flyh6.com/d"
-    g_url_fly_keys="$g_url_fly_cdn/flyh6.keys"
+    g_url_keys_fly="$g_url_fly_cdn/flyh6.keys"
     g_url_fly_ico="$g_url_fly_cdn/flyh6.ico"
 
     if ${IN_CHINA:-true}; then

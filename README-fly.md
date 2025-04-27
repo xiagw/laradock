@@ -1,19 +1,19 @@
 [TOC]
 
 ## 硬件/服务器/网络/域名配置推荐
-| 服务器        | 配置推荐                                             |
-|:--------------|:-----------------------------------------------------|
-| CPU 处理器    | >= 4 core(核) (支持AMD/Intel/ARM64)                      |
-| MEM 内存      | >= 8 GB                                              |
-| Disk 系统硬盘 | >= 50 GB                                             |
-| Net 网络带宽  | >= 50M(按量付费) >= 10M(固定带宽付费)（私有云自行根据实际业务情况配置网络带宽） |
-| 公有云费用    | 初始部署：建议充值200-500元使用“按量付费”观察时间(三天/一周/一月)         |
-| 公有云费用    | 持续运行：根据账单决定采购“固定”套餐(一月/一年)    |
-| 域名数量      | 前/后端各一个，共2个域名                                |
-| 防火墙/安全组 | 开放TCP端口 22/80/443                                |
+| 服务器        | 配置推荐  |
+|:--------------|:-------------------------------------------------|
+| CPU 处理器    | >= 4 core(核) (支持 AMD/Intel/ARM64) |
+| MEM 内存      | >= 8 GB  |
+| Disk 系统硬盘 | >= 50 GB  |
+| Net 网络带宽  | >= 50M(按量付费) （私有云自行根据实际业务情况配置网络带宽） |
+| 公有云费用    | 初始部署：建议充值200-500元使用“按量付费”观察时间(三天/一周) |
+| 公有云费用    | 持续运行：根据账单决定采购“固定”套餐(按月/按年)    |
+| 域名和SSL    | 前/后端各一个，共2个域名，需要 SSL 证书  |
+| 防火墙/安全组 | 开放TCP端口 22/80/443  |
 
 
-## 服务器配置单机/多机套餐推荐
+## 服务器单/多机套餐推荐
 | 要求           | 配置（CPU/MEM/DISK/NETWORK）   |
 |:--------------|:-------------------------------------------------|
 | 单机(适用绝大部分客户) | 2C/8G/50G/50M （Aliyun ECS t6/u1系列便宜）  |
@@ -25,15 +25,16 @@
 
 
 ## 软件/中间件/操作系统/版本
-| 软件      | 系统/配置推荐                                                             |
+| 软件      | 系统/配置推荐                                                         |
 |:----------|:---------------------------------------------------------------------|
 | Nginx     | >= 1.18                                                              |
 | PHP       | >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)                          |
 | JDK       | >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB) (amazoncorretto)        |
-| MySQL     | >= 8.0 (CPU >=2核，内存 >=2GB，存储 >=20GB)                          |
+| Nodejs    | >= 20 (CPU >=2核，内存 >=2GB，存储 >=20GB)                          |
 | Redis     | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)                          |
+| MySQL     | >= 8.0 (CPU >=2核，内存 >=2GB，存储 >=20GB)                          |
 | OS/单机   | Ubuntu 22.04 (推荐), CentOS/Anolis OS/RedHat/Debian/Rocky 等 Linux   |
-| OS/集群   | Kubernetes（推荐） (操作系统根据云厂商自动推荐的OS/lifseaOS等/或自行安排)    |
+| OS/集群   | Kubernetes（推荐） (云厂商自动推荐的OS/lifseaOS等/或自行安排)    |
 
 
 ## 部署方式一：单机/多机docker-compose部署文档
@@ -44,16 +45,6 @@
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-8.1/openjdk-8
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
-## 套装LNMP nginx/php/redis/mysql 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php redis mysql nginx
-## 套装Java nginx/java/redis/mysql 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java redis mysql nginx
-## 单PHP nginx/php 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php nginx
-## 单Java nginx/java 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s java nginx
-## 单Nodejs nginx/nodejs 请执行
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nodejs nginx
 ```
 
 ### 单机docker部署方式站点URL对应服务器目录说明
@@ -76,7 +67,7 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s nodejs n
 | https://www.xxx.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
 | https://www.xxx.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
 | Nginx：目录配置和日志            | （支持多个不同站点配置）                                            |
-| nginx conf 配置文件路径          | $HOME/docker/laradock/nginx/sites/                                  |
+| nginx conf 配置文件路径          | $HOME/docker/laradock/nginx/sites/{default.conf, router.inc}      |
 | nginx 日志文件存放路径           | $HOME/docker/laradock/logs/nginx/                                   |
 | redis 数据存放路径               | $HOME/laradock-data/redis/                                          |
 | mysql 数据存放路径               | $HOME/laradock-data/mysql/                                          |
