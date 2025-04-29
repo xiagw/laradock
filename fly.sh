@@ -527,12 +527,14 @@ get_image() {
             docker tag "${image_mirror}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
             ;;
         esac
-        ## 休眠10秒缓解阿里云ACR限流
-        sleep 10 &
-        show_loading $! "Waiting for 10 seconds"
+        ## 如果不是最后一个镜像，则休眠10秒缓解阿里云ACR限流
+        if [ "$i" != "${args[-1]}" ]; then
+            sleep 10 &
+            show_loading $! "Waiting for 10 seconds to avoid rate limit"
+        fi
     done
     ## remove image mirror
-    docker image ls | grep "$image_mirror" | awk '{print $1":"$2}' | xargs docker rmi -f >/dev/null
+    docker image ls | grep "$image_mirror" | awk '{print $1":"$2}' | xargs -r -I% docker rmi -f % >/dev/null
 }
 
 check_nginx() {
