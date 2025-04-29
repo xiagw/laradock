@@ -186,7 +186,8 @@ check_docker() {
     ${fake_os:-false} && $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
 
     # Enable and start Docker
-    $use_sudo systemctl enable --now docker
+    $use_sudo systemctl enable --now docker >/dev/null
+    $use_sudo /lib/systemd/systemd-sysv-install enable docker
     check_docker_compose
 }
 
