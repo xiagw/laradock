@@ -378,7 +378,7 @@ install_lsyncd() {
 
         ssh-copy-id -o StrictHostKeyChecking=no -i "$id_file" "root@$ssh_host_ip"
         $use_sudo sed -i \
-            -e "/^htmlhosts/ a '$ssh_host_ip:$g_laradock_path/../html/'," \
+            -e "/^htmlhosts/ a '$ssh_host_ip:$g_laradock_html/'," \
             -e "/^nginxhosts/ a '$ssh_host_ip:$g_laradock_path/nginx/'," \
             "$lsyncd_conf"
     done
@@ -401,7 +401,6 @@ _install_acme() {
 
     local key="$g_laradock_home/nginx/sites/ssl/default.key"
     local pem="$g_laradock_home/nginx/sites/ssl/default.pem"
-    local html="$HOME"/docker/html
 
     if ! _check_root; then
         _check_sudo
@@ -415,15 +414,15 @@ _install_acme() {
     case "$domain" in
     *.*.*)
         cd "$acme_home" || return 1
-        ./acme.sh --issue -w "$html" -d "$domain"
+        ./acme.sh --issue -w "$g_laradock_html" -d "$domain"
         ./acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
         ;;
     *)
         echo
         echo "Single host domain:"
-        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-api.example.com}"
+        echo "  cd $acme_home && ./acme.sh --issue -w $g_laradock_html -d ${domain:-api.example.com}"
         echo "Wildcard domain:"
-        echo "  cd $acme_home && ./acme.sh --issue -w $html -d ${domain:-example.com} -d '*.${domain:-example.com}'"
+        echo "  cd $acme_home && ./acme.sh --issue -w $g_laradock_html -d ${domain:-example.com} -d '*.${domain:-example.com}'"
         echo "DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]"
         echo "export Ali_Key= ; export Ali_Secret="
         echo "  cd $acme_home && ./acme.sh --issue --dns dns_cf -d ${domain:-example.com} -d '*.${domain:-example.com}'"
@@ -546,12 +545,13 @@ check_nginx() {
     $dco stop nginx && $dco up -d nginx
 
     # Ensure favicon exists
-    local favicon="$g_laradock_path/../html/favicon.ico"
+    local favicon="$g_laradock_html/favicon.ico"
     [ -f "$favicon" ] || $g_curl_opt -s -o "$favicon" "$g_url_fly_ico"
-    echo "INDEX Page: $(date)" >"$g_laradock_path/../html/index.html"
+    echo "INDEX Page: $(date)" >"$g_laradock_html/index.html"
 
     # Test nginx connection
     _msg time "test nginx $path ..."
+    echo
     for ((i = 1; i <= 5; i++)); do
         $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${path}" && break
         _msg time "test nginx error...[$((i * 2))]s"
@@ -561,11 +561,9 @@ check_nginx() {
 }
 
 check_php_fpm() {
-    local html
-    html="$(dirname "$g_laradock_path")/html"
-    local test_file="$html/test.php"
+    local test_file="$g_laradock_html/test.php"
 
-    $use_sudo chown "$USER:$USER" "$html"
+    $use_sudo chown "$USER:$USER" "$g_laradock_html"
 
     _msg time "Create test.php"
     $use_sudo cp -avf "$g_laradock_path/php-fpm/test.php" "$test_file"
@@ -626,7 +624,7 @@ _upgrade_java() {
 }
 
 _upgrade_php() {
-    $g_curl_opt $g_url_fly_cdn/tp.tar.gz | tar -C "$g_laradock_path"/../html/ vzx
+    $g_curl_opt $g_url_fly_cdn/tp.tar.gz | tar -C "$g_laradock_html"/ vzx
 }
 
 reset_laradock() {
@@ -914,6 +912,7 @@ main() {
     fi
 
     g_laradock_env="$g_laradock_path"/.env
+    g_laradock_html="$(dirname "$g_laradock_path")"/html
 
     if ${arg_install_acme:-false}; then
         _install_acme "$arg_domain"
