@@ -135,7 +135,7 @@ check_docker() {
     if _check_cmd docker; then
         check_docker_compose
         _msg time "docker is already installed."
-        $use_sudo systemctl enable --now docker
+        $use_sudo systemctl enable --now docker >/dev/null
         $use_sudo /lib/systemd/systemd-sysv-install enable docker
         add_to_docker_group
         return 0
@@ -551,10 +551,9 @@ check_nginx() {
 
     # Test nginx connection
     _msg time "test nginx $path ..."
-    echo
     for ((i = 1; i <= 5; i++)); do
         $g_curl_opt "http://localhost:${NGINX_HOST_HTTP_PORT}/${path}" && break
-        _msg time "test nginx error...[$((i * 2))]s"
+        echo "test nginx error...[$((i * 2))]s"
         sleep 2
     done
     echo
