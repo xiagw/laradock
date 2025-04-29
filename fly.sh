@@ -473,7 +473,7 @@ get_image() {
     docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
 
     ## docker version 24 以下使用 laradock_ 前缀
-    if [ "$docker_ver" -le 19 ] ; then
+    if [ "$docker_ver" -le 19 ]; then
         image_prefix="laradock_"
         [ "$docker_ver" -eq 18 ] && image_prefix="laradock-"
     else
@@ -547,6 +547,7 @@ check_nginx() {
     # Ensure favicon exists
     local favicon="$g_laradock_path/../html/favicon.ico"
     [ -f "$favicon" ] || $g_curl_opt -s -o "$favicon" "$g_url_fly_ico"
+    echo "INDEX Page: $(date)" >"$g_laradock_path/../html/index.html"
 
     # Test nginx connection
     _msg time "test nginx $path ..."
@@ -555,6 +556,7 @@ check_nginx() {
         _msg time "test nginx error...[$((i * 2))]s"
         sleep 2
     done
+    echo
 }
 
 check_php_fpm() {
@@ -564,16 +566,14 @@ check_php_fpm() {
 
     $use_sudo chown "$USER:$USER" "$html"
 
-    if [ ! -f "$test_file" ]; then
-        _msg time "Create test.php"
-        $use_sudo cp -avf "$g_laradock_path/php-fpm/test.php" "$test_file"
-        source "$g_laradock_env" 2>/dev/null
-        sed -i \
-            -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
-            -e "s/ENV_MYSQL_USER/${MYSQL_USER-}/" \
-            -e "s/ENV_MYSQL_PASSWORD/${MYSQL_PASSWORD-}/" \
-            "$test_file"
-    fi
+    _msg time "Create test.php"
+    $use_sudo cp -avf "$g_laradock_path/php-fpm/test.php" "$test_file"
+    source "$g_laradock_env" 2>/dev/null
+    sed -i \
+        -e "s/ENV_REDIS_PASSWORD/$REDIS_PASSWORD/" \
+        -e "s/ENV_MYSQL_USER/${MYSQL_USER-}/" \
+        -e "s/ENV_MYSQL_PASSWORD/${MYSQL_PASSWORD-}/" \
+        "$test_file"
 
     check_nginx "test.php"
 }
@@ -581,9 +581,9 @@ check_php_fpm() {
 check_spring() {
     _msg time "check spring..."
     if $dco ps | grep "spring.*Up"; then
-        _msg green "container spring is up"
+        _msg green "container [spring] is up"
     else
-        _msg red "container spring is down"
+        _msg red "container [spring] is down"
     fi
 }
 
@@ -819,7 +819,7 @@ parse_command_args() {
         if [ ${#args[@]} -eq 0 ]; then
             args+=(redis mysql php-fpm spring nginx)
             echo -e "\033[0;33mEN: Using default args: [${args[*]}]\033[0m"
-            echo "CN: 没有提供任何参数，将使用默认参数: [${args[*]}]"
+            echo -e "\033[0;33mCN: 没有提供任何参数，将使用默认参数: [${args[*]}]\033[0m"
         fi
         arg_check_dependence=true # Set to true for auto mode
     fi
@@ -983,6 +983,7 @@ main() {
     ${arg_check_php:-false} && check_php_fpm
 
     ${arg_test_java:-false} && check_spring
+    echo "END"
 }
 
 main "$@"

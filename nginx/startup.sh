@@ -19,7 +19,7 @@ log_path=/var/log/nginx
 [ -d $html_path/s ] || mkdir -p $html_path/s
 [ -d $html_path/tp ] || mkdir -p $html_path/tp
 [ -d $html_path/.well-known/acme-challenge ] || mkdir -p $html_path/.well-known/acme-challenge
-[ -f $html_path/index.html ] || date >>$html_path/index.html
+[ -f $html_path/index.html ] || echo "INDEX Page: $(date)" >>$html_path/index.html
 
 # chown 1000:1000 $html_path
 chmod 600 $ssl_dir/*.key
