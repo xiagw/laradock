@@ -136,6 +136,7 @@ check_docker() {
         check_docker_compose
         _msg time "docker is already installed."
         $use_sudo systemctl enable --now docker
+        $use_sudo /lib/systemd/systemd-sysv-install enable docker
         add_to_docker_group
         return 0
     fi
