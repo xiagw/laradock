@@ -40,8 +40,8 @@
 ## 部署方式一：单机/多机docker-compose部署文档
 ```sh
 ## 假如服务器需要代理访问公网，则设置环境变量
-# export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
-
+#export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
+#curl o.flyh5.cn/d/f.sh | bash
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-8.1/openjdk-8
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
