@@ -1,40 +1,38 @@
 [TOC]
 
 ## 硬件/服务器/网络/域名配置推荐
-| 服务器        | 配置推荐  |
+| 项目          | 配置要求  |
 |:--------------|:-------------------------------------------------|
-| CPU 处理器    | >= 4 core(核) (支持 AMD/Intel/ARM64) |
-| MEM 内存      | >= 8 GB  |
-| Disk 系统硬盘 | >= 50 GB  |
-| Net 网络带宽  | >= 50M(按量付费) （私有云自行根据实际业务情况配置网络带宽） |
-| 公有云费用    | 初始部署：建议充值200-500元使用“按量付费”观察时间(三天/一周) |
-| 公有云费用    | 持续运行：根据账单决定采购“固定”套餐(按月/按年)    |
-| 域名和SSL    | 前/后端各一个，共2个域名，需要 SSL 证书  |
-| 防火墙/安全组 | 开放TCP端口 22/80/443  |
+| CPU/处理器     | ≥4核 (AMD/Intel/ARM64) |
+| MEM/内存       | ≥8GB |
+| DISK/硬盘      | ≥50GB |
+| NET/网络带宽   | ≥50M |
+| 域名          | 前后端各1个，配SSL证书 |
+| 安全设置      | 开放端口：22/80/443 (TCP)|
+| 计费方式      | 1. 初期：按量付费(建议充值200-500元)；2. 稳定后：固定套餐(月付/年付) |
 
 
-## 服务器单/多机套餐推荐
-| 要求           | 配置（CPU/MEM/DISK/NETWORK）   |
-|:--------------|:-------------------------------------------------|
-| 单机(适用绝大部分客户) | 2C/8G/50G/50M （Aliyun ECS t6/u1系列便宜）  |
-| 套餐(对高并发量有要求) | 多个服务器"套餐"推荐（CPU/MEM/DISK/NETWORK） |
-| 1000 tps      | 2C/8G/100G/100M 应用程序2台，数据库2台，缓存(redis)1台 |
-| 3000 tps      | 2C/8G/100G/100M 应用程序4台，数据库2台，缓存(redis)1台 |
-| 5000 tps      | 2C/8G/100G/100M 应用程序6台，数据库2台，缓存(redis)1台 |
+## 服务器配置推荐
+| 业务规模 | 基础配置 | 单机/集群配置 |
+|:--------|:---------|:---------|
+| 标准型   | 2C/8G/50G/50M | 单机部署（最低要求） |
+| 高性能型 | 2C/8G/100G/100M | 应用×2 + 数据库×2 + 缓存×1 (支持1000 TPS) |
+| 企业型   | 2C/8G/100G/100M | 应用×4 + 数据库×2 + 缓存×1 (支持3000 TPS) |
+| 旗舰型   | 2C/8G/100G/100M | 应用×6 + 数据库×2 + 缓存×1 (支持5000 TPS) |
 
 
 
-## 软件/中间件/操作系统/版本
-| 软件      | 系统/配置推荐                                                         |
-|:----------|:---------------------------------------------------------------------|
-| Nginx     | >= 1.18                                                              |
-| PHP       | >= 7.1 (CPU >=2核，内存 >=2GB，存储 >=20GB)                          |
-| JDK       | >= 1.8 (CPU >=2核，内存 >=2GB，存储 >=20GB) (amazoncorretto)        |
-| Nodejs    | >= 20 (CPU >=2核，内存 >=2GB，存储 >=20GB)                          |
-| Redis     | >= 7.0 (CPU >=1核，内存 >=1GB，存储 >=20GB)                          |
-| MySQL     | >= 8.0 (CPU >=2核，内存 >=2GB，存储 >=20GB)                          |
-| OS/单机   | Ubuntu 22.04 (推荐), CentOS/Anolis OS/RedHat/Debian/Rocky 等 Linux   |
-| OS/集群   | Kubernetes（推荐） (云厂商自动推荐的OS/lifseaOS等/或自行安排)    |
+## 运行环境要求/软件/中间件/操作系统/版本
+| 组件      | 最低版本及资源配置                                                  |
+|:----------|:------------------------------------------------------------------|
+| Nginx     | v1.18+ (2C/2G)                                                     |
+| PHP       | v7.1+ (2C/2G/20G)                                                 |
+| JDK       | v1.8+ (2C/2G/20G) (amazoncorretto)                               |
+| Node.js   | v20+ (2C/2G/20G)                                                  |
+| Redis     | v7.0+ (1C/1G/20G)                                                 |
+| MySQL     | v8.0+ (2C/2G/20G)                                                 |
+| OS/单机    | Ubuntu 22.04 LTS (推荐), CentOS/Anolis/RedHat/Debian/Rocky 等Linux|
+| 集群/容器   | Kubernetes (生产环境推荐)                                          |
 
 
 ## 部署方式一：单机/多机docker-compose部署文档
@@ -107,7 +105,7 @@ cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## ngi
 ## 3. 复制镜像: docker tag laradock-spring laradock-spring3
 ## 4. 修改 nginx 配置文件 router.inc（nodejs 同理）
 ## 修改 java 启动参数
-## 1. 创建 spring/.java_opts 文件，内容: export JAVA_OPTS=“java -Xms1g -Xmx1g”
+## 1. 创建 spring/.java_opts 文件，内容: export JAVA_OPTS="java -Xms1g -Xmx1g"
 
 ## 1. sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
 ## 2. 导入数据库文件（使用本服务器的 mysql/redis）（独立非本机 mysql/redis 不从此操作）
@@ -138,14 +136,16 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=
 
 ## 部署方式二：K8S集群kubectl/helm部署参考
 ```sh
-## 1. 前提条件，确保命令 kubectl / helm 工作正常，可以正常操作 k8s 集群
-## 2. 使用命令 helm create <your_app_name> 生成 helm 文件
-cd /path/to/helm/ && helm create your_app_name
-## 3. 根据需要自行修改 your_app_name/*.yml 文件，或使用软件服务商提供的 yml 文件
-## 4. 执行 k8s 部署
+## 1. 确保命令 kubectl / helm 工作正常，可以正常操作 k8s 集群
+command -v kubectl && command -v helm && echo 'ok' || echo failed
+## 2. 使用命令 helm create <your_app> 生成 helm 文件
+cd /path/to/helm/ && helm create testapp
+## 3. 根据需要自行修改 testapp/*.yml 文件，或使用软件服务商提供的 yml 文件
+ls testapp/values.yaml
+## 4. 执行 k8s 部署到 k8s 集群的 dev 命名空间
 helm upgrade --install --atomic --history-max 3 \
 --namespace dev --create-namespace \
-your_app_name /path/to/helm/your_app_name/ \
+testapp /path/to/helm/testapp/ \
 --set image.pullPolicy=Always --timeout 120s \
 --set image.repository=registry-vpc.cn-hangzhou.aliyuncs.com/ns/repo \
 --set image.tag=spring-b962e447-1669878102
@@ -175,9 +175,9 @@ kubectl -n dev get all
 1. 域名公共查询备案： https://beian.miit.gov.cn/#/Integrated/recordQuery
 1. 阿里云ICP备案： https://beian.aliyun.com/ （建议下载它的App进行备案速度更快）
 1. 必须在服务器所在的供应商处备案才有效（域名在哪个服务商和备案无关）
-1. 有效备案：例如“阿里云服务器”+“阿里云备案”
-1. 无效备案：例如“腾讯云服务器”+“阿里云备案”
-1. 需要备案只限服务器在中国内地，港澳台和外国无需域名备案，【如果没有备案必须先去“**服务器提供商**”备案】
+1. 有效备案：例如"阿里云服务器"+"阿里云备案"
+1. 无效备案：例如"腾讯云服务器"+"阿里云备案"
+1. 备案只限服务器在中国内地，港澳台和外国无需域名备案，【如果没有备案必须先去"**服务器提供商**"备案】
 1. 需要设置域名解析，dns解析需要指向服务器IP
 1. 需要提供域名的 https SSL (Nginx类型) 证书文件
 
@@ -191,4 +191,4 @@ kubectl -n dev get all
 1. 点左下角 `login` , （点击 `Accept and Save`），`输入密码`登录
 1. 点击左侧 `New Terminal console` 进入命令行界面
 1. 点击左侧 `New SFTP window` 进入文件夹管理界面，可以直接上传/下载文件
-1. 网址对应服务器目录关系，参考本页上方的“### 单机docker部署方式站点URL对应服务器目录说明”
+1. 网址对应服务器目录关系，参考本页上方的"### 单机docker部署方式站点URL对应服务器目录说明"
