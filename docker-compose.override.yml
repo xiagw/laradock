@@ -599,6 +599,7 @@ services:
         context: ./nodejs
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
+          - MIRROR=${MIRROR}
           - NODE_VERSION=${NODE_VERSION}
       restart: always
       volumes:

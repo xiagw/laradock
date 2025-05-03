@@ -1,6 +1,6 @@
-## nodejs template
-ARG NODE_VERSION=18
-FROM node:${NODE_VERSION}-slim
+ARG MIRROR=
+ARG NODE_VERSION=20
+FROM ${MIRROR}node:${NODE_VERSION}-slim
 
 ARG CHANGE_SOURCE=false
 ARG IN_CHINA=false
@@ -17,6 +17,9 @@ RUN set -xe; \
   [ -d /app ] || mkdir /app; \
   chown -R node:node /.cache /app; \
   if [ "$CHANGE_SOURCE" = true ]; then \
+    sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources; \
+    apt update; \
+    apt install -y curl; \
     npm config set registry https://registry.npmmirror.com/; \
     yarn config set registry https://registry.npmmirror.com/; \
     npm install -g cnpm; \
