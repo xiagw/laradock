@@ -588,6 +588,8 @@ check_spring() {
 
 get_env_info() {
     set +e
+    echo "####  服务器本机集成环境信息  ####"
+    echo "####  客户如果有独立 redis/mysql 则忽略此信息"
     echo "####  代码内写标准端口 mysql:3306 / redis:6379"
     echo "####  此处显示端口只用于SSH端口转发映射(可能不同于标准端口)"
     grep -E '^REDIS_' "$g_laradock_env" | sed -n '1,3p'
