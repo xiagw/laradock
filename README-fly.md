@@ -151,12 +151,10 @@ helm create myapp
 # 3. 配置应用
 # 修改 myapp/values.yaml，设置镜像、资源等配置
 # 4. 部署应用
-helm upgrade --install --atomic --history-max 3 \
+helm upgrade --install --atomic --history-max 3 --timeout 120s \
   --namespace dev --create-namespace \
-  --timeout 120s \
   myapp ./myapp \
-  --set image.repository=<REGISTRY>/<IMAGE> \
-  --set image.tag=<TAG>
+  --set image.repository=nginx,image.tag=stable-alpine
 # 5. 验证部署
 helm ls -n dev
 kubectl -n dev get pods,svc
