@@ -77,7 +77,7 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
 ## ！！！ 必须进入此目录 ！！！
 cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
 
-## ！！！ 注意 ！！！ 这个是本服务器集成的 mysql/redis 信息
+## ！！！ 注意 ！！！ 这个是服务器本机集成的 mysql/redis 信息
 ## 1. 如果客户有独立的 mysql/redis ，则不需要查看此信息（独立 mysql/redis 信息不从此查看）
 ## 2. 只有当客户没有单独的 mysql/redis，则使用此方式查看本服务器 mysql/redis 的链接/账号/密码/信息
 ## 3. 容器内和代码内写标准端口 mysql=3306/redis=6379，此处显示端口只用于远程 SSH 端口转发映射
