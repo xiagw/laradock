@@ -39,6 +39,7 @@
 ```sh
 ## 假如服务器需要代理访问公网，则设置环境变量
 #export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
+## Aliyun - ECS - 云助手(左下角) - 实例(右侧) - 执行命令 （复制以下命令，超时时间1500秒）
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-8.1/openjdk-8
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
@@ -145,13 +146,10 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=
 ```sh
 # 1. 验证环境
 command -v kubectl && command -v helm && echo 'ok' || echo failed
-
 # 2. 创建Helm Chart
 helm create myapp
-
 # 3. 配置应用
 # 修改 myapp/values.yaml，设置镜像、资源等配置
-
 # 4. 部署应用
 helm upgrade --install --atomic --history-max 3 \
   --namespace dev --create-namespace \
@@ -159,7 +157,6 @@ helm upgrade --install --atomic --history-max 3 \
   myapp ./myapp \
   --set image.repository=<REGISTRY>/<IMAGE> \
   --set image.tag=<TAG>
-
 # 5. 验证部署
 helm ls -n dev
 kubectl -n dev get pods,svc
@@ -195,11 +192,9 @@ kubectl -n dev get pods,svc
 - 备案原则：必须在服务器提供商处完成备案
 - 备案查询：https://beian.miit.gov.cn/#/Integrated/recordQuery
 - 阿里云ICP备案： https://beian.aliyun.com/ （建议使用App进行备案速度更快）
-
 ### 备案示例
 - 有效备案：阿里云服务器 + 阿里云备案
 - 无效备案：腾讯云服务器 + 阿里云备案
-
 ### 域名配置要求
 - DNS解析：配置A记录指向服务器IP
 - SSL证书：配置HTTPS证书(Nginx格式)
