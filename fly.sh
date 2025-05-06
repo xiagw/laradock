@@ -122,7 +122,6 @@ add_to_docker_group() {
     echo '############################################'
     _msg red "!!!! Adding user to docker group requires logout !!!!"
     _msg yellow "System will force logout in 5 seconds..."
-    # _msg yellow "Please save your work and press Ctrl+C to cancel if needed."
     echo '############################################'
     sleep 5
     _force_user_logout "$USER"
@@ -136,7 +135,7 @@ check_docker() {
         check_docker_compose
         _msg time "docker is already installed."
         $use_sudo systemctl enable --now docker.service >/dev/null || true
-        $use_sudo /lib/systemd/systemd-sysv-install enable docker.service || true
+        $use_sudo /lib/systemd/systemd-sysv-install enable docker.service 2>/dev/null || true
         add_to_docker_group
         return 0
     fi
@@ -302,12 +301,16 @@ _install_zsh() {
     _msg time "Install fzf"
     if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler|kylin) ]]; then
         [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
-        sed -i "s|url=https:.*|url=$g_url_fzf_release|" "$HOME/.fzf/install"
+        local v
+        v=$(awk -F'=' '{print $2}' "$HOME/.fzf/install")
+        sed -i "s|url=http.*|url=$g_url_fly_cdn/fzf-${v:-0.61.3}-linux_amd64.tar.gz|" "$HOME/.fzf/install"
         "$HOME/.fzf/install"
     else
         _check_cmd install fzf || true
         local file=/usr/share/doc/fzf/examples/key-bindings.zsh
-        [ ! -f "$file" ] && $use_sudo $g_curl_opt -Lo "$file" "$g_url_fly_cdn/$(basename "$file")" || true
+        if [ ! -f "$file" ]; then
+            $use_sudo $g_curl_opt -Lo "$file" "$g_url_fly_cdn/$(basename "$file")" || true
+        fi
     fi
 
     # Install and configure oh-my-zsh
@@ -907,7 +910,6 @@ main() {
         g_url_get_docker="$g_url_fly_cdn/get-docker.sh"
         g_url_get_docker2="$g_url_fly_cdn/get-docker2.sh"
         g_url_fzf="https://gitee.com/mirrors/fzf.git"
-        g_url_fzf_release=$g_url_fly_cdn/fzf-0.56.3-linux_amd64.tar.gz
         g_url_ohmyzsh="https://gitee.com/mirrors/ohmyzsh.git"
     else
         g_url_laradock_git=https://github.com/xiagw/laradock.git
