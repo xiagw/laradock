@@ -135,8 +135,8 @@ check_docker() {
     if _check_cmd docker; then
         check_docker_compose
         _msg time "docker is already installed."
-        $use_sudo systemctl enable --now docker >/dev/null
-        $use_sudo /lib/systemd/systemd-sysv-install enable docker
+        $use_sudo systemctl enable --now docker.service >/dev/null || true
+        $use_sudo /lib/systemd/systemd-sysv-install enable docker.service || true
         add_to_docker_group
         return 0
     fi
@@ -302,7 +302,7 @@ _install_zsh() {
     _msg time "Install fzf"
     if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler|kylin) ]]; then
         [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
-        sed -i -e "#url=https:#s#=.*#=$g_url_fzf_release#" "$HOME/.fzf/install"
+        sed -i "s|url=https:.*|url=$g_url_fzf_release|" "$HOME/.fzf/install"
         "$HOME/.fzf/install"
     else
         _check_cmd install fzf || true
@@ -394,6 +394,34 @@ install_wg() {
         $cmd_pkg install -yqq wireguard wireguard-tools
     fi
     $use_sudo modprobe wireguard
+}
+
+_handle_ssl_config() {
+    # 搜索并复制SSL密钥文件
+    local ssl_dir="$g_laradock_path/nginx/sites/ssl" zip key temp_dir
+    [ -d "$ssl_dir" ] || mkdir -p "$ssl_dir"
+
+    # 在HOME和/tmp目录下同时搜索nginx相关的密钥文件
+    temp_dir=$(mktemp -d)
+    find "$HOME" "/tmp" -maxdepth 1 -iname "*nginx*.zip" -iname "*nginx*.gz" -type f 2>/dev/null |
+        while read -r zip; do
+            if [[ "$zip" == *.zip ]]; then
+                unzip -j "$zip" -d "$temp_dir"
+            elif [[ "$zip" == *.gz ]]; then
+                cp -f "$zip" "$temp_dir"
+                (cd "$temp_dir" && gunzip "$zip")
+            fi
+        done
+    find "$HOME" "/tmp" "$temp_dir" -maxdepth 1 -iname "*.key" -iname "*.crt" -iname "*.pem" -type f |
+        while read -r key; do
+            _msg time "找到SSL密钥文件 $key ，正在复制..."
+            [[ "$key" == *.key ]] && cp -vf "$key" "$ssl_dir/default.key"
+            [[ "$key" == *.crt ]] && cp -vf "$key" "$ssl_dir/default.pem"
+            [[ "$key" == *.pem ]] && cp -vf "$key" "$ssl_dir/default.pem"
+        done
+    _msg green "已更新SSL密钥文件到: $ssl_dir/default.*"
+    _reload_nginx
+    rm -rf "$temp_dir"
 }
 
 _install_acme() {
@@ -801,6 +829,10 @@ parse_command_args() {
         key)
             arg_insert_key=true
             ;;
+        ssl)
+            # arg_ssl=true
+            _handle_ssl_config
+            ;;
         cdn | refresh)
             shift
             arg_need_docker=false
@@ -875,7 +907,7 @@ main() {
         g_url_get_docker="$g_url_fly_cdn/get-docker.sh"
         g_url_get_docker2="$g_url_fly_cdn/get-docker2.sh"
         g_url_fzf="https://gitee.com/mirrors/fzf.git"
-        g_url_fzf_release=$g_url_fly_cdn/fzf-0.56.3-linux_amd64.tgz
+        g_url_fzf_release=$g_url_fly_cdn/fzf-0.56.3-linux_amd64.tar.gz
         g_url_ohmyzsh="https://gitee.com/mirrors/ohmyzsh.git"
     else
         g_url_laradock_git=https://github.com/xiagw/laradock.git
