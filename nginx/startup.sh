@@ -34,14 +34,14 @@ fi
 
 ## nginx 4xx 5xx
 if [ ! -f $html_path/4xx.html ]; then
-    echo 'Error page: 4xx' >>$html_path/4xx.html
+    echo 'Client error page: 4xx' >>$html_path/4xx.html
 fi
 if [ ! -f $html_path/5xx.html ]; then
-    echo 'Error page: 5xx' >>$html_path/5xx.html
+    echo 'Server error page: 5xx' >>$html_path/5xx.html
 fi
 
 ## remove log files / 自动清理超过15天的旧日志文件
-while [ -d $log_path ]; do
+while [ -d $log_path ] && [ ! -f "$log_path/.keep_all_log" ]; do
     find $log_path -type f -iname "*.log" -ctime +15 -delete
     sleep 1d
 done &

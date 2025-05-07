@@ -2,6 +2,11 @@
 ## 2. proxy_pass 后面必须对应 docker 容器名字，当前一般是 spring 和 nodejs
 ## 3. 注意移除注释 #
 
+## 禁止访问的URI
+# location /xxxxx {
+#     return 404;
+# }
+
 ## node.js
 location /nodejs {
     # proxy_pass http://nodejs:8080;
