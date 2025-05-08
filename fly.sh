@@ -508,13 +508,13 @@ show_loading() {
 get_image() {
     _msg step "Get docker image..."
     local docker_ver image_prefix image_mirror=registry.cn-hangzhou.aliyuncs.com/flyh5
-    ## special case tencentos opencloudos  Docker version 0.0.0-20241223130549-3b49deb, build 3b49deb
+    ## special case [tencentos|opencloudos]  Docker version 0.0.0-20241223130549-3b49deb, build 3b49deb
     docker_ver="$(docker --version | awk '{gsub(/[,]/,""); if ($3 ~ /^0\.0\.0-[0-9]+/) {split($3,a,"-"); print a[2]} else print int($3)}')"
 
-    ## docker version 24 以下使用 laradock_ 前缀
     image_prefix="laradock-"
+    ## docker version 24 以下使用 laradock_ 前缀
     if [ "$docker_ver" -le 19 ]; then
-        ## special case kylin V10
+        ## special case [kylin V10] 使用 laradock- 前缀
         [ "$docker_ver" -eq 18 ] || image_prefix="laradock_"
     fi
 
