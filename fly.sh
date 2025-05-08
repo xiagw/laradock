@@ -312,7 +312,7 @@ _install_zsh() {
     if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler|kylin) ]]; then
         [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
         local v
-        v=$(awk -F'=' '{print $2}' "$HOME/.fzf/install")
+        v=$(awk -F'=' '/version/ {print $2}' "$HOME/.fzf/install")
         sed -i "s|url=http.*|url=$g_url_fly_cdn/fzf-${v:-0.61.3}-linux_amd64.tar.gz|" "$HOME/.fzf/install"
         "$HOME/.fzf/install"
     else
