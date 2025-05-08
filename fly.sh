@@ -134,15 +134,15 @@ check_docker() {
     if _check_cmd docker; then
         check_docker_compose
         _msg time "docker is already installed."
-        $use_sudo systemctl enable --now docker.service >/dev/null || true
+        $use_sudo systemctl enable --now docker.service 2>/dev/null || true
         $use_sudo /lib/systemd/systemd-sysv-install enable docker.service 2>/dev/null || true
         add_to_docker_group
         return 0
     fi
 
     # Handle OpenEuler distribution
-    local os_id fake_os
-    os_id="$(grep -q -E '^ID=.*' /etc/os-release)"
+    local os_id fake_os cmd_pkg2
+    os_id="$(awk -F'=' '/^ID=.*/ {print $2}' /etc/os-release | sed 's/"//g' | head -n1)"
     case "$os_id" in
     *openEuler*)
         $use_sudo curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
@@ -151,24 +151,18 @@ check_docker() {
         ${cmd_pkg-} install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         ;;
     *kylin | *kylin*)
-        if command -v dnf; then
-            dnf install docker-engine
-        elif command -v yum; then
-            yum install docker-engine
-        else
-            echo "Unsupport install package"
+        cmd_pkg2="$(command -v dnf || command -v yum)"
+        $cmd_pkg2 install -y docker-engine || {
+            echo "Unsupport install package docker-engine"
             return 1
-        fi
+        }
         ;;
     tencentos | opencloudos)
-        if command -v dnf; then
-            dnf install docker-ce
-        elif command -v yum; then
-            yum install docker-ce
-        else
-            echo "Unsupport install package"
+        cmd_pkg2="$(command -v dnf || command -v yum)"
+        $cmd_pkg2 install -y docker-ce || {
+            echo "Unsupport install package docker-ce"
             return 1
-        fi
+        }
         ;;
     *alinux | *alinux*)
         # Handle Aliyun Linux
@@ -186,8 +180,10 @@ check_docker() {
             url="$g_url_get_docker2"
         fi
     fi
-    # shellcheck disable=2046,2086
-    $g_curl_opt "$url" | $use_sudo bash ${cmd_arg}
+    if [ -z "${cmd_pkg2}" ]; then
+        # shellcheck disable=2046,2086
+        $g_curl_opt "$url" | $use_sudo bash ${cmd_arg}
+    fi
 
     add_to_docker_group || true
 
@@ -195,8 +191,8 @@ check_docker() {
     ${fake_os:-false} && $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
 
     # Enable and start Docker
-    $use_sudo systemctl enable --now docker >/dev/null
-    $use_sudo /lib/systemd/systemd-sysv-install enable docker
+    $use_sudo systemctl enable --now docker 2>/dev/null || true
+    $use_sudo /lib/systemd/systemd-sysv-install enable docker 2>/dev/null || true
     check_docker_compose
 }
 
@@ -512,14 +508,14 @@ show_loading() {
 get_image() {
     _msg step "Get docker image..."
     local docker_ver image_prefix image_mirror=registry.cn-hangzhou.aliyuncs.com/flyh5
-    docker_ver="$(docker --version | awk '{gsub(/[,]/,""); print int($3)}')"
+    ## special case tencentos opencloudos  Docker version 0.0.0-20241223130549-3b49deb, build 3b49deb
+    docker_ver="$(docker --version | awk '{gsub(/[,]/,""); if ($3 ~ /^0\.0\.0-[0-9]+/) {split($3,a,"-"); print a[2]} else print int($3)}')"
 
     ## docker version 24 以下使用 laradock_ 前缀
+    image_prefix="laradock-"
     if [ "$docker_ver" -le 19 ]; then
-        image_prefix="laradock_"
-        [ "$docker_ver" -eq 18 ] && image_prefix="laradock-"
-    else
-        image_prefix="laradock-"
+        ## special case kylin V10
+        [ "$docker_ver" -eq 18 ] || image_prefix="laradock_"
     fi
 
     for i in "${args[@]}"; do
