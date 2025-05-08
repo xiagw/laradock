@@ -160,6 +160,16 @@ check_docker() {
             return 1
         fi
         ;;
+    tencentos | opencloudos)
+        if command -v dnf; then
+            dnf install docker-ce
+        elif command -v yum; then
+            yum install docker-ce
+        else
+            echo "Unsupport install package"
+            return 1
+        fi
+        ;;
     *alinux | *alinux*)
         # Handle Aliyun Linux
         $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
