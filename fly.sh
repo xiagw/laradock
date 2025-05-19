@@ -886,9 +886,14 @@ parse_command_args() {
 }
 
 get_common() {
-    local file="$g_me_path/common.sh" url="$g_deploy_raw/lib/common.sh"
+    local file="/tmp/common.sh" url="$g_deploy_raw/lib/common.sh"
     [ -f "$file" ] || curl -fsSLo "$file" "$url"
-    . "$file"
+    if grep 'shellcheck shell=bash' "$file"; then
+        . "$file"
+    else
+        _msg red "Library $file file is not valid"
+        return 1
+    fi
 }
 
 main() {
