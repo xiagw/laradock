@@ -993,6 +993,13 @@ main() {
         return
     fi
 
+    if ${arg_env_info:-false}; then
+        get_env_info
+        return
+    fi
+
+    ${arg_check_docker:-true} && check_docker
+
     if ${arg_mysql_cli:-false}; then
         mysql_shell "$arg_mysql_user"
         return
@@ -1001,12 +1008,6 @@ main() {
         redis_shell
         return
     fi
-    if ${arg_env_info:-false}; then
-        get_env_info
-        return
-    fi
-
-    ${arg_check_docker:-true} && check_docker
     ## install docker, add normal user (not root) to group "docker", re-login
     ${need_logout:-false} && return
 
