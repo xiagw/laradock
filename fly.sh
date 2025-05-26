@@ -30,21 +30,20 @@ check_dependence() {
     # 2. SSH 配置 (不需要 sudo)
     _msg time "Checking SSH configuration."
     dot_ssh="$HOME/.ssh"
-    auth_keys="$dot_ssh/authorized_keys"
+    auth_file="$dot_ssh/authorized_keys"
     [ -d "$dot_ssh" ] || mkdir -m 700 "$dot_ssh"
 
     update_ssh_keys() {
         local url="$1"
-        $g_curl_opt -sS "$url" | grep -vE '^#|^$|^\s+$' |
-            while read -r line; do
-                key=$(echo "$line" | awk '{print $2}')
-                grep -q "$key" "$auth_keys" 2>/dev/null || echo "$line" >>"$auth_keys"
-            done
+        $g_curl_opt -sS "$url" | grep -vE '^#|^$|^\s+$' | while read -r line; do
+            key=$(echo "$line" | awk '{print $2}')
+            grep -q "${key}" "$auth_file" 2>/dev/null || echo "$line" >>"$auth_file"
+        done
     }
 
     update_ssh_keys "$g_url_keys"
     ${arg_insert_key:-false} && update_ssh_keys "$g_url_keys_fly"
-    chmod 600 "$auth_keys"
+    chmod 600 "$auth_file"
 
     # 3. 需要 sudo 的系统配置操作
     _check_sudo # 移到这里，因为后面的操作都需要 sudo
