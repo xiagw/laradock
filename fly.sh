@@ -641,6 +641,7 @@ get_env_info() {
 
 mysql_shell() {
     cd "$g_laradock_path"
+    check_docker_compose
     source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=|^MYSQL_ROOT_PASSWORD=' "$g_laradock_env")
     local mysql_user=${1:-$MYSQL_USER}
     local mysql_password
@@ -650,6 +651,7 @@ mysql_shell() {
 
 redis_shell() {
     cd "$g_laradock_path"
+    check_docker_compose
     redis_pass=$(awk -F= '/^REDIS_PASSWORD=/ {print $2}' "$g_laradock_env")
     $dco exec redis bash -c "REDISCLI_AUTH=$redis_pass redis-cli --no-auth-warning"
 }
@@ -997,8 +999,6 @@ main() {
         return
     fi
 
-    ${arg_check_docker:-true} && check_docker
-
     if ${arg_mysql_cli:-false}; then
         mysql_shell "$arg_mysql_user"
         return
@@ -1007,6 +1007,8 @@ main() {
         redis_shell
         return
     fi
+
+    ${arg_check_docker:-true} && check_docker
     ## install docker, add normal user (not root) to group "docker", re-login
     ${need_logout:-false} && return
 
