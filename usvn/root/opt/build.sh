@@ -4,7 +4,7 @@ set -xe
 ## mirror for china
 if [[ ${CHANGE_SOURCE:-false} = true ]]; then
     sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
-    url_usvn=http://oss.flyh6.com/d/usvn.tar.gz
+    url_usvn=http://o.flyh5.cn/d/usvn.tar.gz
 else
     url_usvn=https://github.com/usvn/usvn/archive/1.0.10.tar.gz
 fi

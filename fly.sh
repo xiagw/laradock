@@ -974,7 +974,7 @@ main() {
     g_me_log="$g_me_path/${g_me_name}.log"
 
     g_curl_opt='curl --connect-timeout 10 -fL'
-    g_url_fly_cdn="http://oss.flyh6.com/d"
+    g_url_fly_cdn="http://o.flyh5.cn/d"
     g_url_keys_fly="$g_url_fly_cdn/flyh6.keys"
     g_url_fly_ico="$g_url_fly_cdn/flyh6.ico"
 

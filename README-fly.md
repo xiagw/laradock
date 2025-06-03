@@ -208,7 +208,7 @@ kubectl -n dev get pods,svc
 
 ### 下载安装
 - 官方下载：[Bitvise SSH Client](https://www.putty.org/)
-- 镜像下载：[Bitvise SSH Client (国内镜像)](http://oss.flyh6.com/d/BvSshClient-Inst.zip)
+- 镜像下载：[Bitvise SSH Client (国内镜像)](http://o.flyh5.cn/d/BvSshClient-Inst.zip)
 
 ### 服务器连接
 1. 获取必要信息：服务器IP、用户名和认证方式（密码或SSH密钥）
