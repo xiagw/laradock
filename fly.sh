@@ -930,7 +930,7 @@ parse_command_args() {
         fi
         arg_check_dependence=true # Set to true for auto mode
     fi
-    echo "The final args: ${args[*]}"
+    [ "${args[*]}" ] && echo "The final args: ${args[*]}"
 
     ## need docker provider
     if [ "${arg_need_docker:-true}" = true ]; then
@@ -953,7 +953,7 @@ parse_command_args() {
 get_common() {
     local file="/tmp/common.sh" url="$g_deploy_raw/lib/common.sh"
     [ -f "$file" ] || curl -fsSLo "$file" "$url"
-    if grep 'shellcheck shell=bash' "$file"; then
+    if grep -q 'shellcheck shell=bash' "$file"; then
         . "$file"
     else
         _msg red "Library $file file is not valid"
