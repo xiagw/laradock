@@ -49,9 +49,98 @@ services:
       networks:
         - backend
         - frontend
+      healthcheck:
+        test: ["CMD", "mysqladmin", "-p$MYSQL_ROOT_PASSWORD", "ping", "-h", "localhost"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
       # depends_on:
       #   - mysqlbak
       #   - percona-xtrabackup
+
+### MySQL-1 ################################################
+    mysql1:
+      restart: always
+      build:
+        context: ./mysql
+        args:
+          - TZ=${WORKSPACE_TIMEZONE}
+          - MYSQL_VERSION=${MYSQL_VERSION}
+          - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+          - MYSQL_REPL_USER=repl
+          - MYSQL_REPL_PASSWORD=replpass
+          - MYSQL_REPL_TYPE=master1
+          - MYSQL_ROLE=master1
+          - MYSQL_MASTER_HOST=mysql2
+      environment:
+        - MYSQL_DATABASE=${MYSQL_DATABASE}
+        - MYSQL_USER=${MYSQL_USER}
+        - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+        - TZ=${WORKSPACE_TIMEZONE}
+        - MYSQL_REPL_USER=repl
+        - MYSQL_REPL_PASSWORD=replpass
+        - MYSQL_REPL_TYPE=master1
+        - MYSQL_ROLE=master1
+        - MYSQL_MASTER_HOST=mysql2
+      security_opt:
+        - seccomp:unconfined
+      volumes:
+        - ${DATA_PATH_HOST}/mysql1:/var/lib/mysql
+        - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
+        - ${DATA_PATH_HOST}/mysqlbak:/backup
+      ports:
+        - "${MYSQL_PORT}1:3306"
+      networks:
+        - backend
+        - frontend
+      healthcheck:
+        test: ["CMD", "mysqladmin", "-p$MYSQL_ROOT_PASSWORD", "ping", "-h", "localhost"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
+### MySQL-2 ################################################
+    mysql2:
+      restart: always
+      build:
+        context: ./mysql
+        args:
+          - TZ=${WORKSPACE_TIMEZONE}
+          - MYSQL_VERSION=${MYSQL_VERSION}
+          - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+          - MYSQL_REPL_USER=repl
+          - MYSQL_REPL_PASSWORD=replpass
+          - MYSQL_REPL_TYPE=master2
+          - MYSQL_ROLE=master2
+          - MYSQL_MASTER_HOST=mysql1
+      environment:
+        - MYSQL_DATABASE=${MYSQL_DATABASE}
+        - MYSQL_USER=${MYSQL_USER}
+        - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+        - TZ=${WORKSPACE_TIMEZONE}
+        - MYSQL_REPL_USER=repl
+        - MYSQL_REPL_PASSWORD=replpass
+        - MYSQL_REPL_TYPE=master2
+        - MYSQL_ROLE=master2
+        - MYSQL_MASTER_HOST=mysql1
+      security_opt:
+        - seccomp:unconfined
+      volumes:
+        - ${DATA_PATH_HOST}/mysql2:/var/lib/mysql
+        - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
+        - ${DATA_PATH_HOST}/mysqlbak:/backup
+      ports:
+        - "${MYSQL_PORT}2:3306"
+      networks:
+        - backend
+        - frontend
+      healthcheck:
+        test: ["CMD", "mysqladmin", "-p$MYSQL_ROOT_PASSWORD", "ping", "-h", "localhost"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
 
 ### MySQL backup ################################################
     mysqlbak:

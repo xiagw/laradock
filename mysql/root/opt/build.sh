@@ -18,7 +18,6 @@ my_ver=$(mysqld --version | awk '{print $3}' | cut -d. -f1)
 cat >$my_cnf <<'EOF'
 [mysqld]
 host_cache_size=0
-# initialize-insecure=0
 explicit_defaults_for_timestamp
 tls_version=TLSv1.2,TLSv1.3
 character-set-server=utf8mb4
@@ -26,7 +25,6 @@ character-set-server=utf8mb4
 myisam_recover_options = FORCE,BACKUP
 max_allowed_packet = 128M
 max_connect_errors = 1000000
-sync_binlog = 1
 log_bin = log-bin
 log_bin_index = log-bin
 skip-name-resolve
@@ -40,7 +38,37 @@ replicate_ignore_db = test
 replicate_ignore_db = information_schema
 replicate_ignore_db = easyschedule
 replicate_wild_ignore_table = easyschedule.%
-# log_replica_updates
+
+## Basic replication settings (common for all versions)
+gtid_mode = ON
+enforce_gtid_consistency = ON
+binlog_row_image = MINIMAL
+sync_binlog = 1
+
+# Replication and binlog settings
+expire_logs_days = 30
+max_binlog_size = 1024M
+binlog_cache_size = 4M
+binlog_checksum = NONE
+relay_log = mysql-relay-bin
+relay_log_index = mysql-relay-bin.index
+relay_log_recovery = ON
+# Enable crash-safe replication
+relay_log_purge = 1
+relay_log_space_limit = 0
+sync_relay_log = 1
+sync_relay_log_info = 1
+
+# Connection timeout settings
+slave_net_timeout = 60
+wait_timeout = 28800
+interactive_timeout = 28800
+relay_log = mysql-relay-bin
+relay_log_index = mysql-relay-bin.index
+# Use CHANGE MASTER TO MASTER_USER='user', MASTER_PASSWORD='password'
+master_info_repository = TABLE
+relay_log_info_repository = TABLE
+relay_log_recovery = ON
 
 #############################################
 # query_cache_type = 0
@@ -73,22 +101,30 @@ sql-mode="STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE,NO_ZERO_IN_DAT
 default-authentication-plugin=mysql_native_password
 character-set-client-handshake = FALSE
 binlog_format = ROW
+# initialize-insecure=ON
+
+## MySQL 5.7 replication settings
+log_slave_updates = ON
+slave_preserve_commit_order = 1
+master_info_repository = TABLE
+relay_log_info_repository = TABLE
+relay_log_recovery = ON
+transaction_write_set_extraction = XXHASH64
 EOF
 else
     # MySQL 8.0 specific configurations
     cat >>$my_cnf <<'EOF'
 sql-mode="STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO"
+
+## MySQL 8.0 replication settings
+log_replica_updates = ON
+replica_preserve_commit_order = 1
+relay_log_recovery = ON
+# Source info and relay log info are stored in system tables by default in MySQL 8
 EOF
 fi
 
-case "$MYSQL_REPLICATION" in
-single | master2slave)
-    cat >>$my_cnf <<'EOF'
-server_id = 1
-auto_increment_offset = 1
-auto_increment_increment = 1
-EOF
-    ;;
+case "$MYSQL_REPL_TYPE" in
 master1)
     cat >>$my_cnf <<'EOF'
 ######## M2M replication (master to master, source to source)
@@ -109,6 +145,13 @@ auto_increment_offset = 2
 auto_increment_increment = 2
 EOF
     ;;
+single | master2slave | *)
+    cat >>$my_cnf <<'EOF'
+server_id = 1
+auto_increment_offset = 1
+auto_increment_increment = 1
+EOF
+    ;;
 esac
 
 chmod 0644 $my_cnf
@@ -126,3 +169,12 @@ chmod 600 /root/.my.cnf
 EOF
 
 chmod +x /opt/*.sh
+
+# Add auto-start replication script to MySQL entrypoint
+if [ -f /usr/local/bin/docker-entrypoint.sh ]; then
+    sed -i '/if .* _is_sourced.* then/i (exec /opt/repl) &' /usr/local/bin/docker-entrypoint.sh
+elif [ -f /entrypoint.sh ]; then
+    sed -i '/echo ".Entrypoint. MySQL Docker Image/i (exec /opt/repl) &' /entrypoint.sh
+else
+    echo "not found entrypoint file"
+fi
