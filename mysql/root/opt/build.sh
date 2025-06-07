@@ -46,7 +46,6 @@ binlog_row_image = MINIMAL
 sync_binlog = 1
 
 # Replication and binlog settings
-expire_logs_days = 30
 max_binlog_size = 1024M
 binlog_cache_size = 4M
 binlog_checksum = NONE
@@ -57,18 +56,12 @@ relay_log_recovery = ON
 relay_log_purge = 1
 relay_log_space_limit = 0
 sync_relay_log = 1
-sync_relay_log_info = 1
 
 # Connection timeout settings
-slave_net_timeout = 60
 wait_timeout = 28800
 interactive_timeout = 28800
 relay_log = mysql-relay-bin
 relay_log_index = mysql-relay-bin.index
-# Use CHANGE MASTER TO MASTER_USER='user', MASTER_PASSWORD='password'
-master_info_repository = TABLE
-relay_log_info_repository = TABLE
-relay_log_recovery = ON
 
 #############################################
 # query_cache_type = 0
@@ -109,6 +102,9 @@ slave_preserve_commit_order = 1
 master_info_repository = TABLE
 relay_log_info_repository = TABLE
 relay_log_recovery = ON
+sync_relay_log_info = 1
+slave_net_timeout = 60
+expire_logs_days = 30
 transaction_write_set_extraction = XXHASH64
 EOF
 else
@@ -120,6 +116,9 @@ sql-mode="STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE,NO_ZERO_IN_DAT
 log_replica_updates = ON
 replica_preserve_commit_order = 1
 relay_log_recovery = ON
+# Modern parameters replacing deprecated ones
+binlog_expire_logs_seconds = 2592000  # 30 days
+replica_net_timeout = 60
 # Source info and relay log info are stored in system tables by default in MySQL 8
 EOF
 fi
