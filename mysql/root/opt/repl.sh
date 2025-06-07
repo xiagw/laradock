@@ -80,28 +80,13 @@ MASTER_HOST=${MYSQL_MASTER_HOST:-mysql1}
 
 $mysql_cli <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-EOF
-
-# Get MySQL version
-mysql_version=$(mysqld --version | awk '{print $3}' | cut -d. -f1)
-
-if [ "$mysql_version" -lt 8 ]; then
-    # Create replication user with MySQL 5.7 syntax
-    log "Creating replication user for MySQL 5.7"
-    $mysql_cli <<EOF
 CREATE USER IF NOT EXISTS '${REPL_USER}'@'%' IDENTIFIED BY '${REPL_PASSWORD}';
 GRANT REPLICATION SLAVE ON *.* TO '${REPL_USER}'@'%';
 FLUSH PRIVILEGES;
 EOF
-else
-    # Create replication user with MySQL 8.0 syntax
-    log "Creating replication user for MySQL 8.0"
-    $mysql_cli <<EOF
-CREATE USER IF NOT EXISTS '${REPL_USER}'@'%' IDENTIFIED WITH mysql_native_password BY '${REPL_PASSWORD}';
-GRANT REPLICATION SLAVE ON *.* TO '${REPL_USER}'@'%';
-FLUSH PRIVILEGES;
-EOF
-fi
+
+# Get MySQL version
+mysql_version=$(mysqld --version | awk '{print $3}' | cut -d. -f1)
 
 case "$MYSQL_REPL_TYPE" in
 master2slave)
@@ -118,9 +103,12 @@ MASTER_AUTO_POSITION=1;
 
 STOP SLAVE IO_THREAD, SQL_THREAD;
 EOF
-            sleep 3
+            sleep 2
             $mysql_cli <<EOF
 START SLAVE IO_THREAD, SQL_THREAD USER='${REPL_USER}' PASSWORD='${REPL_PASSWORD}';
+EOF
+            sleep 2
+            $mysql_cli <<EOF
 SHOW SLAVE STATUS\G
 EOF
 
@@ -139,9 +127,12 @@ GET_SOURCE_PUBLIC_KEY=1;
 
 STOP REPLICA IO_THREAD, SQL_THREAD;
 EOF
-            sleep 3
+            sleep 2
             $mysql_cli <<EOF
 START REPLICA USER='${REPL_USER}' PASSWORD='${REPL_PASSWORD}';
+EOF
+            sleep 2
+            $mysql_cli <<EOF
 SHOW REPLICA STATUS\G
 EOF
         fi
@@ -166,9 +157,12 @@ MASTER_AUTO_POSITION=1;
 
 STOP SLAVE IO_THREAD, SQL_THREAD;
 EOF
-        sleep 3
+        sleep 2
         $mysql_cli <<EOF
 START SLAVE IO_THREAD, SQL_THREAD USER='${REPL_USER}' PASSWORD='${REPL_PASSWORD}';
+EOF
+        sleep 2
+        $mysql_cli <<EOF
 SHOW SLAVE STATUS\G
 EOF
     else
@@ -183,9 +177,12 @@ GET_SOURCE_PUBLIC_KEY=1;
 
 STOP REPLICA IO_THREAD, SQL_THREAD;
 EOF
-        sleep 3
+        sleep 2
         $mysql_cli <<EOF
 START REPLICA USER='${REPL_USER}' PASSWORD='${REPL_PASSWORD}';
+EOF
+        sleep 2
+        $mysql_cli <<EOF
 SHOW REPLICA STATUS\G
 EOF
 

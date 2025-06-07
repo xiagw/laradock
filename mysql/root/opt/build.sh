@@ -172,9 +172,9 @@ chmod +x /opt/*.sh
 
 # Add auto-start replication script to MySQL entrypoint
 if [ -f /usr/local/bin/docker-entrypoint.sh ]; then
-    sed -i '/if .* _is_sourced.* then/i (exec /opt/repl) &' /usr/local/bin/docker-entrypoint.sh
+    sed -i '/if .* _is_sourced.* then/i (exec /opt/repl.sh) &' /usr/local/bin/docker-entrypoint.sh
 elif [ -f /entrypoint.sh ]; then
-    sed -i '/echo ".Entrypoint. MySQL Docker Image/i (exec /opt/repl) &' /entrypoint.sh
+    sed -i '/echo ".Entrypoint. MySQL Docker Image/i (exec /opt/repl.sh) &' /entrypoint.sh
 else
     echo "not found entrypoint file"
 fi
