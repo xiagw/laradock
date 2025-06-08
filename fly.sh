@@ -143,6 +143,11 @@ check_docker() {
     local os_id fake_os cmd_pkg2
     os_id="$(awk -F'=' '/^ID=.*/ {print $2}' /etc/os-release | sed 's/"//g' | head -n1)"
     case "$os_id" in
+    *rocky*)
+        $use_sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+        $use_sudo sed -i 's#https://download.docker.com#https://mirrors.tuna.tsinghua.edu.cn/docker-ce#' /etc/yum.repos.d/docker-ce.repo
+        $use_sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        ;;
     *openEuler*)
         $use_sudo curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
         $use_sudo sed -i 's#https://download.docker.com#https://mirrors.tuna.tsinghua.edu.cn/docker-ce#' /etc/yum.repos.d/docker-ce.repo
