@@ -334,7 +334,10 @@ _install_zsh() {
         sed -i -e "/^plugins=.*git/s/git/$plugins/" "$HOME/.zshrc"
     fi
 
-    # Install byobu
+    # Install byobu alinux|centos|openEuler|kylin|
+    if [[ "${lsb_dist-}" =~ (almalinux) ]]; then
+        _check_cmd install epel-release || true
+    fi
     _msg time "Install byobu"
     _check_cmd install byobu
     _msg time "End install zsh and byobu"
@@ -394,7 +397,7 @@ install_lsyncd() {
 }
 
 install_wg() {
-    if [[ "${lsb_dist-}" =~ (centos|alinux|openEuler) ]]; then
+    if [[ "${lsb_dist-}" =~ (centos|alinux|openEuler|almalinux) ]]; then
         ${cmd_pkg-} install -y epel-release elrepo-release
         $cmd_pkg install -y yum-plugin-elrepo
         $cmd_pkg install -y kmod-wireguard wireguard-tools
@@ -867,35 +870,35 @@ parse_command_args() {
             fi
 
             case "$2" in
-                mysql)
-                    echo "选择 MySQL 版本："
-                    g_mysql_ver=$(echo -e "5.7\n8.0" | fzf --height 40% --layout reverse --border)
-                    [ -z "$g_mysql_ver" ] && g_mysql_ver="8.0"
-                    echo "已选择 MySQL $g_mysql_ver"
-                    ;;
-                php)
-                    echo "选择 PHP 版本："
-                    g_php_ver=$(echo -e "7.4\n8.0\n8.1\n8.2" | fzf --height 40% --layout reverse --border)
-                    [ -z "$g_php_ver" ] && g_php_ver="8.1"
-                    echo "已选择 PHP $g_php_ver"
-                    ;;
-                java)
-                    echo "选择 Java 版本："
-                    g_java_ver=$(echo -e "8\n11\n17" | fzf --height 40% --layout reverse --border)
-                    [ -z "$g_java_ver" ] && g_java_ver="8"
-                    echo "已选择 Java $g_java_ver"
-                    ;;
-                node)
-                    echo "选择 Node.js 版本："
-                    g_node_ver=$(echo -e "16\n18\n20" | fzf --height 40% --layout reverse --border)
-                    [ -z "$g_node_ver" ] && g_node_ver="20"
-                    echo "已选择 Node.js $g_node_ver"
-                    ;;
-                *)
-                    echo "错误：未知的组件 '$2'"
-                    echo "可用组件: mysql, php, java, node"
-                    exit 1
-                    ;;
+            mysql)
+                echo "选择 MySQL 版本："
+                g_mysql_ver=$(echo -e "5.7\n8.0" | fzf --height 40% --layout reverse --border)
+                [ -z "$g_mysql_ver" ] && g_mysql_ver="8.0"
+                echo "已选择 MySQL $g_mysql_ver"
+                ;;
+            php)
+                echo "选择 PHP 版本："
+                g_php_ver=$(echo -e "7.4\n8.0\n8.1\n8.2" | fzf --height 40% --layout reverse --border)
+                [ -z "$g_php_ver" ] && g_php_ver="8.1"
+                echo "已选择 PHP $g_php_ver"
+                ;;
+            java)
+                echo "选择 Java 版本："
+                g_java_ver=$(echo -e "8\n11\n17" | fzf --height 40% --layout reverse --border)
+                [ -z "$g_java_ver" ] && g_java_ver="8"
+                echo "已选择 Java $g_java_ver"
+                ;;
+            node)
+                echo "选择 Node.js 版本："
+                g_node_ver=$(echo -e "16\n18\n20" | fzf --height 40% --layout reverse --border)
+                [ -z "$g_node_ver" ] && g_node_ver="20"
+                echo "已选择 Node.js $g_node_ver"
+                ;;
+            *)
+                echo "错误：未知的组件 '$2'"
+                echo "可用组件: mysql, php, java, node"
+                exit 1
+                ;;
             esac
 
             # 设置必要的标志
@@ -908,10 +911,10 @@ parse_command_args() {
 
             # 根据选择的组件设置安装参数
             case "$2" in
-                mysql) args=(mysql) ;;
-                php) args=(php-fpm) ;;
-                java) args=(spring) ;;
-                node) args=(nodejs) ;;
+            mysql) args=(mysql) ;;
+            php) args=(php-fpm) ;;
+            java) args=(spring) ;;
+            node) args=(nodejs) ;;
             esac
             ;;
         *)
