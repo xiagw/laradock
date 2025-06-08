@@ -335,7 +335,7 @@ _install_zsh() {
     fi
 
     # Install byobu alinux|centos|openEuler|kylin|
-    if [[ "${lsb_dist-}" =~ (almalinux) ]]; then
+    if [[ "${lsb_dist-}" =~ (almalinux|rocky) ]]; then
         _check_cmd install epel-release || true
     fi
     _msg time "Install byobu"
