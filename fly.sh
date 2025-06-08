@@ -319,7 +319,7 @@ _install_zsh() {
         _check_cmd install fzf || true
         local file=/usr/share/doc/fzf/examples/key-bindings.zsh
         if [ ! -f "$file" ]; then
-            $use_sudo $g_curl_opt -Lo "$file" "$g_url_fly_cdn/$(basename "$file")" || true
+            $use_sudo ${g_curl_opt+$g_curl_opt} -Lo "$file" "$g_url_fly_cdn/$(basename "$file")" || true
         fi
     fi
 
