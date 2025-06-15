@@ -24,8 +24,22 @@ if [ "$(id -u)" -ne 0 ]; then
     exit
 fi
 
-if [ "$MYSQL_REPL_TYPE" = "single" ]; then
-    exit 0
+case "$MYSQL_REPL_MODE" in
+s | single) exit 0 ;;
+esac
+
+# Get MySQL version
+mysql_version=$(mysqld --version | awk '{print $3}' | cut -d. -f1)
+if [ -z "$mysql_version" ]; then
+    log "MySQL version not found, exiting"
+    exit 1
+fi
+if [ "$mysql_version" -lt 8 ]; then
+    ## 初始时 root@localhost 密码为空
+    if mysql -e "select 1" >/dev/null 2>&1; then
+        log "Initial password for root@localhost"
+        mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
+    fi
 fi
 
 create_mysql_config
@@ -85,14 +99,14 @@ GRANT REPLICATION SLAVE ON *.* TO '${REPL_USER}'@'%';
 FLUSH PRIVILEGES;
 EOF
 
-# Get MySQL version
-mysql_version=$(mysqld --version | awk '{print $3}' | cut -d. -f1)
-
-case "$MYSQL_REPL_TYPE" in
-master2slave)
+case "$MYSQL_REPL_MODE" in
+m2s | s2r | p2s | master2slave | source2replica | primary2secondary)
     if [ "$mysql_version" -lt 8 ]; then
-
-        if [ "$MYSQL_ROLE" = "slave" ]; then
+        case "$MYSQL_ROLE" in
+        master | source | primary)
+            # Master doesn't need special setup
+            ;;
+        slave | replica | secondary)
             # MySQL 5.7 syntax
             $mysql_cli <<EOF
 CHANGE MASTER TO
@@ -111,11 +125,16 @@ EOF
             $mysql_cli <<EOF
 SHOW SLAVE STATUS\G
 EOF
+            ;;
+        esac
 
-        fi
     else
 
-        if [ "$MYSQL_ROLE" = "slave" ]; then
+        case "$MYSQL_ROLE" in
+        master | source | primary)
+            # Master doesn't need special setup
+            ;;
+        slave | replica | secondary)
             # MySQL 8.0 syntax
             $mysql_cli <<EOF
 CHANGE REPLICATION SOURCE TO
@@ -135,11 +154,12 @@ EOF
             $mysql_cli <<EOF
 SHOW REPLICA STATUS\G
 EOF
-        fi
+            ;;
+        esac
     fi
     ;;
 
-master1 | master2)
+m2m | s2s | p2p | master2master | source2source | primary2primary)
     # Wait for the other master to be ready
     while ! $mysqladmin_cli ping -h"${MASTER_HOST}" --silent; do
         log "Waiting for other master ${MASTER_HOST} to be ready..."

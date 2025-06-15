@@ -67,24 +67,23 @@ services:
           - TZ=${WORKSPACE_TIMEZONE}
           - MYSQL_VERSION=${MYSQL_VERSION}
           - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-          - MYSQL_REPL_USER=repl
-          - MYSQL_REPL_PASSWORD=replpass
-          - MYSQL_REPL_TYPE=master1
-          - MYSQL_ROLE=master1
-          ## 如果本机启动了mysql2，则需要设置MYSQL_MASTER_HOST为mysql2，否则设置远程主机的IP地址
-          - MYSQL_MASTER_HOST=mysql2
+          - MYSQL_REPL_USER=${MYSQL_REPL_USER}
+          - MYSQL_REPL_PASSWORD=${MYSQL_REPL_PASSWORD}
+          - MYSQL_REPL_MODE=${MYSQL_REPL_MODE}
+          - MYSQL_ROLE=${MYSQL_ROLE_1}
+          ## 如果本机启动了mysql2，则需要设置 MYSQL_MASTER_HOST=mysql2，否则设置远程主机的IP地址
+          - MYSQL_MASTER_HOST=${MYSQL_MASTER_HOST_2}
       environment:
+        - TZ=${WORKSPACE_TIMEZONE}
         - MYSQL_DATABASE=${MYSQL_DATABASE}
         - MYSQL_USER=${MYSQL_USER}
         - MYSQL_PASSWORD=${MYSQL_PASSWORD}
         - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-        - TZ=${WORKSPACE_TIMEZONE}
-        - MYSQL_REPL_USER=repl
-        - MYSQL_REPL_PASSWORD=replpass
-        - MYSQL_REPL_TYPE=master1
-        - MYSQL_ROLE=master1
-        ## 同上
-        - MYSQL_MASTER_HOST=mysql2
+        - MYSQL_REPL_USER=${MYSQL_REPL_USER}
+        - MYSQL_REPL_PASSWORD=${MYSQL_REPL_PASSWORD}
+        - MYSQL_REPL_MODE=${MYSQL_REPL_MODE}
+        - MYSQL_ROLE=${MYSQL_ROLE_1}
+        - MYSQL_MASTER_HOST=${MYSQL_MASTER_HOST_2}
       security_opt:
         - seccomp:unconfined
       volumes:
@@ -118,24 +117,23 @@ services:
           - TZ=${WORKSPACE_TIMEZONE}
           - MYSQL_VERSION=${MYSQL_VERSION}
           - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-          - MYSQL_REPL_USER=repl
-          - MYSQL_REPL_PASSWORD=replpass
-          - MYSQL_REPL_TYPE=master2
-          - MYSQL_ROLE=master2
-          ## 如果本机启动了mysql1，则需要设置MYSQL_MASTER_HOST为mysql1，否则设置远程主机的IP地址
-          - MYSQL_MASTER_HOST=mysql1
+          - MYSQL_REPL_USER=${MYSQL_REPL_USER}
+          - MYSQL_REPL_PASSWORD=${MYSQL_REPL_PASSWORD}
+          - MYSQL_REPL_MODE=${MYSQL_REPL_MODE}
+          - MYSQL_ROLE=${MYSQL_ROLE_2}
+          ## 如果本机启动了mysql1，则需要设置 MYSQL_MASTER_HOST=mysql1，否则设置远程主机的IP地址
+          - MYSQL_MASTER_HOST=${MYSQL_MASTER_HOST_1}
       environment:
+        - TZ=${WORKSPACE_TIMEZONE}
         - MYSQL_DATABASE=${MYSQL_DATABASE}
         - MYSQL_USER=${MYSQL_USER}
         - MYSQL_PASSWORD=${MYSQL_PASSWORD}
         - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-        - TZ=${WORKSPACE_TIMEZONE}
-        - MYSQL_REPL_USER=repl
-        - MYSQL_REPL_PASSWORD=replpass
-        - MYSQL_REPL_TYPE=master2
-        - MYSQL_ROLE=master2
-        ## 同上
-        - MYSQL_MASTER_HOST=mysql1
+        - MYSQL_REPL_USER=${MYSQL_REPL_USER}
+        - MYSQL_REPL_PASSWORD=${MYSQL_REPL_PASSWORD}
+        - MYSQL_REPL_MODE=${MYSQL_REPL_MODE}
+        - MYSQL_ROLE=${MYSQL_ROLE_2}
+        - MYSQL_MASTER_HOST=${MYSQL_MASTER_HOST_1}
       security_opt:
         - seccomp:unconfined
       volumes:

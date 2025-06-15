@@ -1,6 +1,24 @@
 #!/usr/bin/env bash
 
-_restore_db() {
+grant2table() {
+    local tables=(
+        transportation_ad_log
+        transportation_admin_log
+        transportation_gold_log
+    )
+
+    while read -r line; do
+        if [[ " ${tables[*]} " =~ \ ${line}\  ]]; then
+            echo "GRANT SELECT, INSERT ON defaultdb.$line TO 'defaultdb'@'%';"
+        elif [[ "$line" == *"_loggg" ]]; then
+            echo "GRANT SELECT, INSERT ON defaultdb.$line TO 'defaultdb'@'%';"
+        else
+            echo "GRANT ALL PRIVILEGES ON defaultdb.$line TO 'defaultdb'@'%';"
+        fi
+    done < <(mysql defaultdb -Ne 'show tables;') | mysql -v -f
+}
+
+restore_db() {
     ls "$backup_path"/*.sql
     read -rp "Input file name: " read_sql_file
     db=${read_sql_file#*.full.}
@@ -9,6 +27,44 @@ _restore_db() {
     echo "Get db name: $db"
     $mysql_bin -e "create database if not exists $db;"
     $mysql_bin "${db}" <"$read_sql_file"
+}
+
+backup_user_perm() {
+    ## backup user and grants
+    user_list=$backup_path/user.list.txt
+    user_perm=$backup_path/user.perm.sql
+    $mysql_bin -Ne 'select user,host from mysql.user' >"$user_list"
+    while read -r user host; do
+        $mysql_bin -Ne "show grants for \`${user}\`@'${host}';"
+    done <"$user_list" >"$user_perm"
+}
+
+backup_db() {
+    ## backup single/multiple databases
+    databases="$1"
+    if [[ -z "$databases" ]]; then
+        databases="$(
+            $mysql_bin -Ne 'show databases' |
+                grep -vE 'information_schema|performance_schema|^sys$|^mysql$'
+        )"
+    fi
+
+    backup_time="$(date +%s)"
+
+    for db in $databases; do
+        backup_file="$backup_path/${backup_time}.full.${db}.sql"
+        if $mysql_bin "$db" -e 'select now()' >/dev/null; then
+            $mysql_dump "$db" -r "$backup_file"
+            echo "$(date) - $backup_file finish" | tee -a "$me_log"
+        else
+            echo "database $db not exists."
+        fi
+    done
+}
+
+clean_backup() {
+    ## remove backup before 1 year
+    find "$backup_path" -mtime +180 -type f -delete
 }
 
 main() {
@@ -25,66 +81,29 @@ main() {
         return 1
     fi
 
-    ## .my.cnf
-    if [ -f "$me_path/.my.cnf" ]; then
-        mysql_conf="--defaults-extra-file=$me_path/.my.cnf"
-    elif [ -f "$HOME/.my.cnf" ]; then
-        mysql_conf="--defaults-extra-file=$HOME/.my.cnf"
-    else
-        mysql_conf="--defaults-extra-file=/var/lib/mysql/.my.cnf"
-    fi
-
     ## check mysql version
-    mysql_bin="mysql $mysql_conf"
-    mysql_dump="mysqldump $mysql_conf --set-gtid-purged=OFF -E -R --triggers"
-    my_ver=$($mysql_bin --version | awk '{print $3}' | cut -d. -f1)
+    mysql_bin="mysql --defaults-file=$HOME/.my.cnf"
+    mysql_dump="mysqldump --defaults-file=$HOME/.my.cnf --set-gtid-purged=OFF --events --routines"
 
+    my_ver=$($mysql_bin -Ne "select version();" | cut -d. -f1)
     if [ "$my_ver" -lt 8 ]; then
-        mysql_dump="$mysql_dump --master-data=2"
+        mysql_dump+=" --master-data=2"
     else
-        mysql_dump="$mysql_dump --source-data=2"
+        mysql_dump+=" --source-data=2"
     fi
-
-    ## backup user and grants
-    user_list=$backup_path/user.list.txt
-    user_perm=$backup_path/user.perm.sql
-    mysql -Ne 'select user,host from mysql.user' >"$user_list"
-    while read -r line; do
-        read -r -a user_host <<<"$line"
-        mysql -Ne "show grants for \`${user_host[0]}\`@'${user_host[1]}';" >>"$user_perm"
-    done <"$user_list"
 
     case "$1" in
     restore)
-        _restore_db
-        return 0
+        restore_db "$@"
         ;;
-    *)
-        ## backup single/multiple databases
-        databases="$1"
-        if [[ -z "$databases" ]]; then
-            databases="$(
-                $mysql_bin -Ne 'show databases' |
-                    grep -vE 'information_schema|performance_schema|^sys$|^mysql$'
-            )"
-        fi
+    backup)
+        backup_user_perm
+        backup_db "$@"
+        ;;
+    clean)
+        clean_backup
         ;;
     esac
-
-    backup_time="$(date +%s)"
-
-    for db in $databases; do
-        backup_file="$backup_path/${backup_time}.full.${db}.sql"
-        if $mysql_bin "$db" -e 'select now()' >/dev/null; then
-            $mysql_dump "$db" -r "$backup_file"
-            echo "$(date) - $backup_file finish" | tee -a "$me_log"
-        else
-            echo "database $db not exists."
-        fi
-    done
-
-    ## remove backup before 1 year
-    find "$backup_path" -mtime +180 -type f -delete
 }
 
 main "$@"
