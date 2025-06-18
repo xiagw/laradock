@@ -5,21 +5,6 @@ log() {
     echo "$(date +'%F_%T') - [repl] $*"
 }
 
-wait_mysql() {
-    while ! $mysqladmin_cli ping -h"localhost" --silent; do
-        sleep 0.1
-    done
-}
-
-create_mysql_config() {
-    local mysql_conf="/root/.my.cnf"
-    cat >"$mysql_conf" <<EOF
-[client]
-user=root
-password=${MYSQL_ROOT_PASSWORD}
-EOF
-}
-
 if [ "$(id -u)" -ne 0 ]; then
     exit
 fi
@@ -34,56 +19,40 @@ if [ -z "$mysql_version" ]; then
     log "MySQL version not found, exiting"
     exit 1
 fi
+# 等待数据文件存在且MySQL服务可用
+while ! {
+    [ -f "/var/lib/mysql/ibdata1" ] &&
+        [ -e "/var/lib/mysql/mysql.sock" ] &&
+        mysqladmin ping -h"localhost" --silent
+}; do
+    sleep 1
+done
+## MySQL 5.7 初始 root@localhost 密码为空
 if [ "$mysql_version" -lt 8 ]; then
-    ## 初始时 root@localhost 密码为空
     if mysql -e "select 1" >/dev/null 2>&1; then
         log "Initial password for root@localhost"
         mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
     fi
 fi
 
-create_mysql_config
+my_cnf="/root/.my.cnf"
+cat >"$my_cnf" <<EOF
+[client]
+user=root
+password=${MYSQL_ROOT_PASSWORD}
+EOF
 
-mysql_cli="mysql --defaults-file=/root/.my.cnf -f"
-mysqladmin_cli="mysqladmin --defaults-file=/root/.my.cnf"
+mysql_cli="mysql --defaults-file=$my_cnf -f"
+mysqladmin_cli="mysqladmin --defaults-file=$my_cnf"
 
-# 检查是否是首次初始化
-if [ ! -f "/var/lib/mysql/ibdata1" ]; then
-    log "First time MySQL initialization detected, waiting for setup..."
-    wait_mysql
-    log "MySQL first ping successful, waiting for restart..."
-
-    # 记录第一次成功ping的时间
-    first_success_time=$(date +%s)
-    restart_detected=false
-
-    # 等待检测到重启或超时
-    while true; do
-        if ! $mysqladmin_cli ping -h"localhost" --silent; then
-            log "MySQL restart detected, waiting for it to come back up..."
-            restart_detected=true
-            break
-        fi
-
-        current_time=$(date +%s)
-        if [ $((current_time - first_success_time)) -gt 15 ]; then
-            log "No restart detected within 15 seconds, something might be wrong"
-            break
-        fi
-        sleep 0.1
-    done
-
-    log "MySQL restart detected, waiting for it to come back up..."
-    restart_detected=true
-
-    if [ "$restart_detected" = true ]; then
-        wait_mysql
-        log "MySQL initialization completed"
-    fi
-else
-    # 如果已经初始化过，只需要等待MySQL启动
-    wait_mysql
-fi
+# 等待数据文件存在且MySQL服务可用
+while ! {
+    [ -f "/var/lib/mysql/ibdata1" ] &&
+        [ -e "/var/lib/mysql/mysql.sock" ] &&
+        mysqladmin ping -h"localhost" --silent
+}; do
+    sleep 1
+done
 
 log "Starting MySQL replication setup..."
 
