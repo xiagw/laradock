@@ -272,6 +272,11 @@ services:
       depends_on:
         - watchtower
       shm_size: '256m'
+      logdriver:
+        name: json-file
+        options:
+          max-size: "10m"
+          max-file: "3"
 # gitlab-backup create SKIP=artifacts,repositories,registry,uploads,builds,pages,lfs,packages,terraform_state
 
 ### watchtower ################################################
