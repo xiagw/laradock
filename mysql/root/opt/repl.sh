@@ -60,6 +60,7 @@ log "Starting MySQL replication setup..."
 REPL_USER=${MYSQL_REPL_USER:-repl}
 REPL_PASSWORD=${MYSQL_REPL_PASSWORD:-replpass}
 MASTER_HOST=${MYSQL_MASTER_HOST:-mysql1}
+MASTER_PORT=${MYSQL_MASTER_PORT:-3306}
 
 $mysql_cli <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
@@ -80,6 +81,7 @@ m2s | s2r | p2s | master2slave | source2replica | primary2secondary)
             $mysql_cli <<EOF
 CHANGE MASTER TO
 MASTER_HOST='${MASTER_HOST}',
+MASTER_PORT='${MASTER_PORT}',
 MASTER_USER='${REPL_USER}',
 MASTER_PASSWORD='${REPL_PASSWORD}',
 MASTER_AUTO_POSITION=1;
@@ -108,6 +110,7 @@ EOF
             $mysql_cli <<EOF
 CHANGE REPLICATION SOURCE TO
 SOURCE_HOST='${MASTER_HOST}',
+SOURCE_PORT='${MASTER_PORT}',
 SOURCE_USER='${REPL_USER}',
 SOURCE_PASSWORD='${REPL_PASSWORD}',
 SOURCE_AUTO_POSITION=1,
@@ -131,7 +134,7 @@ EOF
 m2m | s2s | p2p | master2master | source2source | primary2primary)
     # Wait for the other master to be ready
     while ! $mysqladmin_cli ping -h"${MASTER_HOST}" --silent; do
-        log "Waiting for other master ${MASTER_HOST} to be ready..."
+        # log "Waiting for other master ${MASTER_HOST} to be ready..."
         sleep 5
     done
 
@@ -140,6 +143,7 @@ m2m | s2s | p2p | master2master | source2source | primary2primary)
         $mysql_cli <<EOF
 CHANGE MASTER TO
 MASTER_HOST='${MASTER_HOST}',
+MASTER_PORT='${MASTER_PORT}',
 MASTER_USER='${REPL_USER}',
 MASTER_PASSWORD='${REPL_PASSWORD}',
 MASTER_AUTO_POSITION=1;
@@ -159,6 +163,7 @@ EOF
         $mysql_cli <<EOF
 CHANGE REPLICATION SOURCE TO
 SOURCE_HOST='${MASTER_HOST}',
+SOURCE_PORT='${MASTER_PORT}',
 SOURCE_USER='${REPL_USER}',
 SOURCE_PASSWORD='${REPL_PASSWORD}',
 SOURCE_AUTO_POSITION=1,

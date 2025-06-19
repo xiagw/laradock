@@ -73,6 +73,7 @@ services:
           - MYSQL_ROLE=${MYSQL_ROLE_1}
           ## 如果本机启动了mysql2，则需要设置 MYSQL_MASTER_HOST=mysql2，否则设置远程主机的IP地址
           - MYSQL_MASTER_HOST=${MYSQL_MASTER_HOST_2}
+          - MYSQL_MASTER_PORT=${MYSQL_MASTER_PORT_2:-3306}
       environment:
         - TZ=${WORKSPACE_TIMEZONE}
         - MYSQL_DATABASE=${MYSQL_DATABASE}
@@ -83,7 +84,9 @@ services:
         - MYSQL_REPL_PASSWORD=${MYSQL_REPL_PASSWORD}
         - MYSQL_REPL_MODE=${MYSQL_REPL_MODE}
         - MYSQL_ROLE=${MYSQL_ROLE_1}
+        ## 同上
         - MYSQL_MASTER_HOST=${MYSQL_MASTER_HOST_2}
+        - MYSQL_MASTER_PORT=${MYSQL_MASTER_PORT_2:-3306}
       security_opt:
         - seccomp:unconfined
       volumes:
@@ -91,7 +94,7 @@ services:
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
         - ${DATA_PATH_HOST}/mysqlbak:/backup
       ports:
-        - "${MYSQL_PORT}1:3306"
+        - "${MYSQL_PORT_1}:3306"
       networks:
         - backend
         - frontend
@@ -123,6 +126,7 @@ services:
           - MYSQL_ROLE=${MYSQL_ROLE_2}
           ## 如果本机启动了mysql1，则需要设置 MYSQL_MASTER_HOST=mysql1，否则设置远程主机的IP地址
           - MYSQL_MASTER_HOST=${MYSQL_MASTER_HOST_1}
+          - MYSQL_MASTER_PORT=${MYSQL_MASTER_PORT_1:-3306}
       environment:
         - TZ=${WORKSPACE_TIMEZONE}
         - MYSQL_DATABASE=${MYSQL_DATABASE}
@@ -133,7 +137,9 @@ services:
         - MYSQL_REPL_PASSWORD=${MYSQL_REPL_PASSWORD}
         - MYSQL_REPL_MODE=${MYSQL_REPL_MODE}
         - MYSQL_ROLE=${MYSQL_ROLE_2}
+        ## 同上
         - MYSQL_MASTER_HOST=${MYSQL_MASTER_HOST_1}
+        - MYSQL_MASTER_PORT=${MYSQL_MASTER_PORT_1:-3306}
       security_opt:
         - seccomp:unconfined
       volumes:
@@ -141,7 +147,7 @@ services:
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
         - ${DATA_PATH_HOST}/mysqlbak:/backup
       ports:
-        - "${MYSQL_PORT}2:3306"
+        - "${MYSQL_PORT_2}:3306"
       networks:
         - backend
         - frontend
@@ -157,6 +163,7 @@ services:
         nproc:
           soft: 65535
           hard: 65535
+
 ### MySQL backup ################################################
     mysqlbak:
       # restart: always
