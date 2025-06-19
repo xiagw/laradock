@@ -90,6 +90,7 @@ services:
       security_opt:
         - seccomp:unconfined
       volumes:
+        - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
         - ${DATA_PATH_HOST}/mysql1:/var/lib/mysql
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
         - ${DATA_PATH_HOST}/mysqlbak:/backup
@@ -143,6 +144,7 @@ services:
       security_opt:
         - seccomp:unconfined
       volumes:
+        - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
         - ${DATA_PATH_HOST}/mysql2:/var/lib/mysql
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
         - ${DATA_PATH_HOST}/mysqlbak:/backup
