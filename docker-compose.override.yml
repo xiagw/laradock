@@ -94,7 +94,7 @@ services:
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
         - ${DATA_PATH_HOST}/mysqlbak:/backup
       ports:
-        - "${MYSQL_PORT_1}:3306"
+        - "${MYSQL_MASTER_PORT_1}:3306"
       networks:
         - backend
         - frontend
@@ -147,7 +147,7 @@ services:
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
         - ${DATA_PATH_HOST}/mysqlbak:/backup
       ports:
-        - "${MYSQL_PORT_2}:3306"
+        - "${MYSQL_MASTER_PORT_2}:3306"
       networks:
         - backend
         - frontend
