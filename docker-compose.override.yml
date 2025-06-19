@@ -272,8 +272,8 @@ services:
       depends_on:
         - watchtower
       shm_size: '256m'
-      logdriver:
-        name: json-file
+      logging:
+        driver: json-file
         options:
           max-size: "10m"
           max-file: "3"
