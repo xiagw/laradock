@@ -54,8 +54,14 @@ services:
         interval: 30s
         timeout: 10s
         retries: 5
+      ulimits:
+        nofile:
+          soft: 65536
+          hard: 65536
+        nproc:
+          soft: 65535
+          hard: 65535
       # depends_on:
-      #   - mysqlbak
       #   - percona-xtrabackup
 
 ### MySQL-1 ################################################
@@ -91,6 +97,7 @@ services:
         - seccomp:unconfined
       volumes:
         - ./mysql/my1.cnf:/etc/mysql/conf.d/my.cnf
+        # - ./mysql/my81.cnf:/etc/mysql/conf.d/my.cnf
         - ${DATA_PATH_HOST}/mysql1:/var/lib/mysql
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
         - ${DATA_PATH_HOST}/mysqlbak:/backup
@@ -145,6 +152,7 @@ services:
         - seccomp:unconfined
       volumes:
         - ./mysql/my2.cnf:/etc/mysql/conf.d/my.cnf
+        # - ./mysql/my82.cnf:/etc/mysql/conf.d/my.cnf
         - ${DATA_PATH_HOST}/mysql2:/var/lib/mysql
         - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
         - ${DATA_PATH_HOST}/mysqlbak:/backup
