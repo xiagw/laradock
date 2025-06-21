@@ -279,7 +279,6 @@ services:
         - "5050:5050"
       depends_on:
         - watchtower
-      shm_size: '256m'
       logging:
         driver: json-file
         options:
