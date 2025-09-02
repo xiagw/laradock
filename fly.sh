@@ -572,10 +572,11 @@ get_image() {
             docker tag "${image_mirror}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
             ;;
         esac
-        ## 如果不是最后一个镜像，则休眠10秒缓解阿里云ACR限流
+        ## 如果不是最后一个镜像，则休眠随机秒缓解阿里云ACR限流
         if [ "$i" != "${args[-1]}" ]; then
-            sleep 6 &
-            show_loading $! "Waiting for 6 seconds to avoid rate limit"
+            local wait_time=$((RANDOM % 15 + 1))
+            sleep $wait_time &
+            show_loading $! "Waiting for $wait_time seconds to avoid rate limit"
         fi
     done
     ## remove image mirror
