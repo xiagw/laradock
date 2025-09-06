@@ -31,12 +31,12 @@
 | Node.js   | v20+ (2C/2G/20G)                                                  |
 | Redis     | v7.0+ (1C/1G/20G)                                                 |
 | MySQL     | v8.0+ (2C/2G/20G)                                                 |
-| OS/单机    | Ubuntu 22.04 LTS (推荐), CentOS/Anolis/RedHat/Debian/Rocky 等Linux|
+| OS/单机    | Ubuntu 24.04 LTS (推荐), CentOS/Anolis/RedHat/Debian/Rocky 等Linux|
 | 集群/容器   | Kubernetes (生产环境推荐)                                          |
 
 ## 极简购买指南
 ```
-## Aliyun - ECS - 地域 - 按量付费 - 2C/8G - Ubuntu22.04 - 分配公网（按量100M） - 新安全组22/80/443 - 登录凭证：创建后设置 - 购买
+## Aliyun - ECS - 地域 - 按量付费 - 2C/8G - Ubuntu24.04 - 分配公网（按量100M） - 新安全组22/80/443 - 登录凭证：创建后设置 - 购买
 ```
 
 ## 部署方式一：单机/多机docker-compose部署文档
