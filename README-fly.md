@@ -26,13 +26,13 @@
 | 组件      | 最低版本及资源配置                                                  |
 |:----------|:------------------------------------------------------------------|
 | Nginx     | v1.18+ (2C/2G)                                                     |
-| PHP       | v7.1+ (2C/2G/20G)                                                 |
+| PHP       | v8.1+ (2C/2G/20G)                                                 |
 | JDK       | v1.8+ (2C/2G/20G) (amazoncorretto)                               |
 | Node.js   | v20+ (2C/2G/20G)                                                  |
 | Redis     | v7.0+ (1C/1G/20G)                                                 |
 | MySQL     | v8.0+ (2C/2G/20G)                                                 |
-| OS/单机    | Ubuntu 24.04 LTS (推荐), CentOS/Anolis/RedHat/Debian/Rocky 等Linux|
-| 集群/容器   | Kubernetes (生产环境推荐)                                          |
+| Linux     | Ubuntu 22.04/24.04 LTS (推荐), 支持CentOS/Anolis/RedHat/Debian/Rocky 等|
+| Kubernetes | 1.21+ 集群/容器 (生产环境推荐)                                          |
 
 ## 极简购买指南
 ```
@@ -42,7 +42,7 @@
 ## 部署方式一：单机/多机docker-compose部署文档
 ```sh
 ## 假如服务器需要代理访问公网，则设置环境变量
-#export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
+# export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
 ## Aliyun - ECS - 云助手(左下角) - 实例(右侧) - 执行命令 （复制以下命令，超时时间1500秒）
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-8.1/openjdk-8
@@ -81,11 +81,11 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
 ## ！！！ 必须进入此目录 ！！！
 cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
 
-## ！！！ 注意 ！！！ 这个是服务器本机集成的 mysql/redis 信息
-## 1. 如果客户有独立的 mysql/redis ，则不需要查看此信息（独立 mysql/redis 信息不从此查看）
-## 2. 只有当客户没有单独的 mysql/redis，则使用此方式查看本服务器 mysql/redis 的链接/账号/密码/信息
+## ！！！ 注意 ！！！
+## 1. 这个命令用于查看服务器本机集成的 mysql/redis 信息
+## 2. 如果客户有额外独立的 mysql/redis ，则不需要查看此信息（使用客户额外的信息）
 ## 3. 容器内和代码内写标准端口 mysql=3306/redis=6379，此处显示端口只用于远程 SSH 端口转发映射
-cd $HOME/docker/laradock && bash fly.sh info
+cd $HOME/docker/laradock && bash fly.sh info      ## 查看服务器本机集成的 mysql/redis 信息
 
 cd $HOME/docker/laradock && docker compose stop redis mysql php-fpm nginx      ## 停止服务 php-fpm
 cd $HOME/docker/laradock && docker compose stop redis mysql spring nginx       ## 停止服务 Java (spring)
@@ -95,14 +95,15 @@ cd $HOME/docker/laradock && docker compose up -d redis mysql php-fpm nginx      
 cd $HOME/docker/laradock && docker compose up -d redis mysql spring nginx       ## 启动服务 Java (spring)
 cd $HOME/docker/laradock && docker compose up -d redis mysql nodejs nginx       ## 启动服务 Nodejs
 
-cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring       ## java 查看容器日志最后 100 行
-cd $HOME/docker/laradock && tail -f spring/*.log          ## 查看文件夹内 spring/*.log 文件
+cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring         ## java 查看容器日志最后 100 行
+cd $HOME/docker/laradock && tail -f spring/*.log              ## 查看文件夹内 spring/*.log 文件
 
 ## 替换 Nginx SSL 证书 key 文件 $HOME/docker/laradock/nginx/sites/ssl/default.key
 ## 替换 Nginx SSL 证书 pem 文件 $HOME/docker/laradock/nginx/sites/ssl/default.pem
 
 ## java / nodejs 修改 nginx 配置文件  $HOME/docker/laradock/nginx/sites/router.inc
 cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload     ## nginx 重启 (修改配置文件后必须重启)
+
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
 ## 修改 java 启动参数
 ## 1. 创建 spring/.java_opts 文件，内容: export JAVA_OPTS="java -Xms1g -Xmx1g"
@@ -134,7 +135,7 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/spring    ## Java 容器内 uid=10
 sudo chown -R 1000:1000 $HOME/docker/html/uploads       ## Java 容器内 uid=1000 对应容器内目录 /var/www/html/uploads
 sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=1000
 
-## 如果有负载均衡，单台或多台服务器
+## 如果有额外独立的负载均衡，以及单台或多台服务器
 1. 设置负载均衡监听端口 80/443，指向服务器组（单台/多台）
 2. 若有安全组或防火墙则需设置安全组开放 80/443
 
@@ -152,13 +153,9 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=
 command -v kubectl && command -v helm && echo 'ok' || echo failed
 # 2. 创建Helm Chart
 helm create myapp
-# 3. 配置应用
-# 修改 myapp/values.yaml，设置镜像、资源等配置
-# 4. 部署应用
-helm upgrade --install --atomic --history-max 3 --timeout 120s \
-  --namespace dev --create-namespace \
-  myapp ./myapp \
-  --set image.repository=nginx,image.tag=stable-alpine
+# 3. 配置应用 修改 myapp/values.yaml，设置镜像、资源等配置
+# 4. 部署应用 namespace=dev
+helm upgrade --install --atomic --history-max 3 --timeout 120s --namespace dev --create-namespace myapp ./myapp --set image.repository=nginx,image.tag=stable-alpine
 # 5. 验证部署
 helm ls -n dev
 kubectl -n dev get pods,svc
@@ -184,22 +181,22 @@ kubectl -n dev get pods,svc
 |:---------------------------|:--------------------------|
 | 奶牛快传免费               | https://cowtransfer.com/  |
 | Wormhole简单私密的文件共享  | https://wormhole.app/     |
-| 文叔叔                     | https://www.wenshushu.cn/ |
+| 文叔叔                    | https://www.wenshushu.cn/ |
 
 
 ## 域名配置与ICP备案要求
 
 ### ICP备案要求
 - 备案范围：仅限中国内地服务器，港澳台及海外无需备案
-- 备案原则：必须在服务器提供商处完成备案
 - 备案查询：https://beian.miit.gov.cn/#/Integrated/recordQuery
 - 阿里云ICP备案： https://beian.aliyun.com/ （建议使用App进行备案速度更快）
-### 备案示例
+- 备案原则：必须在服务器提供商处完成备案
+### 备案有效和无效示例说明
 - 有效备案：阿里云服务器 + 阿里云备案
 - 无效备案：腾讯云服务器 + 阿里云备案
 ### 域名配置要求
 - DNS解析：配置A记录指向服务器IP
-- SSL证书：配置HTTPS证书(Nginx格式)
+- SSL证书：配置HTTPS证书(Nginx格式，需要完整证书链)
 - 备案验证：确保备案信息与服务器提供商一致
 
 
