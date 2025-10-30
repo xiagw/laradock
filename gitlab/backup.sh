@@ -27,6 +27,9 @@ case "$1" in
     sudo sed -i -e "s/example.com/$domain_base/g" "$gitlab_nginx_conf/nginx.ext.conf"
     docker compose exec gitlab "gitlab-ctl restart nginx"
     ;;
+full)
+    docker compose exec gitlab gitlab-backup create
+    ;;
 *)
     docker compose exec gitlab gitlab-backup create SKIP=uploads,builds,artifacts,lfs,terraform_state,registry,repositories,packages
     ;;
