@@ -647,6 +647,12 @@ services:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
           - TZ=${WORKSPACE_TIMEZONE}
           - ZT_VERSION=${ZT_VERSION}
+          - ZT_MYSQL_HOST=${ZT_MYSQL_HOST}
+          - ZT_MYSQL_PORT=${ZT_MYSQL_PORT}
+          - ZT_MYSQL_USER=${ZT_MYSQL_USER}
+          - ZT_MYSQL_PASSWORD=${ZT_MYSQL_PASSWORD}
+          - ZT_MYSQL_DB=${ZT_MYSQL_DB}
+          - ZT_APP_DOMAIN=${ZT_APP_DOMAIN}
       ports:
         - 8080:80
       volumes:
