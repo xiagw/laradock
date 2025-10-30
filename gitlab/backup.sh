@@ -3,7 +3,7 @@
 set -xe
 me_path="$(dirname "$(readlink -f "$0")")"
 laradock_path="$(dirname "${me_path}")"
-laradock_data="$(dirname "${laradock_path}")/laradock-data"
+laradock_data="$(dirname "$(dirname "${laradock_path}")")/laradock-data"
 domain_git=$(grep '^GITLAB_DOMAIN_NAME_GIT' "${laradock_path}/.env" | cut -d'=' -f2)
 domain_base=${domain_git#git.}
 

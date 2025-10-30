@@ -474,14 +474,14 @@ services:
         - "${NGINX_HOST_HTTP_PORT}:80"
         - "${NGINX_HOST_HTTPS_PORT}:443"
         - "${VARNISH_BACKEND_PORT}:81"
-      extra_hosts:
-        - "dockerhost:${DOCKER_HOST_IP}"
-        - "host.docker.internal:host-gateway"
       # depends_on:
       #   - php-fpm
       networks:
         - frontend
         - backend
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+        - "dockerhost:${DOCKER_HOST_IP}"
 
 ### OpenResty Server #########################################
     openresty:
@@ -815,11 +815,11 @@ services:
 
 ### Redis ################################################
     redis:
+      restart: always
       build:
         context: ./redis
         args:
           - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
-      restart: always
       volumes:
         - ${DATA_PATH_HOST}/redis:/data
       command: --databases ${REDIS_DATABASES:-256} --appendonly yes --requirepass ${REDIS_PASSWORD:-secret}
@@ -1567,9 +1567,9 @@ services:
 
 ### Gitlab ################################################
     gitlab:
-      # build:
-      #   context: ./gitlab
-      image: "gitlab/gitlab-ce:latest"
+      build:
+        context: ./gitlab
+      # image: "gitlab/gitlab-ce:latest"
       restart: always
       hostname: "${GITLAB_DOMAIN_NAME_GIT}"
       environment:
@@ -1580,8 +1580,18 @@ services:
           # external_url 'http://gitlab.example.com:8929'
           # gitlab_rails['gitlab_shell_ssh_port'] = 2224
           # redis['enable'] = false
+          ## Nginx 配置
           nginx['listen_https'] = ${NGINX_LISTEN_HTTPS}
+          # nginx['listen_port'] = ${GITLAB_HOST_HTTP_PORT}
           nginx['redirect_http_to_https'] = ${NGINX_REDIRECT_HTTP_TO_HTTPS}
+          nginx['access_log_path'] = "/dev/null"    # 关闭所有 access log
+          # nginx['error_log_path'] = "/dev/null"     # 关闭 error log
+          # nginx['proxy_connect_timeout'] = 600      # 增加超时时间
+          # nginx['proxy_read_timeout'] = 600
+          # nginx['proxy_send_timeout'] = 600
+          # nginx['custom_gitlab_server_config'] = "set_real_ip_from 172.0.0.0/8;\nreal_ip_header X-Real-IP;\nreal_ip_recursive on;"
+          nginx['custom_gitlab_server_config'] = "location /jmeter/ {\n  root /var/opt/gitlab/;\n  autoindex on;\n}\n"
+          nginx['custom_nginx_config'] = "include /var/opt/gitlab/nginx/conf/custom*.conf;"
           letsencrypt['enable'] = "${GITLAB_LETSENCRYPT}"
           letsencrypt['auto_renew'] = "${GITLAB_LETSENCRYPT_RENEW}"
           gitlab_rails['lfs_enabled'] = true
@@ -1597,17 +1607,8 @@ services:
           gitlab_rails['initial_root_password'] = "${GITLAB_ROOT_PASSWORD}"
           gitlab_rails['gitlab_shell_ssh_port'] = "${GITLAB_HOST_SSH_PORT}"
           # gitlab_rails['gitlab_default_projects_features_builds'] = false
-          # laradock-data/gitlab/data/nginx/conf/gitlab-http.conf /var/opt/gitlab/nginx/conf/nginx.ext.conf
           # /opt/gitlab/embedded/sbin/nginx -c /var/opt/gitlab/nginx/conf/nginx.conf -t
-          nginx['custom_gitlab_server_config'] = "location /jmeter/ {\n  root /var/opt/gitlab/;\n  autoindex on;\n}\n"
-          nginx['custom_nginx_config'] = "include /var/opt/gitlab/nginx/conf/nginx.ext.conf;"
-          ## Nginx 配置
-          nginx['access_log_path'] = "/dev/null"    # 关闭所有 access log
-          # nginx['error_log_path'] = "/dev/null"     # 关闭 error log
-          # nginx['proxy_connect_timeout'] = 600      # 增加超时时间
-          # nginx['proxy_read_timeout'] = 600
-          # nginx['proxy_send_timeout'] = 600
-          ## 关闭pages
+          ## 关闭 pages
           gitlab_pages['enable'] = false
           pages_nginx['enable'] = false
           ## 包仓库、依赖管理
