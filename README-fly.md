@@ -7,8 +7,8 @@
 | MEM/内存       | ≥8GB |
 | DISK/硬盘      | ≥50GB |
 | NET/网络带宽   | ≥50M |
-| 域名          | 前后端各1个，配SSL证书 |
-| 安全设置      | 开放端口：22/80/443 (TCP)|
+| 域名          | 前后端各1个，配Nginx SSL证书  |
+| 安全设置      | 开放端口：22/80/443 (TCP) |
 | 计费方式      | 1. 初期：按量付费(建议充值200-500元)；2. 稳定后：固定套餐(月付/年付) |
 
 
@@ -31,11 +31,12 @@
 | Node.js   | v20+ (2C/2G/20G)                                                  |
 | Redis     | v7.0+ (1C/1G/20G)                                                 |
 | MySQL     | v8.0+ (2C/2G/20G)                                                 |
-| Linux     | Ubuntu 22.04/24.04 LTS (推荐), 支持CentOS/Anolis/RedHat/Debian/Rocky 等|
+| Linux     | Ubuntu 24.04 (推荐), 支持CentOS/Anolis/RedHat/Debian/Rocky 等|
 | Kubernetes | 1.21+ 集群/容器 (生产环境推荐)                                          |
 
 ## 极简购买指南
 ```
+## 充值 200 或 500元（可以退款）
 ## Aliyun - ECS - 地域 - 按量付费 - 2C/8G - Ubuntu24.04 - 分配公网（按量100M） - 新安全组22/80/443 - 登录凭证：创建后设置 - 购买
 ```
 

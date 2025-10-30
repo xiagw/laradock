@@ -277,8 +277,9 @@ services:
       # container_name: gitlab
       ports:
         - "5050:5050"
-      depends_on:
-        - watchtower
+        # - "5432:5432"
+      # depends_on:
+      #   - watchtower
       logging:
         driver: json-file
         options:
