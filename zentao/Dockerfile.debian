@@ -1,0 +1,10 @@
+FROM debian:12-slim AS builder
+ARG CHANGE_SOURCE=false
+ARG ZT_VERSION=${ZT_VERSION}
+ENV ZT_VERSION=${ZT_VERSION}
+EXPOSE 80
+VOLUME /app/zentaopms
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+WORKDIR /var/www
+COPY root/ /
+RUN bash -xe /app/build.sh

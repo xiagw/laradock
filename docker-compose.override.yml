@@ -641,7 +641,6 @@ services:
         - backend
 
     zentao:
-      image: hub.zentao.net/app/zentao:${ZT_VERSION}
       build:
         context: ./zentao
         args:
@@ -654,24 +653,6 @@ services:
         - ${DATA_PATH_HOST}/zentao:/data
       # depends_on:
       #   - mysql
-      environment:
-        - ZT_MYSQL_HOST=${ZT_MYSQL_HOST}
-        - ZT_MYSQL_PORT=${ZT_MYSQL_PORT}
-        - ZT_MYSQL_USER=${ZT_MYSQL_USER}
-        - ZT_MYSQL_PASSWORD=${ZT_MYSQL_PASSWORD}
-        - ZT_MYSQL_DB=${ZT_MYSQL_DB}
-        - PHP_MAX_EXECUTION_TIME=120
-        - PHP_MEMORY_LIMIT=512M
-        - PHP_POST_MAX_SIZE=1024M
-        - PHP_UPLOAD_MAX_FILESIZE=1024M
-        - LDAP_ENABLED=false
-        - SMTP_ENABLED=false
-        - APP_DEFAULT_PORT=80
-        - APP_DOMAIN=${ZT_APP_DOMAIN}
-        - PROTOCOL_TYPE=http
-        - IS_CONTAINER=true
-        - LINK_GIT=false
-        - LINK_CI=false
       restart: always
       networks:
         - frontend
