@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -xe
-mode="${1}"
+mode="${1:-partial}"
 ## Determine paths
 me_path="$(dirname "$(readlink -f "$0")")"
 ## Laradock root path, up one level
