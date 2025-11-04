@@ -461,6 +461,8 @@ _install_acme() {
         cd "$acme_home" || return 1
         ./acme.sh --issue -w "$g_laradock_html" -d "$domain"
         ./acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
+        ## reload nginx
+        _reload_nginx
         ;;
     *)
         echo
