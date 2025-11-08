@@ -309,17 +309,28 @@ _install_zsh() {
 
     # Install and configure fzf
     _msg time "Install fzf"
+    use_pkg=true
     if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler|kylin) ]]; then
-        [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
-        local v
-        v=$(awk -F'=' '/^version/ {print $2}' "$HOME/.fzf/install" | head -n1)
-        sed -i "s|url=http.*|url=$g_url_fly_cdn/fzf-${v:-0.61.3}-linux_amd64.tar.gz|" "$HOME/.fzf/install"
-        "$HOME/.fzf/install"
-    else
+        use_pkg=false
+        if [[ "${lsb_dist-}" =~ (alinux) && "${version_id-}" = 3 ]]; then
+            use_pkg=true
+        fi
+    fi
+    if [[ $use_pkg == 'true' ]]; then
         _check_cmd install fzf || true
         local file=/usr/share/doc/fzf/examples/key-bindings.zsh
         if [ ! -f "$file" ]; then
             $use_sudo ${g_curl_opt+$g_curl_opt} -Lo "$file" "$g_url_fly_cdn/$(basename "$file")" || true
+        fi
+    else
+        if _check_cmd fzf; then
+            _msg warn "skip fzf install"
+        else
+            [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
+            local v
+            v=$(awk -F'=' '/^version/ {print $2}' "$HOME/.fzf/install" | head -n1)
+            sed -i "s|url=http.*|url=$g_url_fly_cdn/fzf-${v:-0.61.3}-linux_amd64.tar.gz|" "$HOME/.fzf/install"
+            "$HOME/.fzf/install"
         fi
     fi
 
