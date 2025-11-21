@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xe
+set -e
 mode="${1:---partial}"
 ## Determine paths
 me_path="$(dirname "$(readlink -f "$0")")"
@@ -41,6 +41,7 @@ case "$mode" in
     echo "Upgrading GitLab to the latest version..."
     echo "Pulling the latest GitLab image..."
     docker pull gitlab/gitlab-ce:latest
+    docker tag gitlab/gitlab-ce:latest laradock-gitlab
     echo "Stopping GitLab container..."
     docker compose stop gitlab
     docker compose rm -f gitlab
