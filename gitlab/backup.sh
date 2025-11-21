@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -xe
-mode="${1:-partial}"
+mode="${1:---partial}"
 ## Determine paths
 me_path="$(dirname "$(readlink -f "$0")")"
 ## Laradock root path, up one level
@@ -13,7 +13,7 @@ domain_git=$(grep '^GITLAB_DOMAIN_NAME_GIT' "${laradock_path}/.env" | cut -d'=' 
 # remove git. prefix for base domain
 domain_base=${domain_git#git.}
 
-cd "$laradock_path"
+cd "$laradock_path" || exit 1
 
 case "$mode" in
 -s | --ssl)
@@ -37,12 +37,33 @@ case "$mode" in
     echo "Nginx configuration updated, restarting Nginx..."
     docker compose exec gitlab "gitlab-ctl restart nginx"
     ;;
-full)
+-u | --upgrade)
+    echo "Upgrading GitLab to the latest version..."
+    echo "Pulling the latest GitLab image..."
+    docker pull gitlab/gitlab-ce:latest
+    echo "Stopping GitLab container..."
+    docker compose stop gitlab
+    docker compose rm -f gitlab
+    echo "Backing up existing PostgreSQL data..."
+    sudo cp -a "${laradock_data}/gitlab/data/postgresql" "${laradock_data}/gitlab/data/postgresql_$(date +%Y%m%d_%H%M%S)"
+    echo "Starting GitLab container with the new image..."
+    docker compose up -d gitlab
+    ;;
+-f | --full)
     echo "Full backup including uploads, builds, artifacts, lfs, terraform_state, registry, repositories, packages."
     docker compose exec gitlab gitlab-backup create
     ;;
-*)
+-p | --partial)
     echo "Partial backup only postgresql, skipping uploads, builds, artifacts, lfs, terraform_state, registry, repositories, packages."
     docker compose exec gitlab gitlab-backup create SKIP=uploads,builds,artifacts,lfs,terraform_state,registry,repositories,packages
+    ;;
+*)
+    echo "Usage: $0 [-s|--ssl|-n|--nginx|-u|--upgrade|-f|--full|-p|--partial]"
+    echo "  -s, --ssl        Update GitLab SSL certificates"
+    echo "  -n, --nginx      Update GitLab Nginx configuration"
+    echo "  -u, --upgrade    Upgrade GitLab to the latest version"
+    echo "  -f, --full       Perform a full backup of GitLab"
+    echo "  -p, --partial    Perform a partial backup of GitLab (default)"
+    exit 1
     ;;
 esac
