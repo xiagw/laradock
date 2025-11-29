@@ -1573,7 +1573,7 @@ services:
       restart: always
       hostname: "${GITLAB_DOMAIN_NAME_GIT}"
       environment:
-        GITLAB_LOG_LEVEL: "ERROR"
+        GITLAB_LOG_LEVEL: "warn"
         GITLAB_OMNIBUS_CONFIG: |
           external_url "${GITLAB_DOMAIN_NAME}"
           # registry_external_url "${GITLAB_DOMAIN_NAME}:5050"
