@@ -1647,8 +1647,8 @@ services:
           ## 禁用 PUMA 集群模式
           puma['worker_processes'] = 0
           puma['min_threads'] = 1
-          puma['max_threads'] = 8
-          sidekiq['concurrency'] = 16
+          puma['max_threads'] = 4
+          sidekiq['concurrency'] = 4
           ## 关闭电子邮件相关功能
           gitlab_rails['smtp_enable'] = false
           gitlab_rails['gitlab_email_enabled'] = false
