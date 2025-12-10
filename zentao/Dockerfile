@@ -1,6 +1,6 @@
 
 # ARG ZT_VERSION=latest
-ARG ZT_VERSION=21.7.6
+ARG ZT_VERSION=21.7.7
 FROM hub.zentao.net/app/zentao:${ZT_VERSION}
 LABEL maintainer="xiagw <fxiaxiaoyu@gmail.com>"
 
