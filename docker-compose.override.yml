@@ -236,6 +236,9 @@ services:
 ### Redis restart always ################################################
     redis:
       restart: always
+      volumes:
+        - ./redis/redis.conf:/etc/redis.conf
+      command: --databases ${REDIS_DATABASES:-256} --appendonly yes --appenddirname appendonlydir --requirepass ${REDIS_PASSWORD:-secret}
 
 ### Redis nopass ################################################
     redis2:
