@@ -34,7 +34,7 @@
 | Linux     | Ubuntu 24.04 (推荐), 支持CentOS/Anolis/RedHat/Debian/Rocky 等|
 | Kubernetes | 1.21+ 集群/容器 (生产环境推荐)                                          |
 
-## 极简购买指南
+## 极简Aliyun/Qcloud购买指南
 ```
 ## 充值 200 或 500元（可以退款）
 ## Aliyun - ECS - 地域 - 按量付费 - 2C/8G - Ubuntu24.04 - 分配公网（按量100M） - 新安全组22/80/443 - 登录凭证：创建后设置 - 购买
@@ -42,11 +42,12 @@
 
 ## 部署方式一：单机/多机docker-compose部署文档
 ```sh
-## 假如服务器需要代理访问公网，则设置环境变量
+## 设置代理： 假如服务器需要代理访问公网，则设置环境变量
 # export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
-## Aliyun - ECS - 云助手(左下角) - 实例(右侧) - 执行命令 （复制以下命令，超时时间1500秒）
+## 云助手部署： Aliyun - ECS - 云助手(左下角) - 实例(右侧) - 执行命令 （复制以下命令，超时时间1500秒）
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-8.1/openjdk-8
+## 手动/自动部署：
 curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
 ```
 
@@ -79,14 +80,9 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
 
 ### 操作docker容器简要方式/查看日志
 ```sh
-## ！！！ 必须进入此目录 ！！！
+## ！！！ 必须进入此目录执行 docker compose 命令 ！！！
 cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
-
-## ！！！ 注意 ！！！
-## 1. 这个命令用于查看服务器本机集成的 mysql/redis 信息
-## 2. 如果客户有额外独立的 mysql/redis ，则不需要查看此信息（使用客户额外的信息）
-## 3. 容器内和代码内写标准端口 mysql=3306/redis=6379，此处显示端口只用于远程 SSH 端口转发映射
-cd $HOME/docker/laradock && bash fly.sh info      ## 查看服务器本机集成的 mysql/redis 信息
+cd $HOME/docker/laradock && bash fly.sh info    ## 查看服务器本机集成的 mysql/redis 信息
 
 cd $HOME/docker/laradock && docker compose stop redis mysql php-fpm nginx      ## 停止服务 php-fpm
 cd $HOME/docker/laradock && docker compose stop redis mysql spring nginx       ## 停止服务 Java (spring)
@@ -99,24 +95,24 @@ cd $HOME/docker/laradock && docker compose up -d redis mysql nodejs nginx       
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring         ## java 查看容器日志最后 100 行
 cd $HOME/docker/laradock && tail -f spring/*.log              ## 查看文件夹内 spring/*.log 文件
 
-## 替换 Nginx SSL 证书 key 文件 $HOME/docker/laradock/nginx/sites/ssl/default.key
-## 替换 Nginx SSL 证书 pem 文件 $HOME/docker/laradock/nginx/sites/ssl/default.pem
-
-## java / nodejs 修改 nginx 配置文件  $HOME/docker/laradock/nginx/sites/router.inc
+## 替换证书 Nginx SSL key: $HOME/docker/laradock/nginx/sites/ssl/default.key
+## 替换证书 Nginx SSL pem: $HOME/docker/laradock/nginx/sites/ssl/default.pem
+## 修改Nginx配置java和nodejs：  $HOME/docker/laradock/nginx/sites/router.inc
 cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload     ## nginx 重启 (修改配置文件后必须重启)
 
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
-## 修改 java 启动参数
+## 修改jdk启动参数：
 ## 1. 创建 spring/.java_opts 文件，内容: export JAVA_OPTS="java -Xms1g -Xmx1g"
 
-## 新增 spring 或 nodejs 容器
-## 1. 复制文件夹 spring 到新文件夹，例如 spring3（nodejs 同理）
+## 新增 spring 或 nodejs 容器：
+## 1. 复制文件夹 spring/ 到新文件夹，例如 spring3（nodejs 同理）
 ## 2. 修改 docker-compose.override.yml，复制 spring 段落到新段落，改名，例如 spring3（nodejs 同理）
 ## 3. 复制镜像: docker tag laradock-spring laradock-spring3
 ## 4. 修改 nginx 配置文件 router.inc（nodejs 同理）
 
-## 1. sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
-## 2. 导入数据库文件（使用本服务器的 mysql/redis）（独立非本机 mysql/redis 不从此操作）
+## 命令行导入数据库文件：
+## 1. db.sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
+## 2. 导入数据库文件（只适用于使用本服务器的 mysql/redis）（如果有独立的非本机 mysql/redis 不从此操作）
 cd $HOME/docker/laradock && docker compose exec mysql bash -c 'mysql -udefaultdb -p defaultdb </backup/db.sql'
 ## mysql 进入命令行操作(本机)
 cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql defaultdb"
@@ -127,7 +123,7 @@ cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis
 ## redis 进入命令行操作(远程)
 cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -h'xxxxx' -a'zzzzzz'"
 
-## 如果 SSH 登陆服务器为非 root 帐号，先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/laradock/spring
+## 非root账号文件上传：先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/laradock/spring
 # sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
 sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
 sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
@@ -149,9 +145,10 @@ sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=
 - 已获取K8S集群访问权限
 
 ### 部署步骤
-```sh
+```bash
 # 1. 验证环境
-command -v kubectl && command -v helm && echo 'ok' || echo failed
+command -v kubectl && echo OK || echo FAIL
+command -v helm && echo OK || echo FAIL
 # 2. 创建Helm Chart
 helm create myapp
 # 3. 配置应用 修改 myapp/values.yaml，设置镜像、资源等配置
