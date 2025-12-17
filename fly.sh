@@ -171,6 +171,7 @@ check_docker() {
     *alinux | *alinux*)
         # Handle Aliyun Linux
         $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
+        [ -f /etc/dnf/dnf.conf ] && echo 'exclude=dnf python3-dnf libsolv' >>/etc/dnf/dnf.conf
         fake_os=true
         ;;
     esac
