@@ -113,7 +113,7 @@ cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## ngi
 ## 命令行导入数据库文件：
 ## 1. db.sql文件存放目录/文件名: $HOME/laradock-data/mysqlbak/db.sql
 ## 2. 导入数据库文件（只适用于使用本服务器的 mysql/redis）（如果有独立的非本机 mysql/redis 不从此操作）
-cd $HOME/docker/laradock && docker compose exec mysql bash -c 'mysql -udefaultdb -p defaultdb </backup/db.sql'
+cd $HOME/docker/laradock && docker compose exec mysql bash -c 'mysql -udefaultdb -p${get_pass_info:-} </backup/db.sql'
 ## mysql 进入命令行操作(本机)
 cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql defaultdb"
 ## mysql 进入命令行操作(远程)
