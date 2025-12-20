@@ -19,7 +19,7 @@ location ~* /runtime/ { return 444; }
 location ~* /(.*)\.(htaccess|htpasswd|env|svn|subversion|git|db|sql|sqlite|sqlite3)$ { return 444; }
 location ~* /(.*)\.(bak|inc|old|7z|zip|rar|xz|tar|gz|tgz|log|bashrc|bash_history|cfg)$ { return 444; }
 location ~* /(.*)\.(ini|yml|buildpath|project|settings|mdb|frm|\~|asp|aspx|jsp)$ { return 444; }
-if ( $request_method !~ ^(GET|POST|PUT|DELETE|OPTIONS)$ ) { return 444; }
+# if ( $request_method !~ ^(GET|POST|PUT|DELETE|OPTIONS)$ ) { return 444; }
 if ( $query_string ~* ".*['<>].*" ) { return 444; }
 if ($request_uri ~* "(cost\()|(concat\()" ) { return 444; }
 if ($request_uri ~* "[+|(%20)]union[+|(%20)]" ) { return 444; }
