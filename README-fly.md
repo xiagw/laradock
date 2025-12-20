@@ -67,6 +67,7 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
 | https://www.xxx.com/uri/         | $HOME/docker/laradock/spring/                                       |
 | https://www.xxx.com/uri2/        | $HOME/docker/laradock/spring2/                                      |
 | https://www.xxx.com/             | $HOME/docker/html/  (服务器本机存储文件路径)(容器内为/var/www/html/) |
+| https://www.xxx.com/uploads/     | $HOME/docker/html/uploads/  (如果没有OSS，存放此处，spring内部为/var/www/html/uploads/) |
 | 后端：(Nodejs)                    | （支持多个项目目录）（node_modules 不需要上传）                       |
 | https://www.xxx.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
 | https://www.xxx.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
