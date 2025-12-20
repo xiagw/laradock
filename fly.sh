@@ -484,7 +484,7 @@ _install_acme() {
         echo "  cd $acme_home && ./acme.sh --issue -w $g_laradock_html -d ${domain:-example.com} -d '*.${domain:-example.com}'"
         echo "DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]"
         echo "export Ali_Key= ; export Ali_Secret="
-        echo "  cd $acme_home && ./acme.sh --issue --dns dns_cf -d ${domain:-example.com} -d '*.${domain:-example.com}'"
+        echo "  cd $acme_home && ./acme.sh --issue --dns dns_ali -d ${domain:-example.com} -d '*.${domain:-example.com}'"
         echo "Deploy cert"
         echo "  cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-example.com}"
         ;;
