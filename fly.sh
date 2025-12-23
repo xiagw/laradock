@@ -214,7 +214,7 @@ check_laradock() {
 
     ## jdk image, uid is 1000.(see spring/Dockerfile)
     if [[ "$(stat -c %u "$g_laradock_path/spring")" != 1000 ]]; then
-        if $use_sudo chown 1000:1000 "$g_laradock_path/spring"; then
+        if $use_sudo chown 1000:1000 "$g_laradock_path/spring"*; then
             _msg time "OK: chown 1000:1000 $g_laradock_path/spring"
         else
             _msg red "FAIL: chown 1000:1000 $g_laradock_path/spring"
