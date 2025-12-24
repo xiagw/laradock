@@ -725,23 +725,23 @@ Usage: $0 [parameters ...]
 Parameters:
     -h, --help          Show this help message.
     -v, --version       Show version info.
-    info                Get MySQL and Redis info.
+    info                Get MySQL/Redis user/pass info.
     redis               Install Redis.
-    mysql               Install MySQL.
+    mysql               Install MySQL [default 8.0].
     mysql-5.7           Install MySQL version 5.7.
     java                Install openjdk-8.
     java-17             Install openjdk-17.
-    php                 Install php-fpm.
+    php                 Install php-fpm [default 8.1].
     php-8.2             Install php version 8.2.
-    node                Install nodejs.
-    node-19             Install nodejs version 19.
+    node                Install nodejs [default 20].
+    node-22             Install nodejs version 22.
     nginx               Install nginx.
     mysql-cli           Exec into MySQL CLI.
     redis-cli           Exec into Redis CLI.
     lsync               Install and setup lsyncd.
     zsh                 Install zsh.
     gitlab              Install gitlab.
-    acme                Install acme.sh.
+    acme                Install acme.sh [api.example.com].
     cdn                 Refresh CDN: [bucket-name domain.com/ cn-hangzhou]
     select              Manually select versions for mysql, php, java, and node.
 EOF
@@ -882,35 +882,31 @@ parse_command_args() {
             fi
 
             # 如果没有指定组件，显示帮助信息
-            if [ -z "$2" ]; then
-                echo "用法: ./fly.sh select [组件名]"
-                echo "可选组件: mysql, php, java, node"
-                echo "示例: ./fly.sh select mysql"
-                exit 1
-            fi
+            service="$2"
+            [ -z "$service" ] && service=$(echo -e "mysql\nphp\njava\nnode" | fzf --height 40% --layout reverse --border)
 
-            case "$2" in
+            case "$service" in
             mysql)
                 echo "选择 MySQL 版本："
-                g_mysql_ver=$(echo -e "5.7\n8.0" | fzf --height 40% --layout reverse --border)
+                g_mysql_ver=$(echo -e "5.7\n8.0\n8.1\n9.0" | fzf --height 40% --layout reverse --border)
                 [ -z "$g_mysql_ver" ] && g_mysql_ver="8.0"
                 echo "已选择 MySQL $g_mysql_ver"
                 ;;
             php)
                 echo "选择 PHP 版本："
-                g_php_ver=$(echo -e "7.4\n8.0\n8.1\n8.2" | fzf --height 40% --layout reverse --border)
+                g_php_ver=$(echo -e "7.3\n7.4\n8.0\n8.1\n8.2\n8.3\n8.4\n8.5" | fzf --height 40% --layout reverse --border)
                 [ -z "$g_php_ver" ] && g_php_ver="8.1"
                 echo "已选择 PHP $g_php_ver"
                 ;;
             java)
                 echo "选择 Java 版本："
-                g_java_ver=$(echo -e "8\n11\n17" | fzf --height 40% --layout reverse --border)
+                g_java_ver=$(echo -e "8\n11\n17\n21\n22" | fzf --height 40% --layout reverse --border)
                 [ -z "$g_java_ver" ] && g_java_ver="8"
                 echo "已选择 Java $g_java_ver"
                 ;;
             node)
                 echo "选择 Node.js 版本："
-                g_node_ver=$(echo -e "16\n18\n20" | fzf --height 40% --layout reverse --border)
+                g_node_ver=$(echo -e "16\n18\n20\n22\n24" | fzf --height 40% --layout reverse --border)
                 [ -z "$g_node_ver" ] && g_node_ver="20"
                 echo "已选择 Node.js $g_node_ver"
                 ;;
@@ -930,7 +926,7 @@ parse_command_args() {
             arg_pull_image=true
 
             # 根据选择的组件设置安装参数
-            case "$2" in
+            case "$service" in
             mysql) args=(mysql) ;;
             php) args=(php-fpm) ;;
             java) args=(spring) ;;
