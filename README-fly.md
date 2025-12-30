@@ -85,22 +85,24 @@ curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
 cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
 cd $HOME/docker/laradock && bash fly.sh info    ## 查看服务器本机集成的 mysql/redis 信息
 
-cd $HOME/docker/laradock && docker compose stop redis mysql php-fpm nginx      ## 停止服务 php-fpm
-cd $HOME/docker/laradock && docker compose stop redis mysql spring nginx       ## 停止服务 Java (spring)
-cd $HOME/docker/laradock && docker compose stop redis mysql nodejs nginx       ## 停止服务 nodejs
+cd $HOME/docker/laradock && docker compose stop php-fpm nginx      ## 停止服务 php-fpm
+cd $HOME/docker/laradock && docker compose stop spring nginx       ## 停止服务 Java (spring)
+cd $HOME/docker/laradock && docker compose stop nodejs nginx       ## 停止服务 nodejs
 
-cd $HOME/docker/laradock && docker compose up -d redis mysql php-fpm nginx      ## 启动服务 php-fpm
-cd $HOME/docker/laradock && docker compose up -d redis mysql spring nginx       ## 启动服务 Java (spring)
-cd $HOME/docker/laradock && docker compose up -d redis mysql nodejs nginx       ## 启动服务 Nodejs
+cd $HOME/docker/laradock && docker compose up -d php-fpm nginx      ## 启动服务 php-fpm
+cd $HOME/docker/laradock && docker compose up -d spring nginx       ## 启动服务 Java (spring)
+cd $HOME/docker/laradock && docker compose up -d nodejs nginx       ## 启动服务 Nodejs
 
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring         ## java 查看容器日志最后 100 行
 cd $HOME/docker/laradock && tail -f spring/*.log              ## 查看文件夹内 spring/*.log 文件
 
 ## 替换证书 Nginx SSL key: $HOME/docker/laradock/nginx/sites/ssl/default.key
+cp -vf $HOME/example.com.key $HOME/docker/laradock/nginx/sites/ssl/default.key
 ## 替换证书 Nginx SSL pem: $HOME/docker/laradock/nginx/sites/ssl/default.pem
-## 修改Nginx配置java和nodejs：  $HOME/docker/laradock/nginx/sites/router.inc
+cp -vf $HOME/example.com.pem $HOME/docker/laradock/nginx/sites/ssl/default.pem
+## 修改 Nginx 配置 java 和 nodejs：  $HOME/docker/laradock/nginx/sites/router.inc
 cd $HOME/docker/laradock && docker compose exec nginx nginx -s reload     ## nginx 重启 (修改配置文件后必须重启)
-
+## 查看 Nginx 容器日志
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## nginx 查看容器日志最后 100 行
 ## 修改jdk启动参数：
 ## 1. 创建 spring/.java_opts 文件，内容: export JAVA_OPTS="java -Xms1g -Xmx1g"
@@ -120,9 +122,9 @@ cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql
 ## mysql 进入命令行操作(远程)
 cd $HOME/docker/laradock && docker compose exec mysql bash -c "LANG=C.UTF8 mysql -h'xxxxx' -u'yyyyyy' -p'zzzzzz'"
 ## redis 进入命令行操作(本机)
-cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -a'zzzzzz'"
+cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -a'zzzzzz' --no-auth-warning"
 ## redis 进入命令行操作(远程)
-cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -h'xxxxx' -a'zzzzzz'"
+cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -h'xxxxx' -a'zzzzzz' --no-auth-warning"
 
 ## 非root账号文件上传：先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/laradock/spring
 # sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
