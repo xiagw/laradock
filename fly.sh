@@ -594,7 +594,7 @@ get_image() {
         fi
     done
     ## remove image mirror
-    docker images --format '{{.Repository}}:{{.Tag}}' | grep "$image_mirror" | xargs -r -I% docker rmi -f % >/dev/null
+    docker images --format '{{.Repository}}:{{.Tag}}' | grep "$image_mirror" | xargs -r -t -I% docker rmi -f % >/dev/null || true
 }
 
 check_nginx() {
