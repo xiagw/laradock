@@ -1603,7 +1603,7 @@ services:
           # gitlab_rails['db_password'] = "${GITLAB_POSTGRES_PASSWORD}"
           # gitlab_rails['db_database'] = "${GITLAB_POSTGRES_DB}"
           gitlab_rails['initial_root_password'] = "${GITLAB_ROOT_PASSWORD}"
-          gitlab_rails['gitlab_shell_ssh_port'] = "${GITLAB_HOST_SSH_PORT}"
+          # gitlab_rails['gitlab_shell_ssh_port'] = "${GITLAB_HOST_SSH_PORT}"
           # gitlab_rails['gitlab_default_projects_features_builds'] = false
           # /opt/gitlab/embedded/sbin/nginx -c /var/opt/gitlab/nginx/conf/nginx.conf -t
           ## 关闭 pages
