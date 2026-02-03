@@ -1,12 +1,12 @@
 # Laradock
 
-### 国内(gitee)  branch: in-china
+### 国内(gitee)  branch: china
 ```
-curl -fsSL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash -s php
+curl -fsSL https://gitee.com/xiagw/laradock/raw/china/fly.sh | bash -s php
 ```
-### 国外(github) branch: in-china
+### 国外(github) branch: china
 ```
-curl -fsSL https://github.com/xiagw/laradock/raw/in-china/fly.sh | bash -s github php
+curl -fsSL https://github.com/xiagw/laradock/raw/china/fly.sh | bash -s ncn php
 ```
 
 [![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://zalt.me)

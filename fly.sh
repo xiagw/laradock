@@ -210,7 +210,7 @@ check_laradock() {
     fi
     _msg step "Clone laradock to $g_laradock_path/"
     mkdir -p "$g_laradock_path"
-    git clone -b in-china --depth 1 $g_url_laradock_git "$g_laradock_path"
+    git clone -b china --depth 1 $g_url_laradock_git "$g_laradock_path"
 
     ## jdk image, uid is 1000.(see spring/Dockerfile)
     if [[ "$(stat -c %u "$g_laradock_path/spring")" != 1000 ]]; then
@@ -795,7 +795,7 @@ parse_command_args() {
             auto_mode=false
             arg_need_docker=false
             ;;
-        not-china | not-cn | ncn)
+        not-china | not-cn | ncn | github)
             IN_CHINA=false
             aliyun_mirror=false
             ;;
@@ -999,7 +999,7 @@ main() {
 
     if ${IN_CHINA:-true}; then
         g_url_laradock_git=https://gitee.com/xiagw/laradock.git
-        g_url_laradock_raw=https://gitee.com/xiagw/laradock/raw/in-china
+        g_url_laradock_raw=https://gitee.com/xiagw/laradock/raw/china
         g_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw/main
         g_url_keys="$g_url_fly_cdn/xiagw.keys"
         g_url_get_docker="$g_url_fly_cdn/get-docker.sh"
