@@ -48,7 +48,7 @@
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-8.1/openjdk-8
 ## 手动/自动部署：
-curl -fL https://gitee.com/xiagw/laradock/raw/in-china/fly.sh | bash
+curl -fL https://gitee.com/xiagw/laradock/raw/china/fly.sh | bash
 ```
 
 ### 单机docker部署方式站点URL对应服务器目录说明
