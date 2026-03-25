@@ -47,7 +47,7 @@ while [ -d $log_path ] && [ ! -f "$log_path/.keep_all_log" ]; do
 done &
 
 # Start crond in background
-crond -l 2 -b
+# crond -l 2 -b
 
 # Start nginx in foreground
 # exec nginx
