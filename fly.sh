@@ -743,7 +743,8 @@ Parameters:
     gitlab              Install gitlab.
     acme                Install acme.sh [api.example.com].
     cdn                 Refresh CDN: [bucket-name domain.com/ cn-hangzhou]
-    select              Manually select versions for mysql, php, java, and node.
+    select [mysql|php|java|node]
+                        Interactively select service and version with fzf.
 EOF
     exit 1
 }
@@ -875,15 +876,16 @@ parse_command_args() {
             return
             ;;
         select)
+            auto_mode=false
             # 检查是否安装了 fzf
             if ! command -v fzf >/dev/null 2>&1; then
                 echo "请先安装 fzf: ./fly.sh zsh"
                 exit 1
             fi
 
-            # 如果没有指定组件，显示帮助信息
-            service="$2"
-            [ -z "$service" ] && service=$(echo -e "mysql\nphp\njava\nnode" | fzf --height 40% --layout reverse --border)
+            # 如果没有指定组件，则通过 fzf 交互选择
+            service="${2:-}"
+            [ -z "$service" ] && service=$(printf '%s\n' "mysql" "php" "java" "node" | fzf --height 40% --layout reverse --border)
 
             case "$service" in
             mysql)
