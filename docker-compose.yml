@@ -1590,8 +1590,8 @@ services:
           # gitlab_rails['gitlab_default_projects_features_builds'] = false
           # /opt/gitlab/embedded/sbin/nginx -c /var/opt/gitlab/nginx/conf/nginx.conf -t
           ## 关闭 pages
-          gitlab_pages['enable'] = false
-          pages_nginx['enable'] = false
+          # gitlab_pages['enable'] = false
+          # pages_nginx['enable'] = false
           ## 包仓库、依赖管理
           gitlab_rails['packages_enabled'] = false
           gitlab_rails['dependency_proxy_enabled'] = false
