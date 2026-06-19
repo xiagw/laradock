@@ -1642,9 +1642,6 @@ services:
           gitlab_rails['kerberos_enabled'] = false
           ## Sentinel
           sentinel['enable'] = false
-          # Mattermost
-          mattermost['enable'] = false
-          mattermost_nginx['enable'] = false
           ## 禁用 PUMA 集群模式
           puma['worker_processes'] = 0
           puma['min_threads'] = 1
