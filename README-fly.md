@@ -37,12 +37,12 @@
 ## 极简Aliyun/Qcloud购买指南
 ```
 ## 充值 200 或 500元（可以退款）
-## Aliyun - ECS - 地域 - 按量付费 - 2C/8G - Ubuntu24.04 - 分配公网（按量100M） - 新安全组22/80/443 - 登录凭证：创建后设置 - 购买
+## Aliyun - ECS - 地域 - 按量付费 - 2C/8G - Ubuntu24.04 - 分配公网（按量付费100M） - 新安全组22/80/443 - 登录凭证：创建后设置 - 购买
 ```
 
 ## 部署方式一：单机/多机docker-compose部署文档
 ```sh
-## 设置代理： 假如服务器需要代理访问公网，则设置环境变量
+## （可选项）设置代理： 假如服务器需要代理访问公网，则设置环境变量
 # export http_proxy=x.x.x.x:1080; export https_proxy=x.x.x.x:1080
 ## 云助手部署： Aliyun - ECS - 云助手(左下角) - 实例(右侧) - 执行命令 （复制以下命令，超时时间1500秒）
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
@@ -169,8 +169,8 @@ kubectl -n dev get pods,svc
 - 更多配置参见values.yaml文件
 
 
-## 不建议部署于Windows服务器
-1. Windows 服务器不适合安装redis，Windows 兼容性较差，以及与docker兼容性较差，不建议使用Windows服务器
+## 不适合/不支持部署到Windows服务器
+1. Windows 服务器不适合安装redis，Windows 兼容性较差，以及与docker兼容性/性能较差，不适合使用Windows服务器
 
 
 ## 域名配置与ICP备案要求
@@ -181,8 +181,8 @@ kubectl -n dev get pods,svc
 - 阿里云ICP备案： `beian.aliyun.com` （建议使用App进行备案速度更快）
 - 备案原则：必须在服务器提供商处完成备案
 ### 备案有效和无效示例说明
-- 有效备案：阿里云服务器 + 阿里云备案
-- 无效备案：腾讯云服务器 + 阿里云备案
+- 有效备案：阿里云服务器 + 阿里云备案（备案提供商和服务器提供商需一致）
+- 无效备案：非阿里云服务器 + 阿里云备案（备案提供商和服务器提供商需不一致导致无效备案）
 ### 域名配置要求
 - DNS解析：配置A记录指向服务器IP
 - SSL证书：配置HTTPS证书(Nginx格式，需要完整证书链)
@@ -192,7 +192,6 @@ kubectl -n dev get pods,svc
 ## Bitvise SSH客户端配置指南
 
 ### 安装
-- Putty 官方：`www.chiark.greenend.org.uk/~sgtatham/putty/latest.html`
 - Bvssh client镜像：`http://o.flyh5.cn/d/BvSshClient-Inst.zip`
 
 ### 服务器连接
