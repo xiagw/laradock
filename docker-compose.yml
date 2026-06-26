@@ -1631,6 +1631,21 @@ services:
           gitlab_rails['smtp_enable'] = false
           gitlab_rails['gitlab_email_enabled'] = false
           gitlab_rails['incoming_email_enabled'] = false
+          ## 开启腾讯企业邮件
+          # gitlab_rails['smtp_enable'] = true
+          # gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
+          # gitlab_rails['smtp_port'] = 465
+          # gitlab_rails['smtp_tls'] = true
+          # gitlab_rails['smtp_enable_starttls_auto'] = false
+          # gitlab_rails['smtp_authentication'] = "login"
+          # gitlab_rails['smtp_user_name'] = "test@demo.com"
+          # gitlab_rails['smtp_password'] = "DemoPass"
+          # gitlab_rails['smtp_domain'] = "demo.com"
+          # gitlab_rails['gitlab_email_from'] = 'test@demo.com'
+          # gitlab_rails['gitlab_email_reply_to'] = 'test@demo.com'
+          # gitlab_rails['gitlab_email_display_name'] = 'GitLab Notice'
+          # 测试： sudo gitlab-rails console
+          # Notify.test_email('test@demo.com', 'Rail-console', 'Message-Body').deliver_now
           ## 日志配置
           logging['svlogd_size'] = 200 * 1024 * 1024  # 日志文件最大尺寸（200MB）
           logging['svlogd_num'] = 5  # 保留的日志文件数量
