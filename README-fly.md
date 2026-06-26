@@ -43,7 +43,7 @@
 ## 部署方式一：单机/多机docker-compose部署文档
 ```sh
 ## 设置代理： 假如服务器需要代理访问公网，则设置环境变量
-# export http_proxy=http://x.x.x.x:1080; export https_proxy=http://x.x.x.x:1080
+# export http_proxy=x.x.x.x:1080; export https_proxy=x.x.x.x:1080
 ## 云助手部署： Aliyun - ECS - 云助手(左下角) - 实例(右侧) - 执行命令 （复制以下命令，超时时间1500秒）
 ## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
 ## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-8.1/openjdk-8
@@ -54,23 +54,23 @@ curl -fL https://gitee.com/xiagw/laradock/raw/china/fly.sh | bash
 ### 单机docker部署方式站点URL对应服务器目录说明
 | 站点/URL/目录                    | 对应服务器文件系统目录/(或容器内目录)                                      |
 |:---------------------------------|:--------------------------------------------------------------------|
-| https://www.xxx.com/             | $HOME/docker/html/                                                  |
+| example.com/             | $HOME/docker/html/                                                  |
 | 前端：(VUE/TS 等静态文件)          | 若开启静态内容的 CDN 则只需针对此目录开启                           |
-| https://www.xxx.com/s1/          | $HOME/docker/html/s1/                                               |
-| https://www.xxx.com/s2/          | $HOME/docker/html/s2/                                               |
-| https://www.xxx.com/static/      | $HOME/docker/html/static/                                           |
+| example.com/s1/          | $HOME/docker/html/s1/                                               |
+| example.com/s2/          | $HOME/docker/html/s2/                                               |
+| example.com/static/      | $HOME/docker/html/static/                                           |
 | 后端：(PHP)                       | （支持多个不同项目按目录区分）                                           |
-| https://www.xxx.com/tp/php-app01 | $HOME/docker/html/tp/php-app01                                      |
-| https://www.xxx.com/tp/php-app02 | $HOME/docker/html/tp/php-app02                                      |
-| https://www.xxx.com/tp/php-app03 | $HOME/docker/html/tp/php-app03                                      |
+| example.com/tp/php-app01 | $HOME/docker/html/tp/php-app01                                      |
+| example.com/tp/php-app02 | $HOME/docker/html/tp/php-app02                                      |
+| example.com/tp/php-app03 | $HOME/docker/html/tp/php-app03                                      |
 | 后端：(Jar)                       | （支持多个jar文件/log文件也在此）                                   |
-| https://www.xxx.com/uri/         | $HOME/docker/laradock/spring/                                       |
-| https://www.xxx.com/uri2/        | $HOME/docker/laradock/spring2/                                      |
-| https://www.xxx.com/             | $HOME/docker/html/  (服务器本机存储文件路径)(容器内为/var/www/html/) |
-| https://www.xxx.com/uploads/     | $HOME/docker/html/uploads/  (如果没有OSS，存放此处，spring内部为/var/www/html/uploads/) |
+| example.com/uri/         | $HOME/docker/laradock/spring/                                       |
+| example.com/uri2/        | $HOME/docker/laradock/spring2/                                      |
+| example.com/             | $HOME/docker/html/  (服务器本机存储文件路径)(容器内为/var/www/html/) |
+| example.com/uploads/     | $HOME/docker/html/uploads/  (如果没有OSS，存放此处，spring内部为/var/www/html/uploads/) |
 | 后端：(Nodejs)                    | （支持多个项目目录）（node_modules 不需要上传）                       |
-| https://www.xxx.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
-| https://www.xxx.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
+| example.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
+| example.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
 | Nginx：目录配置和日志              | （支持多个不同站点配置）                                            |
 | nginx conf 配置文件路径          | $HOME/docker/laradock/nginx/sites/{default.conf, router.inc}      |
 | nginx 日志文件存放路径           | $HOME/docker/laradock/logs/nginx/                                   |
@@ -173,24 +173,12 @@ kubectl -n dev get pods,svc
 1. Windows 服务器不适合安装redis，Windows 兼容性较差，以及与docker兼容性较差，不建议使用Windows服务器
 
 
-## 公网传送临时文件-非加密传输
-1. 文件非机密内容，可以公开传送
-1. 文件敏感性低的可以压缩文件并加复杂密码
-1. 禁止传递敏感性高的文件
-
-| 站点                       | 网址                      |
-|:---------------------------|:--------------------------|
-| 奶牛快传免费               | https://cowtransfer.com/  |
-| Wormhole简单私密的文件共享  | https://wormhole.app/     |
-| 文叔叔                    | https://www.wenshushu.cn/ |
-
-
 ## 域名配置与ICP备案要求
 
 ### ICP备案要求
 - 备案范围：仅限中国内地服务器，港澳台及海外无需备案
-- 备案查询：https://beian.miit.gov.cn/#/Integrated/recordQuery
-- 阿里云ICP备案： https://beian.aliyun.com/ （建议使用App进行备案速度更快）
+- 备案查询：`beian.miit.gov.cn/#/Integrated/recordQuery`
+- 阿里云ICP备案： `beian.aliyun.com` （建议使用App进行备案速度更快）
 - 备案原则：必须在服务器提供商处完成备案
 ### 备案有效和无效示例说明
 - 有效备案：阿里云服务器 + 阿里云备案
@@ -201,12 +189,11 @@ kubectl -n dev get pods,svc
 - 备案验证：确保备案信息与服务器提供商一致
 
 
-
 ## Bitvise SSH客户端配置指南
 
-### 下载安装
-- Putty 官方下载：[https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
-- Bvssh client镜像下载：[http://o.flyh5.cn/d/BvSshClient-Inst.zip](http://o.flyh5.cn/d/BvSshClient-Inst.zip)
+### 安装
+- Putty 官方：`www.chiark.greenend.org.uk/~sgtatham/putty/latest.html`
+- Bvssh client镜像：`http://o.flyh5.cn/d/BvSshClient-Inst.zip`
 
 ### 服务器连接
 1. 获取必要信息：服务器IP、用户名和认证方式（密码或SSH密钥）
