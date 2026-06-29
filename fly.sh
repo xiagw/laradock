@@ -330,7 +330,7 @@ _install_zsh() {
             [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
             local v
             v=$(awk -F'=' '/^version/ {print $2}' "$HOME/.fzf/install" | head -n1)
-            sed -i "s|url=http.*|url=$g_url_fly_cdn/fzf-${v:-0.61.3}-linux_amd64.tar.gz|" "$HOME/.fzf/install"
+            sed -i "s|url=http.*|url=$g_url_fly_cdn/fzf-${v:-0.73.1}-linux_amd64.tar.gz|" "$HOME/.fzf/install"
             "$HOME/.fzf/install"
         fi
     fi
@@ -448,6 +448,13 @@ _handle_ssl_config() {
             [[ "$key" == *.pem ]] && cp -vf "$key" "$ssl_dir/default.pem"
         done
     _msg green "已更新SSL密钥文件到: $ssl_dir/default.*"
+    # 显示证书有效期
+    local p
+    for p in "$ssl_dir"/*.pem "$ssl_dir/"*.crt; do
+        echo "Found $p"
+        openssl x509 -noout -dates -in "$p"
+    done
+
     _reload_nginx
     rm -rf "$temp_dir"
 }
@@ -466,27 +473,38 @@ _install_acme() {
         $use_sudo chmod g+w "$key" "$pem"
     fi
 
-    domain="${1}"
-    _msg time "your domain is: ${domain:-api.example.com}"
-    case "$domain" in
-    *.*.*)
+    local domain mode
+    read -rp "Enter your domain (e.g., api.example.com): " domain
+    _msg time "your domain is: ${domain}"
+    cat <<EOF
+Single host domain（单域名使用目录）:
+    $acme_home/acme.sh --issue -w $g_laradock_html -d ${domain:-example.com}
+Wildcard domain（通配符域名使用目录）:
+    $acme_home/acme.sh --issue -w $g_laradock_html -d ${domain:-example.com} -d '*.${domain:-example.com}'
+
+DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]
+# （手动 DNS） --yes-I-know-dns-manual-mode-enough-go-ahead-please
+Wildcard domain（通配符域名使用dns_api）:
+    export Ali_Key=xxxx ; export Ali_Secret=yyyy
+    $acme_home/acme.sh --issue --dns dns_ali -d ${domain:-example.com} -d '*.${domain:-example.com}'
+Deploy cert
+    $acme_home/acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-example.com}
+EOF
+    read -rp "Enter your mode (e.g., webroot or dns_api): " mode
+    _msg time "your mode is: ${mode:-webroot}"
+    case "${mode:-webroot}" in
+    webroot)
         cd "$acme_home" || return 1
-        ./acme.sh --issue -w "$g_laradock_html" -d "$domain"
-        ./acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
-        ## reload nginx
+        "$acme_home"/acme.sh --issue -w "$g_laradock_html" -d "$domain"
+        "$acme_home"/acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
         _reload_nginx
         ;;
-    *)
-        echo
-        echo "Single host domain:"
-        echo "  cd $acme_home && ./acme.sh --issue -w $g_laradock_html -d ${domain:-api.example.com}"
-        echo "Wildcard domain:"
-        echo "  cd $acme_home && ./acme.sh --issue -w $g_laradock_html -d ${domain:-example.com} -d '*.${domain:-example.com}'"
-        echo "DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]"
-        echo "export Ali_Key= ; export Ali_Secret="
-        echo "  cd $acme_home && ./acme.sh --issue --dns dns_ali -d ${domain:-example.com} -d '*.${domain:-example.com}'"
-        echo "Deploy cert"
-        echo "  cd $acme_home && ./acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-example.com}"
+    dns_api)
+        read -rp "Enter your Aliyun Key: " Ali_Key
+        read -rp "Enter your Aliyun Secret: " Ali_Secret
+        export Ali_Key Ali_Secret
+        cd "$acme_home" || return 1
+        "$acme_home"/acme.sh --issue --dns dns_ali -d "${domain}" -d "*.${domain}"
         ;;
     esac
     # openssl x509 -noout -text -in "$pem"
@@ -651,16 +669,9 @@ get_env_info() {
     echo "####  客户如果有独立 redis/mysql 则忽略此信息"
     echo "####  代码内写标准端口 mysql:3306 / redis:6379"
     echo "####  此处显示端口只用于SSH端口转发映射(可能不同于标准端口)"
-    echo
-    grep -E '^REDIS_' "$g_laradock_env" | grep -E 'REDIS_HOST=|REDIS_PORT=|REDIS_PASSWORD='
-    echo
-    grep -E '^MYSQL_' "$g_laradock_env" | grep -E 'MYSQL_VERSION=|MYSQL_HOST=|MYSQL_PORT=|MYSQL_DATABASE=|MYSQL_USER=|MYSQL_PASSWORD='
-    echo
-    grep -E '^JDK_VERSION' "$g_laradock_env"
-    echo
-    grep -E '^PHP_VERSION' "$g_laradock_env"
-    echo
-    grep -E '^NODE_VERSION' "$g_laradock_env"
+
+    grep -E '^(REDIS_HOST|REDIS_PORT|REDIS_PASSWORD|MYSQL_VERSION|MYSQL_HOST|MYSQL_PORT|MYSQL_DATABASE|MYSQL_USER|MYSQL_PASSWORD|JDK_VERSION|PHP_VERSION|NODE_VERSION)=' "$g_laradock_env" |
+        awk '/^REDIS_/{if(!r++){print ""} print} /^MYSQL_/{if(!m++){print ""} print} /^JDK_VERSION|^PHP_VERSION|^NODE_VERSION/{print ""; print} '
 }
 
 mysql_shell() {
