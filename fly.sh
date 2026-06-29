@@ -651,9 +651,10 @@ get_env_info() {
     echo "####  客户如果有独立 redis/mysql 则忽略此信息"
     echo "####  代码内写标准端口 mysql:3306 / redis:6379"
     echo "####  此处显示端口只用于SSH端口转发映射(可能不同于标准端口)"
-    grep -E '^REDIS_' "$g_laradock_env" | sed -n '1,3p'
     echo
-    grep -E '^DB_HOST|^MYSQL_' "$g_laradock_env" | grep -vE 'MYSQL_ROOT_PASSWORD|MYSQL_ENTRYPOINT_INITDB|MYSQL_SLAVE_ID'
+    grep -E '^REDIS_' "$g_laradock_env" | grep -E 'REDIS_HOST=|REDIS_PORT=|REDIS_PASSWORD='
+    echo
+    grep -E '^MYSQL_' "$g_laradock_env" | grep -E 'MYSQL_VERSION=|MYSQL_HOST=|MYSQL_PORT=|MYSQL_DATABASE=|MYSQL_USER=|MYSQL_PASSWORD='
     echo
     grep -E '^JDK_VERSION' "$g_laradock_env"
     echo
