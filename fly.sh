@@ -705,7 +705,7 @@ _upgrade_php() {
 reset_laradock() {
     _msg step "Reset laradock service"
     cd "$g_laradock_path" && $dco stop && $dco rm -f
-    $use_sudo rm -rf "$g_laradock_path" "$g_laradock_path/../../laradock-data/mysql"
+    $use_sudo rm -rf "$g_laradock_path" "$g_laradock_path/../../laradata/mysql"
 }
 
 _refresh_cdn() {
