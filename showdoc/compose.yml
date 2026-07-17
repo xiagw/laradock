@@ -1,0 +1,12 @@
+services:
+
+    showdoc:
+      image: star7th/showdoc:${SHOWDOC_VERSION}
+      restart: always
+      volumes:
+        - ${DATA_PATH_HOST}/showdoc/html:/var/www/html
+      ports:
+        - "4999:80"
+      networks:
+        - backend
+        - frontend

@@ -1,0 +1,18 @@
+services:
+
+    nodejs:
+      image: ${MIRROR}node:${NODE_VERSION:-20}-base
+      build:
+        context: ./nodejs
+        args:
+          - NODE_VERSION=${NODE_VERSION}
+      environment:
+        - NODE_VERSION=${NODE_VERSION}
+      volumes:
+        - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+        - ${APP_CODE_PATH_HOST}/nodejs:/app
+      ports:
+        - ${NODE_PORT}:8080
+      networks:
+        - frontend
+        - backend

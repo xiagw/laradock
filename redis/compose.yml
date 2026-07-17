@@ -1,6 +1,7 @@
 services:
 
     redis:
+      image: ${MIRROR}redis:${REDIS_VERSION}
       restart: always
       build:
         context: ./redis
@@ -8,7 +9,7 @@ services:
           - REDIS_VERSION=${REDIS_VERSION}
       volumes:
         - ${DATA_PATH_HOST}/redis:/data
-      command: --requirepass ${REDIS_PASSWORD}
+      command: --requirepass ${REDIS_PASSWORD:-secret} --databases ${REDIS_DATABASES:-256} --appendonly yes --appenddirname appendonlydir
       ports:
         - "${REDIS_PORT}:6379"
       networks:

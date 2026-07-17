@@ -1,0 +1,17 @@
+
+services:
+
+    golang:
+      image: ${MIRROR}golang:${GO_VERSION}-base
+      build:
+        context: ./golang
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
+      restart: always
+      volumes:
+        - ${APP_CODE_PATH_HOST}/golang:${APP_CODE_PATH_CONTAINER}
+      ports:
+        - 5000:5000
+      networks:
+        - frontend
+        - backend

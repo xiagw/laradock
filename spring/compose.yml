@@ -1,0 +1,23 @@
+services:
+
+    spring:
+      image: ${MIRROR}amazoncorretto:${SPRING_JDK_VERSION:-17}-base
+      build:
+        context: ./spring
+        args:
+          - SPRING_JDK_VERSION=${SPRING_JDK_VERSION}
+      environment:
+        - JAVA_OPTS=${SPRING_JAVA_OPTS}
+        - SPRING_WORKDIR=${SPRING_WORKDIR}
+        - SPRING_APP_DIR=${SPRING_APP_DIR}
+        - SPRING_JAR=${SPRING_JAR}
+        - SPRING_AUTO_DETECT=${SPRING_AUTO_DETECT}
+      # working_dir: ${SPRING_WORKDIR}
+      ports:
+        - ${SPRING_PORT_0}:8080
+        - ${SPRING_PORT_1}:8081
+      volumes:
+        - ${APP_CODE_PATH_HOST}/${SPRING_APP_DIR:-spring}:${SPRING_WORKDIR}${APP_CODE_CONTAINER_FLAG}
+      networks:
+        - frontend
+        - backend

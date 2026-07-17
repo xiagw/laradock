@@ -38,6 +38,8 @@ volumes:
     driver: ${VOLUMES_DRIVER}
   weaviate:
     driver: ${VOLUMES_DRIVER}
+  zentao:
+    driver: ${VOLUMES_DRIVER}
 
 include:
   - path: adminer/compose.yml
@@ -356,3 +358,26 @@ include:
   - path: zookeeper/compose.yml
     project_directory: .
     env_file: zookeeper/defaults.env
+  ## Custom Single-Service
+  - path: spring/compose.yml
+    project_directory: .
+    env_file: spring/defaults.env
+  - path: zentao/compose.yml
+    project_directory: .
+    env_file: zentao/defaults.env
+  - path: nodejs/compose.yml
+    project_directory: .
+    env_file: nodejs/defaults.env
+  - path: golang/compose.yml
+    project_directory: .
+    env_file: golang/defaults.env
+  - path: showdoc/compose.yml
+    project_directory: .
+    env_file: showdoc/defaults.env
+  ## Custom Multi-Service
+  - path: multi-php/compose.yml
+    env_file:
+      - php-fpm/defaults.env
+      - workspace/defaults.env
+  - path: multi-spring/compose.yml
+    env_file: spring/defaults.env

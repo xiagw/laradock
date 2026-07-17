@@ -1,6 +1,7 @@
 services:
 
     php-fpm:
+      image: ${MIRROR}php:${PHP_VERSION:-8.1}-base
       restart: always
       build:
         context: ./php-fpm
@@ -98,9 +99,10 @@ services:
           - https_proxy
           - no_proxy
       volumes:
-        - ./php-fpm/php${PHP_VERSION}.ini:/usr/local/etc/php/php.ini
+        # - ./php-fpm/php${PHP_VERSION}.ini:/usr/local/etc/php/php.ini
+        - ./php-fpm/php${PHP_VERSION}.ini:/etc/php/${PHP_VERSION}/fpm/php.ini
         - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
-        - docker-in-docker:/certs/client
+        # - docker-in-docker:/certs/client
       expose:
         - "9000"
       extra_hosts:
@@ -114,9 +116,9 @@ services:
         - FAKETIME=${PHP_FPM_FAKETIME}
         - TZ=${WORKSPACE_TIMEZONE}
 
-      depends_on:
-        - workspace
+      # depends_on:
+      #   - workspace
       networks:
         - backend
-      links:
-        - docker-in-docker
+      # links:
+      #   - docker-in-docker

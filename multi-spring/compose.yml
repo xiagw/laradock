@@ -1,0 +1,61 @@
+services:
+
+    spring-11:
+      extends:
+        file: ../spring/compose.yml
+        service: spring
+      environment:
+        - SPRING_JDK_VERSION=11
+        - SPRING_APP_DIR=spring-11
+      build:
+        context: ../spring
+        args:
+          - SPRING_JDK_VERSION=11
+
+    spring-17:
+      extends:
+        file: ../spring/compose.yml
+        service: spring
+      environment:
+        - SPRING_JDK_VERSION=17
+        - SPRING_APP_DIR=spring-17
+      build:
+        context: ../spring
+        args:
+          - SPRING_JDK_VERSION=17
+
+    spring-21:
+      extends:
+        file: ../spring/compose.yml
+        service: spring
+      environment:
+        - SPRING_JDK_VERSION=21
+        - SPRING_APP_DIR=spring-21
+      build:
+        context: ../spring
+        args:
+          - SPRING_JDK_VERSION=21
+
+    spring-25:
+      extends:
+        file: ../spring/compose.yml
+        service: spring
+      environment:
+        - SPRING_JDK_VERSION=25
+        - SPRING_APP_DIR=spring-25
+      build:
+        context: ../spring
+        args:
+          - SPRING_JDK_VERSION=25
+
+    spring-26:
+      extends:
+        file: ../spring/compose.yml
+        service: spring
+      environment:
+        - SPRING_JDK_VERSION=26
+        - SPRING_APP_DIR=spring-26
+      build:
+        context: ../spring
+        args:
+          - SPRING_JDK_VERSION=26
