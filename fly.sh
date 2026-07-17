@@ -474,37 +474,39 @@ _install_acme() {
     fi
 
     local domain mode
-    read -rp "Enter your domain (e.g., api.example.com): " domain
+    read -rp "Enter your domain (e.g., example.com/api.example.com): " domain
     _msg time "your domain is: ${domain}"
     cat <<EOF
 Single host domain（单域名使用目录）:
-    $acme_home/acme.sh --issue -w $g_laradock_html -d ${domain:-example.com}
+    $acme_home/acme.sh --issue -w $g_laradock_html -d ${domain:-api.example.com}
 Wildcard domain（通配符域名使用目录）:
     $acme_home/acme.sh --issue -w $g_laradock_html -d ${domain:-example.com} -d '*.${domain:-example.com}'
 
-DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]
+# DNS API: [https://github.com/acmesh-official/acme.sh/wiki/dnsapi]
 # （手动 DNS） --yes-I-know-dns-manual-mode-enough-go-ahead-please
-Wildcard domain（通配符域名使用dns_api）:
-    export Ali_Key=xxxx ; export Ali_Secret=yyyy
+Wildcard domain（通配符域名使用dns_ali）:
+    export Ali_Key=xxxx
+    export Ali_Secret=yyyy
     $acme_home/acme.sh --issue --dns dns_ali -d ${domain:-example.com} -d '*.${domain:-example.com}'
 Deploy cert
     $acme_home/acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-example.com}
 EOF
-    read -rp "Enter your mode (e.g., webroot or dns_api): " mode
+
+    read -rp "Enter your mode (e.g., webroot/dns_ali/dns_cf): " mode
     _msg time "your mode is: ${mode:-webroot}"
     case "${mode:-webroot}" in
     webroot)
         cd "$acme_home" || return 1
-        "$acme_home"/acme.sh --issue -w "$g_laradock_html" -d "$domain"
+        "$acme_home"/acme.sh --issue -w "$g_laradock_html" -d "${domain:?domain is required}"
         "$acme_home"/acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
         _reload_nginx
         ;;
-    dns_api)
+    dns_ali)
         read -rp "Enter your Aliyun Key: " Ali_Key
         read -rp "Enter your Aliyun Secret: " Ali_Secret
         export Ali_Key Ali_Secret
         cd "$acme_home" || return 1
-        "$acme_home"/acme.sh --issue --dns dns_ali -d "${domain}" -d "*.${domain}"
+        "$acme_home"/acme.sh --issue --dns dns_ali -d "${domain:?domain is required}" -d "*.${domain:?domain is required}"
         ;;
     esac
     # openssl x509 -noout -text -in "$pem"
