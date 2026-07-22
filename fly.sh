@@ -490,6 +490,11 @@ Wildcard domain（通配符域名使用dns_ali）:
     $acme_home/acme.sh --issue --dns dns_ali -d ${domain:-example.com} -d '*.${domain:-example.com}'
 Deploy cert
     $acme_home/acme.sh --install-cert --key-file $key --fullchain-file $pem -d ${domain:-example.com}
+Deploy cert with Aliyun CDN
+    export Ali_Key=xxxx
+    export Ali_Secret=yyyy
+    export DEPLOY_ALI_CDN_DOMAIN="cdn1.${domain:-example.com} cdn2.${domain:-example.com}"
+    $acme_home/acme.sh --deploy -d ${domain:-example.com} --deploy-hook ali_cdn
 EOF
 
     read -rp "Enter your mode (e.g., webroot/dns_ali/dns_cf): " mode
@@ -508,6 +513,16 @@ EOF
         cd "$acme_home" || return 1
         "$acme_home"/acme.sh --issue --dns dns_ali -d "${domain:?domain is required}" -d "*.${domain:?domain is required}"
         "$acme_home"/acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
+        _reload_nginx
+        echo "Please ensure that you have set up the Aliyun CDN domain for your certificate deployment."
+        echo "You can set the Aliyun CDN domain in the following format: cdn1.example.com cdn2.example.com"
+        read -rp "Enter your Aliyun CDN domain (e.g., cdn1.example.com cdn2.example.com): " DEPLOY_ALI_CDN_DOMAIN
+        if [ -z "$DEPLOY_ALI_CDN_DOMAIN" ]; then
+            _msg warn "No Aliyun CDN domain provided. Skipping deployment to Aliyun CDN."
+        else
+            export DEPLOY_ALI_CDN_DOMAIN
+            "$acme_home"/acme.sh --deploy -d "$domain" --deploy-hook ali_cdn
+        fi
         ;;
     esac
     # openssl x509 -noout -text -in "$pem"
