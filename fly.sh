@@ -507,6 +507,7 @@ EOF
         export Ali_Key Ali_Secret
         cd "$acme_home" || return 1
         "$acme_home"/acme.sh --issue --dns dns_ali -d "${domain:?domain is required}" -d "*.${domain:?domain is required}"
+        "$acme_home"/acme.sh --install-cert --key-file "$key" --fullchain-file "$pem" -d "$domain"
         ;;
     esac
     # openssl x509 -noout -text -in "$pem"
