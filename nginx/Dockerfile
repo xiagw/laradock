@@ -1,5 +1,5 @@
-FROM nginx:stable-alpine
-# FROM registry.cn-hangzhou.aliyuncs.com/flyh5/flyh5:nginx-stable-alpine
+ARG MIRROR=
+FROM ${MIRROR}nginx:stable-alpine
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
@@ -40,7 +40,7 @@ RUN set -x ; \
 #     && rm /etc/nginx/conf.d/default.conf
 
 COPY ./startup.sh /docker-entrypoint.d/startup.sh
-RUN sed -i 's/\r//g' /docker-entrypoint.d/startup.sh; chmod +x /docker-entrypoint.d/startup.sh
+# RUN sed -i 's/\r//g' /docker-entrypoint.d/startup.sh; chmod +x /docker-entrypoint.d/startup.sh
 # CMD ["/bin/bash", "/opt/startup.sh"]
 
 EXPOSE 80 81 443
