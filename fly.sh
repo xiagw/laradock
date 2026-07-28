@@ -587,7 +587,7 @@ get_image() {
             ;;
         redis)
             # $g_curl_opt -fLo - "$g_url_fly_cdn/laradock-redis.tar" | docker load
-            docker pull "${image_mirror}/redis:laradock" >/dev/null 2>&1 &
+            docker pull "${image_mirror}/redis:latest-base" >/dev/null 2>&1 &
             show_loading $! "Pulling redis image"
             docker tag "${image_mirror}/redis:laradock" "${image_prefix}redis"
             ;;
