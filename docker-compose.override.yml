@@ -249,7 +249,9 @@ services:
         context: ./redis
       volumes:
         - ${DATA_PATH_HOST}/redis2:/data
-      command: --databases ${REDIS_DATABASES:-256}
+      environment:
+        - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
+      command: --databases ${REDIS_DATABASES:-256} --appendonly yes --appenddirname appendonlydir
       ports:
         - "${REDIS_PORT2:-6380}:6379"
       networks:
