@@ -155,6 +155,11 @@ check_docker() {
         ${cmd_pkg-} install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         ;;
     *kylin | *kylin*)
+        # https://download.docker.com/linux/static/stable/aarch64/
+        # curl -LO https://download.docker.com/linux/static/stable/aarch64/docker-24.0.9.tgz
+        # mkdir -p /usr/libexec/docker/cli-plugins
+        # curl -Lo /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.40.3/docker-compose-linux-aarch64
+        # chmod 755 /usr/libexec/docker/cli-plugins/docker-compose
         cmd_pkg2="$(command -v dnf || command -v yum)"
         $cmd_pkg2 install -y docker-engine || {
             echo "Unsupport install package docker-engine"
