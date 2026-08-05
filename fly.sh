@@ -155,11 +155,6 @@ check_docker() {
         ${cmd_pkg-} install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         ;;
     *kylin | *kylin*)
-        # https://download.docker.com/linux/static/stable/aarch64/
-        # curl -LO https://download.docker.com/linux/static/stable/aarch64/docker-24.0.9.tgz
-        # mkdir -p /usr/libexec/docker/cli-plugins
-        # curl -Lo /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.40.3/docker-compose-linux-aarch64
-        # chmod 755 /usr/libexec/docker/cli-plugins/docker-compose
         cmd_pkg2="$(command -v dnf || command -v yum)"
         $cmd_pkg2 install -y docker-engine || {
             echo "Unsupport install package docker-engine"
@@ -427,6 +422,93 @@ install_wg() {
         $cmd_pkg install -yqq wireguard wireguard-tools
     fi
     $use_sudo modprobe wireguard
+}
+
+## 两个函数：
+## 1， 准备离线安装所需的文件和镜像
+## 2， 在离线环境中安装 docker 和 laradock
+prepare_offline() {
+    _msg step "Prepare offline package for Docker and Laradock"
+    ## ~/docker/offline/root
+    local offline_dir="${g_laradock_path}/../offline"
+    local offline_root_dir="$offline_dir/root"
+    mkdir -p "$offline_root_dir"
+
+    set +e
+    _msg time "Copy root assets"
+    rsync -a $HOME/.zshrc "$offline_root_dir/"
+    rsync -a $HOME/.oh-my-zsh/ "$offline_root_dir/.oh-my-zsh/"
+    rsync -a $HOME/.fzf/ "$offline_root_dir/.fzf/"
+    rsync -a $HOME/.fzf.* "$offline_root_dir/"
+
+    ## 2. 准备离线安装所需的文件和镜像
+    find /var/cache/dnf/ -name '*.rpm' -exec cp -vf {} "$offline_dir/" \;
+    find /var/cache/apt/archives/ -name '*.deb' -exec cp -vf {} "$offline_dir/" \;
+
+    if grep -q 'ID.*kylin' /etc/os-release && uname -m | grep -q aarch64; then
+        # https://download.docker.com/linux/static/stable/aarch64/
+        curl -Lo "$offline_dir/docker-24.0.9.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-24.0.9.tgz
+        curl -Lo "$offline_dir/docker-compose" https://github.com/docker/compose/releases/download/v2.40.3/docker-compose-linux-aarch64
+    elif uname -m | grep -q aarch64; then
+        curl -Lo "$offline_dir/docker-29.7.1.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-29.7.1.tgz
+        curl -Lo "$offline_dir/docker-compose" https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-aarch64
+    elif uname -m | grep -q x86_64; then
+        curl -Lo "$offline_dir/docker-29.7.1.tgz" https://download.docker.com/linux/static/stable/amd64/docker-29.7.1.tgz
+        curl -Lo "$offline_dir/docker-compose" https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-x86_64
+    fi
+
+    _msg time "Save standard Laradock images into tar files"
+    local images=(
+        "laradock-nginx"
+        "laradock-redis"
+        "laradock-mysql"
+        "laradock-spring"
+        "laradock-node"
+        "laradock-php-fpm"
+    )
+    local image
+    for image in "${images[@]}"; do
+        docker save -o "$offline_dir/$image.tar" "$image" >/dev/null 2>&1 || _msg warn "docker save failed for $image"
+    done
+
+    _msg green "Offline package prepared in: $offline_dir"
+}
+
+install_offline() {
+    _msg step "Install Docker and Laradock offline"
+
+    if ! _check_root; then
+        _check_sudo
+    fi
+    local offline_dir="${g_laradock_path}/../offline"
+
+    cd "$offline_dir" || exit 1
+
+    $use_sudo rsync -a "$offline_dir/root/" /root/
+    $use_sudo dnf localinstall -y --disablerepo=* ./*.rpm
+    if [ -d "docker-29.7.1" ]; then
+        for f in docker-29.7.1/docker/*; do
+            $use_sudo install -m 0755 "$f" /usr/bin/"${f##*/}"
+        done
+    elif [ -d "docker-24.0.9" ]; then
+        for f in docker-24.0.9/docker/*; do
+            $use_sudo install -m 0755 "$f" /usr/bin/"${f##*/}"
+        done
+    else
+        _msg red "Docker directory not found."
+        return 1
+    fi
+
+    $use_sudo mkdir -p /usr/libexec/docker/cli-plugins
+    $use_sudo install -m 0755 docker-compose /usr/libexec/docker/cli-plugins/docker-compose
+    $use_sudo install -m 0644 docker.service /etc/systemd/system/docker.service
+    $use_sudo systemctl daemon-reload
+    $use_sudo systemctl restart docker.service
+
+    find . -maxdepth 1 -name "laradock*.tar" -type f -print0 | xargs -r -t -0 $use_sudo docker load -i {}
+
+    cd "$g_laradock_path" || exit 1
+    docker compose up -d redis mysql php-fpm spring nginx
 }
 
 _handle_ssl_config() {
@@ -774,6 +856,8 @@ Parameters:
     mysql-cli           Exec into MySQL CLI.
     redis-cli           Exec into Redis CLI.
     lsync               Install and setup lsyncd.
+    offline-prepare     Prepare offline package and tar images.
+    offline             Install Docker and Laradock offline.
     zsh                 Install zsh.
     gitlab              Install gitlab.
     acme                Install acme.sh [api.example.com].
@@ -869,6 +953,17 @@ parse_command_args() {
         wg | wireguard | install-wg)
             arg_install_wg=true
             arg_check_dependence=true
+            auto_mode=false
+            arg_need_docker=false
+            ;;
+        offline-prepare | prepare-offline)
+            arg_prepare_offline=true
+            auto_mode=false
+            arg_need_docker=false
+            [ -n "$2" ] && shift
+            ;;
+        offline | install-offline)
+            arg_install_offline=true
             auto_mode=false
             arg_need_docker=false
             ;;
@@ -1101,6 +1196,14 @@ main() {
     fi
     if ${arg_install_wg:-false}; then
         install_wg
+        return
+    fi
+    if ${arg_prepare_offline:-false}; then
+        prepare_offline
+        return
+    fi
+    if ${arg_install_offline:-false}; then
+        install_offline
         return
     fi
     if ${arg_upgrade_php:-false}; then
