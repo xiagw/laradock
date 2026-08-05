@@ -46,7 +46,7 @@ check_dependence() {
     chmod 600 "$auth_file"
 
     # 3. 需要 sudo 的系统配置操作
-    _check_sudo # 移到这里，因为后面的操作都需要 sudo
+    _check_root # 移到这里，因为后面的操作都需要 sudo
 
     # 系统配置更改
     ${set_sysctl:-false} && _set_system_conf
@@ -477,9 +477,7 @@ prepare_offline() {
 install_offline() {
     _msg step "Install Docker and Laradock offline"
 
-    if ! _check_root; then
-        _check_sudo
-    fi
+    _check_root
     local offline_dir="${g_laradock_path}/../offline"
 
     cd "$offline_dir" || exit 1
@@ -553,8 +551,7 @@ _install_acme() {
     local key="$g_laradock_home/nginx/sites/ssl/default.key"
     local pem="$g_laradock_home/nginx/sites/ssl/default.pem"
 
-    if ! _check_root; then
-        _check_sudo
+    if _check_root; then
         $use_sudo chown "$USER:$USER" "$(dirname "$key")"
         $use_sudo chgrp "$USER" "$key" "$pem"
         $use_sudo chmod g+w "$key" "$pem"
