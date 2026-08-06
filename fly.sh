@@ -253,7 +253,7 @@ check_laradock_env() {
         -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
         -e "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" \
         -e "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" \
-        -e "/^CHANGE_SOURCE=/s/false/$IN_CHINA/" \
+        -e "/^CHANGE_SOURCE=/s/false/$IS_CHINA/" \
         -e "/^DOCKER_HOST_IP=/s/=.*/=$docker_host_ip/" \
         -e "/^GITLAB_HOST_SSH_IP=/s/=.*/=$docker_host_ip/" \
         "$g_laradock_env"
@@ -305,7 +305,7 @@ _set_file_mode() {
 
 _install_zsh() {
     _msg step "Install zsh"
-    ${IN_CHINA:-true} && _set_mirror os
+    ${IS_CHINA:-true} && _set_mirror os
     _check_cmd install zsh
 
     # Install and configure fzf
@@ -328,9 +328,9 @@ _install_zsh() {
             _msg warn "skip fzf install"
         else
             [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
-            local v
-            v=$(awk -F'=' '/^version/ {print $2}' "$HOME/.fzf/install" | head -n1)
-            sed -i "s|url=http.*|url=$g_url_fly_cdn/fzf-${v:-0.73.1}-linux_amd64.tar.gz|" "$HOME/.fzf/install"
+            # local v
+            # v=$(awk -F'=' '/^version/ {print $2}' "$HOME/.fzf/install" | head -n1)
+            # sed -i "s|url=http.*|url=$g_url_fly_cdn/fzf-${v:-0.73.1}-linux_amd64.tar.gz|" "$HOME/.fzf/install"
             "$HOME/.fzf/install"
         fi
     fi
@@ -338,7 +338,7 @@ _install_zsh() {
     # Install and configure oh-my-zsh
     _msg time "Install oh-my-zsh"
     if [ ! -d "$HOME/.oh-my-zsh" ]; then
-        if ${IN_CHINA:-true}; then
+        if ${IS_CHINA:-true}; then
             git clone --depth 1 "$g_url_ohmyzsh" "$HOME/.oh-my-zsh"
         else
             bash -c "$($g_curl_opt "$g_url_ohmyzsh")"
@@ -699,7 +699,7 @@ get_image() {
         php*)
             sed -i \
                 -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
-                -e "/CHANGE_SOURCE=/s/false/$IN_CHINA/" "$g_laradock_env"
+                -e "/CHANGE_SOURCE=/s/false/$IS_CHINA/" "$g_laradock_env"
             arg_check_php=true
             docker pull "${image_mirror}/php:${g_php_ver}-base" >/dev/null 2>&1 &
             show_loading $! "Pulling php-fpm image"
@@ -913,7 +913,7 @@ parse_command_args() {
             arg_need_docker=false
             ;;
         not-china | not-cn | ncn | github)
-            IN_CHINA=false
+            IS_CHINA=false
             aliyun_mirror=false
             ;;
         install-docker-without-aliyun)
@@ -1090,7 +1090,7 @@ parse_command_args() {
         arg_check_dependence=true # Set to true when docker is needed
     fi
 
-    IN_CHINA=${IN_CHINA:-true}
+    IS_CHINA=${IS_CHINA:-true}
     g_php_ver=${g_php_ver:-8.1}
     g_java_ver=${g_java_ver:-8}
     g_mysql_ver=${g_mysql_ver:-8.0}
@@ -1126,7 +1126,7 @@ main() {
     g_url_keys_fly="$g_url_fly_cdn/flyh6.keys"
     g_url_fly_ico="$g_url_fly_cdn/flyh6.ico"
 
-    if ${IN_CHINA:-true}; then
+    if ${IS_CHINA:-true}; then
         g_url_laradock_git=https://gitee.com/xiagw/laradock.git
         g_url_laradock_raw=https://gitee.com/xiagw/laradock/raw/china
         g_deploy_raw=https://gitee.com/xiagw/deploy.sh/raw/main
