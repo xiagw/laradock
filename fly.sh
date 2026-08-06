@@ -476,7 +476,7 @@ prepare_offline() {
     done
 
     # curl -fLo "$offline_dir/docker.service" https://raw.githubusercontent.com/docker/docker/master/contrib/init/systemd/docker.service
-    curl -fLo "$offline_dir/docker.service" https://$g_url_fly_cdn/d/docker.service
+    curl -fLo "$offline_dir/docker.service" $g_url_fly_cdn/d/docker.service
 
     _msg green "Offline package prepared in: $offline_dir"
 }
