@@ -445,15 +445,18 @@ prepare_offline() {
     find /var/cache/dnf/ -name '*.rpm' -exec cp -vf {} "$offline_dir/" \;
     find /var/cache/apt/archives/ -name '*.deb' -exec cp -vf {} "$offline_dir/" \;
 
+    ## 麒麟V10 aarch64 最高只能安装 docker-28.5.2.tgz docker-rootless-extras-28.5.2.tgz
     if grep -q 'ID.*kylin' /etc/os-release && uname -m | grep -q aarch64; then
-        # https://download.docker.com/linux/static/stable/aarch64/
-        curl -Lo "$offline_dir/docker-24.0.9.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-24.0.9.tgz
+        curl -Lo "$offline_dir/docker-28.5.2.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-28.5.2.tgz
+        curl -Lo "$offline_dir/docker-rootless-extras-28.5.2.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-28.5.2.tgz
         curl -Lo "$offline_dir/docker-compose" https://github.com/docker/compose/releases/download/v2.40.3/docker-compose-linux-aarch64
     elif uname -m | grep -q aarch64; then
         curl -Lo "$offline_dir/docker-29.7.1.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-29.7.1.tgz
+        curl -Lo "$offline_dir/docker-rootless-extras-29.7.1.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-29.7.1.tgz
         curl -Lo "$offline_dir/docker-compose" https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-aarch64
     elif uname -m | grep -q x86_64; then
         curl -Lo "$offline_dir/docker-29.7.1.tgz" https://download.docker.com/linux/static/stable/amd64/docker-29.7.1.tgz
+        curl -Lo "$offline_dir/docker-rootless-extras-29.7.1.tgz" https://download.docker.com/linux/static/stable/amd64/docker-rootless-extras-29.7.1.tgz
         curl -Lo "$offline_dir/docker-compose" https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-x86_64
     fi
 
@@ -484,18 +487,20 @@ install_offline() {
 
     $use_sudo rsync -a "$offline_dir/root/" /root/
     $use_sudo dnf localinstall -y --disablerepo=* ./*.rpm
-    if [ -d "docker-29.7.1" ]; then
-        for f in docker-29.7.1/docker/*; do
-            $use_sudo install -m 0755 "$f" /usr/bin/"${f##*/}"
-        done
-    elif [ -d "docker-24.0.9" ]; then
-        for f in docker-24.0.9/docker/*; do
-            $use_sudo install -m 0755 "$f" /usr/bin/"${f##*/}"
-        done
+    $use_sudo apt install -y ./*.deb
+    ## 有 root 或 sudo 权限的用户可以直接安装到 /usr/bin 下
+    ## 没有 root 或 sudo 权限的用户可以安装在 $HOME/bin 下
+    local docker_bin_dir
+    if _check_root; then
+        docker_bin_dir="/usr/bin"
     else
-        _msg red "Docker directory not found."
-        return 1
+        docker_bin_dir="$HOME/bin"
+        mkdir -p "$HOME/bin"
     fi
+    for tgz in docker-*.tgz; do
+        [ -f "$tgz" ] || continue
+        tar -xzf "$tgz" -C "$docker_bin_dir" --strip-components=1
+    done
 
     $use_sudo mkdir -p /usr/libexec/docker/cli-plugins
     $use_sudo install -m 0755 docker-compose /usr/libexec/docker/cli-plugins/docker-compose
