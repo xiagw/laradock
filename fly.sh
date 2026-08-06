@@ -678,7 +678,7 @@ get_image() {
             # $g_curl_opt -fLo - "$g_url_fly_cdn/laradock-redis.tar" | docker load
             docker pull "${image_mirror}/redis:latest-base" >/dev/null 2>&1 &
             show_loading $! "Pulling redis image"
-            docker tag "${image_mirror}/redis:laradock" "${image_prefix}redis"
+            docker tag "${image_mirror}/redis:latest-base" "${image_prefix}redis"
             ;;
         mysql)
             source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
