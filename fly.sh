@@ -430,7 +430,8 @@ install_wg() {
 prepare_offline() {
     _msg step "Prepare offline package for Docker and Laradock"
     ## ~/docker/offline/root
-    local offline_dir="${g_laradock_path}/../offline"
+    local offline_dir
+    offline_dir="$(dirname "${g_laradock_path}")/offline"
     local offline_root_dir="$offline_dir/root"
     mkdir -p "$offline_root_dir"
 
@@ -481,10 +482,12 @@ install_offline() {
     _msg step "Install Docker and Laradock offline"
 
     _check_root
-    local offline_dir="${g_laradock_path}/../offline"
+    local offline_dir
+    offline_dir="$(dirname "${g_laradock_path}")/offline"
 
     cd "$offline_dir" || exit 1
 
+    set +e
     $use_sudo rsync -a "$offline_dir/root/" /root/
     $use_sudo dnf localinstall -y --disablerepo=* ./*.rpm
     $use_sudo apt install -y ./*.deb
