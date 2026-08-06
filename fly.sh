@@ -512,7 +512,7 @@ install_offline() {
     $use_sudo systemctl restart docker.service
 
     # find . -maxdepth 1 -name "laradock*.tar" -type f -print0 | xargs -0 -n1 -I{} $use_sudo docker load -i '{}'
-    find "$offline_dir" -maxdepth 1 -name "laradock*.tar" -type f -print0 -exec $use_sudo docker load -i '{}' +
+    find "$offline_dir" -maxdepth 1 -name "laradock*.tar" -type f -print0 -exec $use_sudo docker load -i '{}' \;
 
     cd "$g_laradock_path" || exit 1
     docker compose up -d redis mysql php-fpm spring nginx
