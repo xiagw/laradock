@@ -22,12 +22,7 @@ _set_system_conf() {
 }
 
 check_dependence() {
-    # 1. 基本命令检查
-    _check_distribution
-    _msg step "Checking commands: curl, git, binutils."
-    _check_cmd install curl git strings
-
-    # 2. SSH 配置 (不需要 sudo)
+    # 1. SSH 配置 (不需要 sudo)
     _msg time "Checking SSH configuration."
     dot_ssh="$HOME/.ssh"
     auth_file="$dot_ssh/authorized_keys"
@@ -45,21 +40,28 @@ check_dependence() {
     ${arg_insert_key:-false} && update_ssh_keys "$g_url_keys_fly"
     chmod 600 "$auth_file"
 
-    # 3. 需要 sudo 的系统配置操作
-    _check_root # 移到这里，因为后面的操作都需要 sudo
+    # 2. 需要 sudo 的系统配置 (权限已在 main 一次性检测: is_root/has_root_priv)
+    if ${has_root_priv:-false}; then
+        # 系统配置更改
+        ${set_sysctl:-false} && _set_system_conf
 
-    # 系统配置更改
-    ${set_sysctl:-false} && _set_system_conf
+        # Sudoers 配置: 仅非 root 用户配置免密 sudo
+        $is_root || echo "$USER ALL=(ALL) NOPASSWD: ALL" | $use_sudo tee /etc/sudoers.d/"$USER" >/dev/null
 
-    # Sudoers 配置
-    if ! _check_root; then
-        echo "$USER ALL=(ALL) NOPASSWD: ALL" | $use_sudo tee /etc/sudoers.d/"$USER" >/dev/null
+        # IPv6 配置
+        $use_sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null
+        $use_sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1 >/dev/null
+        $use_sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1 >/dev/null
+
+        # 3. 基本命令检查 (安装软件包需要 root)
+        _check_distribution
+        _msg step "Checking commands: curl, git, binutils."
+        _check_cmd install curl git strings
+    else
+        # 非root无sudo: 跳过系统配置与包安装 (需求2)，仍检测发行版信息
+        _msg time "No root privilege, skip system configuration and package install."
+        _check_distribution
     fi
-
-    # IPv6 配置
-    $use_sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
-    $use_sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
-    $use_sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
 
     _msg time "Dependency check completed."
 }
@@ -68,14 +70,66 @@ check_docker_compose() {
     dco="docker compose"
     if $dco version 2>/dev/null; then
         _msg green "$dco ready."
-    else
-        dco="docker-compose"
-        if _check_cmd $dco; then
-            dco_ver=$($dco -v | awk '{gsub(/[,\.]/,""); print int($3)}')
-            if [[ "$dco_ver" -lt 1190 ]]; then
-                _msg warn "$dco version is too old."
-            fi
+        return 0
+    fi
+    dco="docker-compose"
+    if _check_cmd $dco; then
+        dco_ver=$($dco -v | awk '{gsub(/[,\.]/,""); print int($3)}')
+        if [[ "$dco_ver" -lt 1190 ]]; then
+            _msg warn "$dco version is too old."
         fi
+        return 0
+    fi
+
+    # compose 缺失，安装插件
+    _msg time "docker compose not found, installing plugin..."
+    local plugin_dir compose_arch
+    case "$(uname -m)" in
+    aarch64 | arm64) compose_arch=aarch64 ;;
+    x86_64 | amd64)  compose_arch=x86_64 ;;
+    *) _msg red "Unsupported arch for compose: $(uname -m)"; return 1 ;;
+    esac
+    if ${has_root_priv:-false}; then
+        plugin_dir="/usr/libexec/docker/cli-plugins"
+        $use_sudo mkdir -p "$plugin_dir"
+        local tmp; tmp=$(mktemp)
+        _download_compose "$tmp" "$compose_arch"
+        $use_sudo install -m 0755 "$tmp" "$plugin_dir/docker-compose"
+        rm -f "$tmp"
+    else
+        plugin_dir="$HOME/.docker/cli-plugins"
+        mkdir -p "$plugin_dir"
+        _download_compose "$plugin_dir/docker-compose" "$compose_arch"
+        chmod +x "$plugin_dir/docker-compose"
+    fi
+}
+
+check_docker_buildx() {
+    if docker buildx version 2>/dev/null; then
+        _msg green "docker buildx ready."
+        return 0
+    fi
+
+    # buildx 缺失，安装插件
+    _msg time "docker buildx not found, installing plugin..."
+    local plugin_dir plugin_arch
+    case "$(uname -m)" in
+    aarch64 | arm64) plugin_arch=arm64 ;;
+    x86_64 | amd64)  plugin_arch=amd64 ;;
+    *) _msg red "Unsupported arch for buildx: $(uname -m)"; return 1 ;;
+    esac
+    if ${has_root_priv:-false}; then
+        plugin_dir="/usr/libexec/docker/cli-plugins"
+        $use_sudo mkdir -p "$plugin_dir"
+        local tmp; tmp=$(mktemp)
+        _download_buildx "$tmp" "$plugin_arch"
+        $use_sudo install -m 0755 "$tmp" "$plugin_dir/docker-buildx"
+        rm -f "$tmp"
+    else
+        plugin_dir="$HOME/.docker/cli-plugins"
+        mkdir -p "$plugin_dir"
+        _download_buildx "$plugin_dir/docker-buildx" "$plugin_arch"
+        chmod +x "$plugin_dir/docker-buildx"
     fi
 }
 
@@ -103,7 +157,7 @@ _force_user_logout() {
 
 add_to_docker_group() {
     # Skip for root user or if user already in docker group
-    if _check_root || groups "$USER" | grep -q docker; then
+    if ${is_root:-false} || groups "$USER" | grep -q docker; then
         return 0
     fi
 
@@ -128,18 +182,99 @@ add_to_docker_group() {
     exit 0
 }
 
+_enable_docker_service() {
+    # 启用并启动 docker 服务，兼容 systemd 与 sysvinit
+    $use_sudo systemctl enable --now docker.service 2>/dev/null || true
+    $use_sudo /lib/systemd/systemd-sysv-install enable docker.service 2>/dev/null || true
+}
+
+_extract_docker_binary() {
+    # 解压 docker 静态二进制到指定目录 (src 为 URL 则下载，本地文件则直接解压)
+    local src="$1" bin_dir="$2"
+    if [[ "$src" == http* ]]; then
+        curl -fL "$src" | tar -C "$bin_dir" -xz --strip-components 1
+    else
+        [ -f "$src" ] || return 0
+        tar -xzf "$src" -C "$bin_dir" --strip-components 1
+    fi
+}
+
+_download_buildx() {
+    # 下载 buildx 插件到指定路径 (查询 GitHub 最新版本，按架构)
+    local dest="$1" arch="$2" v
+    v=$(curl -fL https://github.com/docker/buildx/releases/latest | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
+    [ -n "$v" ] && curl -fL "https://github.com/docker/buildx/releases/download/v${v}/buildx-v${v}.linux-${arch}" -o "$dest"
+}
+
+_download_compose() {
+    # 下载 compose 插件到指定路径 (查询 GitHub 最新版本，按架构)
+    local dest="$1" arch="$2" v
+    v=$(curl -fL https://github.com/docker/compose/releases/latest | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
+    [ -n "$v" ] && curl -fL "https://github.com/docker/compose/releases/download/v${v}/docker-compose-linux-${arch}" -o "$dest"
+}
+
+_download_cli_plugins() {
+    # 下载 buildx + compose 插件到指定目录 (查询最新版本，按架构)
+    local plugin_dir="$1" plugin_arch="$2" compose_arch="$3"
+    _download_buildx "$plugin_dir/docker-buildx" "$plugin_arch"
+    _download_compose "$plugin_dir/docker-compose" "$compose_arch"
+}
+
+_install_docker_rootless() {
+    # 无 root 权限时一律 rootless 静态安装 (需求3)
+    _msg time "No root privilege, install docker rootless"
+    local docker_bin_dir="$HOME/bin"
+    local docker_plugin_dir="$HOME/.docker/cli-plugins"
+    mkdir -p "$docker_bin_dir" "$docker_plugin_dir"
+
+    # 按架构选择静态二进制
+    local docker_arch plugin_arch compose_arch version
+    version="29.7.1"
+    # kylin V10 aarch64 内核较旧，最高只支持 28.5.2
+    if grep -q 'ID.*kylin' /etc/os-release && uname -m | grep -q aarch64; then
+        version="28.5.2"
+    fi
+    case "$(uname -m)" in
+    aarch64 | arm64) docker_arch=aarch64; plugin_arch=arm64; compose_arch=aarch64 ;;
+    x86_64 | amd64)  docker_arch=amd64;  plugin_arch=amd64;  compose_arch=x86_64 ;;
+    *)
+        _msg red "Unsupported arch for rootless: $(uname -m)"
+        return 1
+        ;;
+    esac
+
+    _extract_docker_binary "https://download.docker.com/linux/static/stable/${docker_arch}/docker-${version}.tgz" "$docker_bin_dir"
+    _extract_docker_binary "https://download.docker.com/linux/static/stable/${docker_arch}/docker-rootless-extras-${version}.tgz" "$docker_bin_dir"
+
+    # buildx + docker-compose 插件
+    _download_cli_plugins "$docker_plugin_dir" "$plugin_arch" "$compose_arch"
+    chmod +x "$docker_plugin_dir/docker-buildx" "$docker_plugin_dir/docker-compose"
+
+    "$docker_bin_dir/dockerd-rootless-setuptool.sh" install
+}
+
 check_docker() {
     _msg step "Check docker and docker-compose"
+
+    # 1. 已安装：有权限则启用服务，检查 compose、加入 docker 组后返回
     if _check_cmd docker; then
+        ${has_root_priv:-true} && _enable_docker_service
         check_docker_compose
+        check_docker_buildx
         _msg time "docker is already installed."
-        $use_sudo systemctl enable --now docker.service 2>/dev/null || true
-        $use_sudo /lib/systemd/systemd-sysv-install enable docker.service 2>/dev/null || true
-        add_to_docker_group
+        ${has_root_priv:-true} && add_to_docker_group
         return 0
     fi
 
-    # Handle OpenEuler distribution
+    # 2. 无 root 权限一律 rootless 静态安装 (需求3)
+    if ! ${has_root_priv:-true}; then
+        _install_docker_rootless
+        check_docker_compose
+        check_docker_buildx
+        return $?
+    fi
+
+    # 3. 有 root 权限按发行版安装或预处理 docker
     local os_id fake_os cmd_pkg2
     os_id="$(awk -F'=' '/^ID=.*/ {print $2}' /etc/os-release | sed 's/"//g' | head -n1)"
     case "$os_id" in
@@ -155,56 +290,59 @@ check_docker() {
         ${cmd_pkg-} install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         ;;
     *kylin* | *Kylin*)
-        ## 特供麒麟 V10 aarch64，下载安装，参考 offline install
-        echo "Installing docker for Kylin OS V10 aarch64"
-        docker_bin_dir="$HOME/bin"
-        docker_plugin_dir="$HOME/.docker/cli-plugin"
-        mkdir -p "$docker_bin_dir"
-        mkdir -p "$docker_plugin_dir"
-        curl -fsSL https://download.docker.com/linux/static/stable/aarch64/docker-28.5.2.tgz | tar -C "$docker_bin_dir" -xz --strip-components 1 
-        curl -fsSL https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-28.5.2.tgz | tar -C "$docker_bin_dir" -xz --strip-components 1 
-        ## 先查询 buildx 最新版本
-        buildx_version=$(curl -fsSL https://github.com/docker/buildx/releases/latest | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
-        [ -n "$buildx_version" ] && curl -fsSL https://github.com/docker/buildx/releases/download/v${buildx_version}/buildx-v${buildx_version}.linux-arm64 -o "$docker_plugin_dir/docker-buildx"
+        ## 麒麟 V10 aarch64 rootful 静态安装 (无 root 权限已走 rootless)
+        _msg time "Installing docker for Kylin OS V10 aarch64 (rootful)"
+        local docker_bin_dir="/usr/bin"
+        local docker_plugin_dir="/usr/libexec/docker/cli-plugins"
+        $use_sudo mkdir -p "$docker_bin_dir" "$docker_plugin_dir"
+        curl -fL https://download.docker.com/linux/static/stable/aarch64/docker-28.5.2.tgz |
+            $use_sudo tar -C "$docker_bin_dir" -xz --strip-components 1
+        $use_sudo curl -fLo /etc/systemd/system/docker.service "$g_url_fly_cdn/docker.service"
+        $use_sudo systemctl daemon-reload
+        ## buildx + compose 插件
+        _download_cli_plugins "$docker_plugin_dir" arm64 aarch64
+        $use_sudo chmod +x "$docker_plugin_dir/docker-buildx" "$docker_plugin_dir/docker-compose"
         ;;
     tencentos | opencloudos)
         cmd_pkg2="$(command -v dnf || command -v yum)"
         $cmd_pkg2 install -y docker-ce || {
-            echo "Unsupport install package docker-ce"
+            _msg red "Unsupported: cannot install docker-ce on $os_id"
             return 1
         }
         ;;
-    *alinux | *alinux*)
-        # Handle Aliyun Linux
+    *alinux*)
+        # 伪装成 centos 以便后续 get-docker.sh 脚本识别
         $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
         [ -f /etc/dnf/dnf.conf ] && echo 'exclude=dnf python3-dnf libsolv' >>/etc/dnf/dnf.conf
         fake_os=true
         ;;
     esac
 
-    # Install Docker using Aliyun mirror
-    local url="$g_url_get_docker" cmd_arg
-    if ${aliyun_mirror:-true}; then
-        cmd_arg='-s - --mirror Aliyun'
-        echo "${version_id-}"
-        if [[ "${version_id%%.*}" -ne 7 ]]; then
-            url="$g_url_get_docker2"
+    # 3. 仍未安装则用阿里云镜像 get-docker.sh 兜底
+    if ! command -v docker >/dev/null 2>&1; then
+        local url="$g_url_get_docker" cmd_arg
+        if ${aliyun_mirror:-true}; then
+            cmd_arg='-s - --mirror Aliyun'
+            if [[ "${version_id-}" =~ ^[0-9]+$ && "${version_id%%.*}" -ne 7 ]]; then
+                url="$g_url_get_docker2"
+            fi
+        fi
+        if [ -z "${cmd_pkg2}" ]; then
+            # shellcheck disable=2046,2086
+            $g_curl_opt "$url" | $use_sudo bash ${cmd_arg}
         fi
     fi
-    if [ -z "${cmd_pkg2}" ]; then
-        # shellcheck disable=2046,2086
-        $g_curl_opt "$url" | $use_sudo bash ${cmd_arg}
-    fi
 
+    # 4. 加入 docker 组（可能触发强制登出）
     add_to_docker_group || true
 
-    # Revert Aliyun Linux fake Centos
+    # 5. 还原 alinux 伪装的 centos
     ${fake_os:-false} && $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
 
-    # Enable and start Docker
-    $use_sudo systemctl enable --now docker 2>/dev/null || true
-    $use_sudo /lib/systemd/systemd-sysv-install enable docker 2>/dev/null || true
+    # 6. 启用服务并检查 compose
+    _enable_docker_service
     check_docker_compose
+    check_docker_buildx
 }
 
 check_laradock() {
@@ -398,7 +536,7 @@ install_lsyncd() {
         _msg time "new lsyncd.conf.lua"
         $use_sudo cp -vf "$g_laradock_path/usvn/root$lsyncd_conf" "$lsyncd_conf"
     }
-    _check_root || $use_sudo sed -i "s@/root/docker@$HOME/docker@g" "$lsyncd_conf"
+    ${is_root:-false} || $use_sudo sed -i "s@/root/docker@$HOME/docker@g" "$lsyncd_conf"
 
     # Setup SSH key
     [ -f "$id_file" ] || {
@@ -453,21 +591,24 @@ prepare_offline() {
     find /var/cache/apt/archives/ -name '*.deb' -exec cp -vf {} "$offline_dir/" \;
 
     ## 麒麟V10 aarch64 最高只能安装 docker-28.5.2.tgz docker-rootless-extras-28.5.2.tgz
+    local plugin_arch
     if grep -q 'ID.*kylin' /etc/os-release && uname -m | grep -q aarch64; then
         curl -fL https://download.docker.com/linux/static/stable/aarch64/docker-28.5.2.tgz -o "$offline_dir/docker-28.5.2.tgz"
         curl -fL https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-28.5.2.tgz -o "$offline_dir/docker-rootless-extras-28.5.2.tgz"
         curl -fL https://github.com/docker/compose/releases/download/v2.40.3/docker-compose-linux-aarch64 -o "$offline_dir/docker-compose"
+        plugin_arch=arm64
     elif uname -m | grep -q aarch64; then
         curl -fL https://download.docker.com/linux/static/stable/aarch64/docker-29.7.1.tgz -o "$offline_dir/docker-29.7.1.tgz"
         curl -fL https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-29.7.1.tgz -o "$offline_dir/docker-rootless-extras-29.7.1.tgz"
         curl -fL https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-aarch64 -o "$offline_dir/docker-compose"
+        plugin_arch=arm64
     elif uname -m | grep -q x86_64; then
         curl -fL https://download.docker.com/linux/static/stable/amd64/docker-29.7.1.tgz -o "$offline_dir/docker-29.7.1.tgz"
         curl -fL https://download.docker.com/linux/static/stable/amd64/docker-rootless-extras-29.7.1.tgz -o "$offline_dir/docker-rootless-extras-29.7.1.tgz"
         curl -fL https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-x86_64 -o "$offline_dir/docker-compose"
+        plugin_arch=amd64
     fi
-    buildx_version=$(curl -fsSL https://github.com/docker/buildx/releases/latest | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
-    curl -fL https://github.com/docker/buildx/releases/download/v${buildx_version}/buildx-v${buildx_version}.linux-arm64 -o "$offline_dir/docker-buildx"
+    _download_buildx "$offline_dir/docker-buildx" "${plugin_arch:-arm64}"
 
     _msg time "Save standard Laradock images into tar files"
     local images=(
@@ -492,7 +633,6 @@ prepare_offline() {
 install_offline() {
     _msg step "Install Docker and Laradock offline"
 
-    _check_root
     local offline_dir
     offline_dir="$(dirname "${g_laradock_path}")/offline"
 
@@ -505,19 +645,19 @@ install_offline() {
     ## 有 root 或 sudo 权限的用户可以直接安装到 /usr/bin 下
     ## 没有 root 或 sudo 权限的用户可以安装在 $HOME/bin 下
     local docker_bin_dir
-    if _check_root; then
+    if ${is_root:-false}; then
         docker_bin_dir="/usr/bin"
     else
         docker_bin_dir="$HOME/bin"
         mkdir -p "$HOME/bin"
     fi
     for tgz in docker-*.tgz; do
-        [ -f "$tgz" ] || continue
-        tar -xzf "$tgz" -C "$docker_bin_dir" --strip-components=1
+        _extract_docker_binary "$tgz" "$docker_bin_dir"
     done
 
     $use_sudo mkdir -p /usr/libexec/docker/cli-plugins
     $use_sudo install -m 0755 docker-compose /usr/libexec/docker/cli-plugins/docker-compose
+    $use_sudo install -m 0755 docker-buildx /usr/libexec/docker/cli-plugins/docker-buildx 2>/dev/null || true
     $use_sudo install -m 0644 docker.service /etc/systemd/system/docker.service
     $use_sudo systemctl daemon-reload
     $use_sudo systemctl restart docker.service
@@ -571,7 +711,7 @@ _install_acme() {
     local key="$g_laradock_home/nginx/sites/ssl/default.key"
     local pem="$g_laradock_home/nginx/sites/ssl/default.pem"
 
-    if _check_root; then
+    if ${is_root:-false}; then
         $use_sudo chown "$USER:$USER" "$(dirname "$key")"
         $use_sudo chgrp "$USER" "$key" "$pem"
         $use_sudo chmod g+w "$key" "$pem"
@@ -818,6 +958,9 @@ parse_command_args() {
     args=()
     if [ "$#" -eq 0 ]; then
         auto_mode=true
+        arg_check_nginx=true
+        arg_check_php=true
+        arg_check_java=true
         arg_need_docker=true
     fi
 
@@ -1126,6 +1269,19 @@ main() {
 
     g_laradock_env="$g_laradock_path"/.env
     g_laradock_html="$(dirname "$g_laradock_path")"/html
+
+    ## 一次性检测 root 权限 (整个文件只 check root 一次)
+    ## 三种情况: root / 非root有sudo / 非root无sudo
+    if _check_root; then
+        is_root=true
+        has_root_priv=true
+    elif sudo -n true 2>/dev/null; then
+        is_root=false
+        has_root_priv=true
+    else
+        is_root=false
+        has_root_priv=false
+    fi
 
     if ${arg_install_acme:-false}; then
         _install_acme "$arg_domain"
