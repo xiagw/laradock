@@ -154,12 +154,18 @@ check_docker() {
         $use_sudo sed -i "s#\$releasever#7#g" /etc/yum.repos.d/docker-ce.repo
         ${cmd_pkg-} install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         ;;
-    *kylin | *kylin*)
-        cmd_pkg2="$(command -v dnf || command -v yum)"
-        $cmd_pkg2 install -y docker-engine || {
-            echo "Unsupport install package docker-engine"
-            return 1
-        }
+    *(k|K)ylin*)
+        ## 特供麒麟 V10 aarch64，下载安装，参考 offline install
+        echo "Installing docker for Kylin OS V10 aarch64"
+        docker_bin_dir="$HOME/bin"
+        docker_plugin_dir="$HOME/.docker/cli-plugin"
+        mkdir -p "$docker_bin_dir"
+        mkdir -p "$docker_plugin_dir"
+        curl -fsSL https://download.docker.com/linux/static/stable/aarch64/docker-28.5.2.tgz | tar -C "$docker_bin_dir" -xz --strip-components 1 
+        curl -fsSL https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-28.5.2.tgz | tar -C "$docker_bin_dir" -xz --strip-components 1 
+        ## 先查询 buildx 最新版本
+        buildx_version=$(curl -fsSL https://github.com/docker/buildx/releases/latest | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
+        [ -n "$buildx_version" ] && curl -fsSL https://github.com/docker/buildx/releases/download/v${buildx_version}/buildx-v${buildx_version}.linux-arm64 -o "$docker_plugin_dir/docker-buildx"
         ;;
     tencentos | opencloudos)
         cmd_pkg2="$(command -v dnf || command -v yum)"
@@ -448,18 +454,20 @@ prepare_offline() {
 
     ## 麒麟V10 aarch64 最高只能安装 docker-28.5.2.tgz docker-rootless-extras-28.5.2.tgz
     if grep -q 'ID.*kylin' /etc/os-release && uname -m | grep -q aarch64; then
-        curl -Lo "$offline_dir/docker-28.5.2.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-28.5.2.tgz
-        curl -Lo "$offline_dir/docker-rootless-extras-28.5.2.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-28.5.2.tgz
-        curl -Lo "$offline_dir/docker-compose" https://github.com/docker/compose/releases/download/v2.40.3/docker-compose-linux-aarch64
+        curl -fL https://download.docker.com/linux/static/stable/aarch64/docker-28.5.2.tgz -o "$offline_dir/docker-28.5.2.tgz"
+        curl -fL https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-28.5.2.tgz -o "$offline_dir/docker-rootless-extras-28.5.2.tgz"
+        curl -fL https://github.com/docker/compose/releases/download/v2.40.3/docker-compose-linux-aarch64 -o "$offline_dir/docker-compose"
     elif uname -m | grep -q aarch64; then
-        curl -Lo "$offline_dir/docker-29.7.1.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-29.7.1.tgz
-        curl -Lo "$offline_dir/docker-rootless-extras-29.7.1.tgz" https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-29.7.1.tgz
-        curl -Lo "$offline_dir/docker-compose" https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-aarch64
+        curl -fL https://download.docker.com/linux/static/stable/aarch64/docker-29.7.1.tgz -o "$offline_dir/docker-29.7.1.tgz"
+        curl -fL https://download.docker.com/linux/static/stable/aarch64/docker-rootless-extras-29.7.1.tgz -o "$offline_dir/docker-rootless-extras-29.7.1.tgz"
+        curl -fL https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-aarch64 -o "$offline_dir/docker-compose"
     elif uname -m | grep -q x86_64; then
-        curl -Lo "$offline_dir/docker-29.7.1.tgz" https://download.docker.com/linux/static/stable/amd64/docker-29.7.1.tgz
-        curl -Lo "$offline_dir/docker-rootless-extras-29.7.1.tgz" https://download.docker.com/linux/static/stable/amd64/docker-rootless-extras-29.7.1.tgz
-        curl -Lo "$offline_dir/docker-compose" https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-x86_64
+        curl -fL https://download.docker.com/linux/static/stable/amd64/docker-29.7.1.tgz -o "$offline_dir/docker-29.7.1.tgz"
+        curl -fL https://download.docker.com/linux/static/stable/amd64/docker-rootless-extras-29.7.1.tgz -o "$offline_dir/docker-rootless-extras-29.7.1.tgz"
+        curl -fL https://github.com/docker/compose/releases/download/v5.4.0/docker-compose-linux-x86_64 -o "$offline_dir/docker-compose"
     fi
+    buildx_version=$(curl -fsSL https://github.com/docker/buildx/releases/latest | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
+    curl -fL https://github.com/docker/buildx/releases/download/v${buildx_version}/buildx-v${buildx_version}.linux-arm64 -o "$offline_dir/docker-buildx"
 
     _msg time "Save standard Laradock images into tar files"
     local images=(
@@ -658,77 +666,6 @@ show_loading() {
     echo " done ($((SECONDS - start_time))s)"
 }
 
-get_image() {
-    _msg step "Get docker image..."
-    local docker_ver image_prefix image_mirror=registry.cn-hangzhou.aliyuncs.com/flyh5
-    ## special case [tencentos|opencloudos]  Docker version 0.0.0-20241223130549-3b49deb, build 3b49deb
-    docker_ver="$(docker --version | awk '{gsub(/[,]/,""); if ($3 ~ /^0\.0\.0-[0-9]+/) {split($3,a,"-"); print a[2]} else print int($3)}')"
-
-    image_prefix="laradock-"
-    ## docker version 24 以下使用 laradock_ 前缀
-    if [ "$docker_ver" -le 19 ]; then
-        ## special case [kylin V10] 使用 laradock- 前缀
-        [ "$docker_ver" -eq 18 ] || image_prefix="laradock_"
-    fi
-
-    for i in "${args[@]}"; do
-        _msg time "docker pull image $i ..."
-        case $i in
-        nginx)
-            arg_check_nginx=true
-            # $g_curl_opt -fLo - "$g_url_fly_cdn/laradock-nginx.tar" | docker load
-            docker pull "${image_mirror}/nginx:laradock" >/dev/null 2>&1 &
-            show_loading $! "Pulling nginx image"
-            docker tag "${image_mirror}/nginx:laradock" "${image_prefix}nginx"
-            ;;
-        redis)
-            # $g_curl_opt -fLo - "$g_url_fly_cdn/laradock-redis.tar" | docker load
-            docker pull "${image_mirror}/redis:latest-base" >/dev/null 2>&1 &
-            show_loading $! "Pulling redis image"
-            docker tag "${image_mirror}/redis:latest-base" "${image_prefix}redis"
-            ;;
-        mysql)
-            source <(grep '^MYSQL_VERSION=' "$g_laradock_env")
-            docker pull "${image_mirror}/mysql:${MYSQL_VERSION}-base" >/dev/null 2>&1 &
-            show_loading $! "Pulling mysql image"
-            docker tag "${image_mirror}/mysql:${MYSQL_VERSION}-base" "${image_prefix}mysql"
-            ;;
-        spring)
-            sed -i "/^JDK_VERSION=/s/=.*/=${g_java_ver}/" "$g_laradock_env"
-            source <(grep '^JDK_VERSION=' "$g_laradock_env")
-            arg_test_java=true
-            docker pull "${image_mirror}/amazoncorretto:${g_java_ver}-base" >/dev/null 2>&1 &
-            show_loading $! "Pulling spring image"
-            docker tag "${image_mirror}/amazoncorretto:${g_java_ver}-base" "${image_prefix}spring"
-            ;;
-        nodejs)
-            sed -i "/^NODE_VERSION=/s/=.*/=${g_node_ver}/" "$g_laradock_env"
-            source <(grep '^NODE_VERSION=' "$g_laradock_env")
-            docker pull "${image_mirror}/node:${g_node_ver}-slim" >/dev/null 2>&1 &
-            show_loading $! "Pulling nodejs image"
-            docker tag "${image_mirror}/node:${g_node_ver}-slim" "${image_prefix}nodejs"
-            ;;
-        php*)
-            sed -i \
-                -e "/^PHP_VERSION=/s/=.*/=${g_php_ver}/" \
-                -e "/CHANGE_SOURCE=/s/false/$IS_CHINA/" "$g_laradock_env"
-            arg_check_php=true
-            docker pull "${image_mirror}/php:${g_php_ver}-base" >/dev/null 2>&1 &
-            show_loading $! "Pulling php-fpm image"
-            docker tag "${image_mirror}/php:${g_php_ver}-base" "${image_prefix}php-fpm"
-            ;;
-        esac
-        ## 如果不是最后一个镜像，则休眠随机秒缓解阿里云ACR限流
-        if [ "$i" != "${args[-1]}" ]; then
-            local wait_time=$((RANDOM % 15 + 1))
-            sleep $wait_time &
-            show_loading $! "Waiting for $wait_time seconds to avoid rate limit"
-        fi
-    done
-    ## remove image mirror
-    docker images --format '{{.Repository}}:{{.Tag}}' | grep "$image_mirror" | xargs -r -t -I% docker rmi -f % >/dev/null || true
-}
-
 check_nginx() {
     local path=${1:-""}
 
@@ -818,7 +755,7 @@ _upgrade_php() {
 
 reset_laradock() {
     _msg step "Reset laradock service"
-    cd "$g_laradock_path" && $dco stop && $dco rm -f
+    cd "$g_laradock_path" && $dco rm -sf
     $use_sudo rm -rf "$g_laradock_path" "$g_laradock_path/../../laradata/mysql"
 }
 
@@ -1159,7 +1096,11 @@ main() {
     echo "$g_me_env $g_me_log $g_url_laradock_raw" >/dev/null
 
     get_common
-    ## 确定 laradock 的安装目录
+    ## 确定 laradock 的安装目录:
+    ## 默认在当前目录下安装 laradock，例如: /root/docker/laradock 或 /home/user/docker/laradock 或 /data/docker/laradock
+    ## 通常如果未切换目录一般都是在主目录，例如 /root 或 /home/user
+    ## 如果已经事先切换目录，则使用当前目录，例如 /data
+    ## 远程执行场景下 (curl "remote_url" | bash -s args)，则在当前目录下创建 docker/laradock 目录
     ## 按以下优先级顺序选择:
 
     ## 1. 默认安装目录 ($HOME/docker/laradock)
@@ -1240,8 +1181,8 @@ main() {
         return
     fi
 
-    ${arg_check_docker:-true} && check_docker
     ## install docker, add normal user (not root) to group "docker", re-login
+    ${arg_check_docker:-true} && check_docker
     ${need_logout:-false} && return
 
     if ${arg_reset_laradock:-false}; then
@@ -1255,8 +1196,6 @@ main() {
 
     ${arg_check_laradock_env:-false} && check_laradock_env
 
-    ${arg_pull_image:-false} && get_image
-
     ${arg_start_docker_service:-false} && docker_service
 
     ${arg_check_nginx:-false} && check_nginx
@@ -1264,6 +1203,7 @@ main() {
     ${arg_check_php:-false} && check_php_fpm
 
     ${arg_test_java:-false} && check_spring
+
     echo "END"
 }
 

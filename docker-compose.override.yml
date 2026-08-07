@@ -4,6 +4,7 @@ services:
 
 ### PHP-FPM ##############################################
     php-fpm:
+      image: ${MIRROR}php:${PHP_VERSION}-base
       restart: always
       build:
         context: ./php-fpm
@@ -25,6 +26,7 @@ services:
 
 ### NGINX Server #########################################
     nginx:
+      image: ${MIRROR}nginx:laradock
       restart: always
       build:
         context: ./nginx
@@ -35,6 +37,7 @@ services:
 
 ### MySQL ################################################
     mysql:
+      image: ${MIRROR}mysql:${MYSQL_VERSION}-base
       restart: always
       build:
         args:
@@ -66,6 +69,7 @@ services:
 
 ### MySQL-1 ################################################
     mysql1:
+      image: ${MIRROR}mysql:${MYSQL_VERSION}-base
       restart: always
       build:
         context: ./mysql
@@ -121,6 +125,7 @@ services:
 
 ### MySQL-2 ################################################
     mysql2:
+      image: ${MIRROR}mysql:${MYSQL_VERSION}-base
       restart: always
       build:
         context: ./mysql
@@ -235,6 +240,7 @@ services:
 
 ### Redis restart always ################################################
     redis:
+      image: ${MIRROR}redis:7-alpine
       restart: always
       environment:
         - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
@@ -244,6 +250,7 @@ services:
 
 ### Redis nopass ################################################
     redis2:
+      image: ${MIRROR}redis:7-alpine
       restart: always
       build:
         context: ./redis
@@ -685,6 +692,7 @@ services:
         - backend
 
     spring:
+      image: ${MIRROR}amazoncorretto:${JDK_VERSION}-base
       build:
         context: ./spring
         args:
@@ -700,6 +708,7 @@ services:
         - backend
 
     spring2:
+      image: ${MIRROR}amazoncorretto:${JDK_VERSION}-base
       build:
         context: ./spring2
         args:
@@ -715,6 +724,7 @@ services:
         - backend
 
     nodejs:
+      image: ${MIRROR}node:${NODE_VERSION}-slim
       build:
         context: ./nodejs
         args:
@@ -730,6 +740,7 @@ services:
         - backend
 
     golang:
+      image: ${MIRROR}golang:${GO_VERSION}-alpine
       build:
         context: ./golang
         args:
