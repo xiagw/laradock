@@ -154,7 +154,7 @@ check_docker() {
         $use_sudo sed -i "s#\$releasever#7#g" /etc/yum.repos.d/docker-ce.repo
         ${cmd_pkg-} install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         ;;
-    *(k|K)ylin*)
+    *kylin* | *Kylin*)
         ## 特供麒麟 V10 aarch64，下载安装，参考 offline install
         echo "Installing docker for Kylin OS V10 aarch64"
         docker_bin_dir="$HOME/bin"
