@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# vim: set ft=sh ts=4 sw=4 et:
 # shellcheck disable=SC1090
 
 ## 本文件功能说明：
@@ -108,26 +109,6 @@ pkg_install() {
         brew install "$@"
         ;;
     esac
-}
-
-ensure_cmd() {
-    # install 子命令：命令缺失则先 update（apt）再安装；否则仅探测
-    if [[ "$1" == install ]]; then
-        shift
-        local need_update=1
-        for c in "$@"; do
-            if ! command -v "$c" &>/dev/null; then
-                check_root
-                if [[ "${pkg_mgr:-apt-get}" == apt-get && $need_update -eq 1 ]]; then
-                    pkg_update
-                    need_update=0
-                fi
-                pkg_install "$([[ "$c" == strings ]] && echo binutils || echo "$c")"
-            fi
-        done
-    else
-        command -v "$@"
-    fi
 }
 
 detect_distribution() {
@@ -279,14 +260,28 @@ ensure_base_dependence() {
 
     update_ssh_keys() {
         local url="$1"
-        $g_curl_opt -sS "$url" | grep -vE '^#|^$|^\s+$' | while read -r line; do
+        local expect_sha="$2"
+        local tmp actual_sha
+        tmp="$(mktemp)" || return 0
+        # 下载→比对哈希→匹配才合入，防中间人篡改(HTTP 明文链路)
+        if ! $g_curl_opt -sS "$url" -o "$tmp"; then
+            msg warn "SSH keys download failed, skip: $url"
+            rm -f "$tmp"
+        fi
+        actual_sha="$(sha256sum "$tmp" | awk '{print $1}')"
+        if [[ "$actual_sha" != "$expect_sha" ]]; then
+            msg warn "SSH keys hash mismatch, skip keys: $url (expect $expect_sha, got $actual_sha)"
+            rm -f "$tmp"
+        fi
+        grep -vE '^#|^$|^\s+$' "$tmp" | while read -r line; do
             key=$(echo "$line" | awk '{print $2}')
             grep -q "${key}" "$auth_file" 2>/dev/null || echo "$line" >>"$auth_file"
         done
+        rm -f "$tmp"
     }
 
-    update_ssh_keys "$g_url_keys"
-    ${arg_insert_key:-false} && update_ssh_keys "$g_url_keys_fly"
+    # 固定 sha256 的 keys 来源（如改文件内容，需同步更新这里的哈希）
+    update_ssh_keys "$g_url_keys" "$g_sha_keys"
 
     # 2. 需要 root/sudo 的系统配置 (权限已在 main 一次性检测: is_root/has_root_priv)
     if ${has_root_priv:-false}; then
@@ -496,7 +491,7 @@ install_docker_rootless() {
     local docker_arch plugin_arch compose_arch version
     version="29.7.1"
     # kylin V10 aarch64 内核较旧，最高只支持 28.5.2
-    if grep -q 'ID.*kylin' /etc/os-release && uname -m | grep -q aarch64; then
+    if [[ "$ID" == *kylin* ]] && uname -m | grep -q aarch64; then
         version="28.5.2"
     fi
     case "$(uname -m)" in
@@ -506,7 +501,7 @@ install_docker_rootless() {
         compose_arch=aarch64
         ;;
     x86_64 | amd64)
-        docker_arch=amd64
+        docker_arch=x86_64
         plugin_arch=amd64
         compose_arch=x86_64
         ;;
@@ -548,8 +543,8 @@ check_docker() {
     fi
 
     # 3. 有 root 权限按发行版安装或预处理 docker
-    local os_id fake_os
-    os_id="$(awk -F'=' '/^ID=.*/ {print $2}' /etc/os-release | sed 's/"//g' | head -n1)"
+    local os_id
+    os_id="$ID"
     case "$os_id" in
     *rocky*)
         $use_sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
@@ -563,17 +558,36 @@ check_docker() {
         pkg_install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         ;;
     *kylin* | *Kylin*)
-        ## 麒麟 V10 aarch64 rootful 静态安装 (无 root 权限已走 rootless)
-        msg time "Installing docker for Kylin OS V10 aarch64 (rootful)"
+        ## 麒麟 V10 rootful 静态安装。三个归档目录名不同：
+        ## docker 静态包 aarch64/x86_64，buildx 插件 arm64/amd64，compose 插件 aarch64/x86_64
+        ## (无 root 权限已走 rootless)
+        local docker_arch plugin_arch compose_arch
+        case "$(uname -m)" in
+        aarch64 | arm64)
+            docker_arch=aarch64
+            plugin_arch=arm64
+            compose_arch=aarch64
+            ;;
+        x86_64 | amd64)
+            docker_arch=x86_64
+            plugin_arch=amd64
+            compose_arch=x86_64
+            ;;
+        *)
+            msg red "Unsupported arch for kylin: $(uname -m)"
+            return 1
+            ;;
+        esac
+        msg time "Installing docker for Kylin OS V10 ${docker_arch} (rootful)"
         local docker_bin_dir="/usr/bin"
         local docker_plugin_dir="/usr/libexec/docker/cli-plugins"
         $use_sudo mkdir -p "$docker_bin_dir" "$docker_plugin_dir"
-        $g_curl_opt https://download.docker.com/linux/static/stable/aarch64/docker-28.5.2.tgz |
+        $g_curl_opt "https://download.docker.com/linux/static/stable/${docker_arch}/docker-28.5.2.tgz" |
             $use_sudo tar -C "$docker_bin_dir" -xz --strip-components 1
         $use_sudo $g_curl_opt -o /etc/systemd/system/docker.service "$g_url_fly_cdn/docker.service"
         $use_sudo systemctl daemon-reload
-        ## buildx + compose 插件
-        download_cli_plugins "$docker_plugin_dir" arm64 aarch64
+        # buildx + compose 插件
+        download_cli_plugins "$docker_plugin_dir" "$plugin_arch" "$compose_arch"
         $use_sudo chmod +x "$docker_plugin_dir/docker-buildx" "$docker_plugin_dir/docker-compose"
         ;;
     tencentos | opencloudos)
@@ -584,9 +598,17 @@ check_docker() {
         ;;
     *alinux*)
         # 伪装成 centos 以便后续 get-docker.sh 脚本识别
+        # 先备份整份 /etc/os-release，用 EXIT trap 确保无论成功/失败都按原样还原
+        # （避免 sed 只剩字面 alinux、丢引号、中途出错导致线上 os-release 被改坏）
+        os_release_bak="$(mktemp)"
+        $use_sudo cp -a /etc/os-release "$os_release_bak"
+        restore_os_release() {
+            $use_sudo cp -a "$os_release_bak" /etc/os-release
+            $use_sudo rm -f "$os_release_bak"
+        }
+        trap restore_os_release EXIT
         $use_sudo sed -i -e '/^ID=/s/ID=.*/ID=centos/' /etc/os-release
         [ -f /etc/dnf/dnf.conf ] && echo 'exclude=dnf python3-dnf libsolv' >>/etc/dnf/dnf.conf
-        fake_os=true
         ;;
     esac
 
@@ -595,7 +617,7 @@ check_docker() {
         local url="$g_url_get_docker" cmd_arg
         if ${aliyun_mirror:-true}; then
             cmd_arg='-s - --mirror Aliyun'
-            if [[ "${version_id-}" =~ ^[0-9]+$ && "${version_id%%.*}" -ne 7 ]]; then
+            if [[ "${VERSION_ID-}" =~ ^[0-9]+$ && "${VERSION_ID%%.*}" -ne 7 ]]; then
                 url="$g_url_get_docker7"
             fi
         fi
@@ -603,11 +625,14 @@ check_docker() {
         $g_curl_opt "$url" | $use_sudo bash ${cmd_arg}
     fi
 
+    # alinux 伪装用完后立即还原；EXIT trap 仅在失败时兜底
+    if [[ -n "$os_release_bak" ]]; then
+        restore_os_release
+        trap - EXIT
+    fi
+
     # 4. 加入 docker 组（可能触发强制登出）
     add_to_docker_group || true
-
-    # 5. 还原 alinux 伪装的 centos
-    ${fake_os:-false} && $use_sudo sed -i -e '/^ID=/s/centos/alinux/' /etc/os-release
 
     # 6. 启用服务并检查 compose
     enable_docker_service
@@ -692,7 +717,7 @@ install_zsh() {
     use_pkg=true
     if [[ "${lsb_dist-}" =~ (alinux|centos|openEuler|kylin) ]]; then
         use_pkg=false
-        if [[ "${lsb_dist-}" =~ (alinux) && "${version_id-}" = 3 ]]; then
+        if [[ "${lsb_dist-}" =~ (alinux) && "${VERSION_ID-}" = 3 ]]; then
             use_pkg=true
         fi
     fi
@@ -834,7 +859,7 @@ prepare_offline() {
 
     local plugin_arch compose_ver docker_ver docker_arch compose_arch
     ## 麒麟V10 aarch64 内核较旧，最高只能安装 docker-28.5.2
-    if grep -iq '^ID.*kylin' /etc/os-release && uname -m | grep -q aarch64; then
+    if [[ "$ID" == *kylin* ]] && uname -m | grep -q aarch64; then
         docker_ver=28.5.2
         compose_ver=v2.40.3
         plugin_arch=arm64
@@ -850,7 +875,7 @@ prepare_offline() {
         docker_ver=29.7.1
         compose_ver=v5.4.0
         plugin_arch=amd64
-        docker_arch=amd64
+        docker_arch=x86_64
         compose_arch=x86_64
     fi
     $g_curl_opt "https://download.docker.com/linux/static/stable/${docker_arch}/docker-${docker_ver}.tgz" -o "$offline_dir/docker-${docker_ver}.tgz"
@@ -1016,7 +1041,7 @@ EOF
     local p
     for p in "$(dirname "$pem")"/*.pem; do
         echo "Found $p"
-        openssl x509 -noout -dates -in "$pem"
+        openssl x509 -noout -dates -in "$p"
     done
 }
 
@@ -1132,7 +1157,6 @@ env_of() {
 
 # 服务器本机集成环境信息（本地实现：版本/端口/连接，不动官方 laradock）
 get_env_info() {
-    echo "####  服务器本机集成环境信息  ####"
     echo "####  客户若没有独立 redis/mysql，使用以下mysql/redis连接信息"
     echo "####  客户若已有独立 redis/mysql，直接用独立的 host/port/user/pass 连接即可，忽略下列信息"
     echo "####  代码内始终用标准端口连接：redis:6379/mysql:3306"
@@ -1204,10 +1228,26 @@ reset_laradock() {
     msg step "Reset laradock service"
     dco rm -sf || true
     dco down 2>/dev/null || true
-    local data_path
+    local data_path stamp
     data_path=$(awk -F= '/^DATA_PATH_HOST=/{print $2; exit}' "$g_laradock_env" 2>/dev/null)
     data_path="${data_path:-~/.laradock/data}"
-    $use_sudo rm -rf "$g_laradock_path" "${data_path/#\~/$HOME}"
+    data_path="${data_path/#\~/$HOME}"
+    stamp="$(date +%Y%m%d%H%M%S)"
+    for d in "$g_laradock_path" "$data_path"; do
+        # 只防精确的根目录/家目录本身，家目录下的常规安装路径（$HOME/docker/...）不拦
+        case "$d" in
+        /)
+            msg red "Refuse to touch / for safety, skip: $d"
+            ;;
+        "$HOME")
+            msg red "Refuse to touch \$HOME for safety, skip: $d"
+            ;;
+        *)
+            $use_sudo mv "$d" "$d.bak-$stamp"
+            msg time "Moved $d -> $d.bak-$stamp"
+            ;;
+        esac
+    done
 }
 
 refresh_cdn() {
@@ -1382,9 +1422,6 @@ parse_command_args() {
             arg_reset_laradock=true
             auto_mode=false
             ;;
-        key)
-            arg_insert_key=true
-            ;;
         ssl)
             # arg_ssl=true
             handle_ssl_config
@@ -1501,12 +1538,12 @@ main() {
 
     g_curl_opt='curl --connect-timeout 10 -fL'
     g_url_fly_cdn="http://o.flyh5.cn/d"
-    g_url_keys_fly="$g_url_fly_cdn/flyh6.keys"
     g_url_fly_ico="$g_url_fly_cdn/flyh6.ico"
 
     if ${IS_CHINA:-true}; then
         g_url_laradock_git=https://gitee.com/xiagw/laradock.git
         g_url_keys="$g_url_fly_cdn/xiagw.keys"
+        g_sha_keys='e0cba5045051f1aef66f9696aa7a25e52c023e8cfbf1d4fb9aa6dc59c64bdefe'
         g_url_get_docker="$g_url_fly_cdn/get-docker.sh"
         g_url_get_docker7="$g_url_fly_cdn/get-docker7.sh"
         g_url_fzf="https://gitee.com/mirrors/fzf.git"
@@ -1514,10 +1551,15 @@ main() {
     else
         g_url_laradock_git=https://github.com/xiagw/laradock.git
         g_url_keys='https://github.com/xiagw.keys'
+        g_sha_keys='73996ee473eecd97199748358771d3e2241faa5c29b29f3aeb441e850d495356'
         g_url_get_docker="https://get.docker.com"
         g_url_fzf="https://github.com/junegunn/fzf.git"
         g_url_ohmyzsh="https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     fi
+
+    ## 一次 source 系统发行版信息 (ID/VERSION_ID/PRETTY_NAME...)
+    ## 供 check_docker/install_docker_rootless/prepare_offline 等直接使用 $ID/$VERSION_ID
+    [[ -r /etc/os-release ]] && . /etc/os-release
 
     ## 确定 laradock 的安装目录:
     ## 默认在已登录shell的当前目录下安装 docker/laradock
