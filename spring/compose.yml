@@ -12,7 +12,7 @@ services:
         - SPRING_APP_DIR=${SPRING_APP_DIR}
         - SPRING_JAR=${SPRING_JAR}
         - SPRING_AUTO_DETECT=${SPRING_AUTO_DETECT}
-      # working_dir: ${SPRING_WORKDIR}
+      working_dir: ${SPRING_WORKDIR}
       ports:
         - ${SPRING_PORT_0}:8080
         - ${SPRING_PORT_1}:8081
