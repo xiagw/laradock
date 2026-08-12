@@ -471,6 +471,12 @@ enable_docker_service() {
     fi
     $use_sudo systemctl enable --now docker.service 2>/dev/null || true
     $use_sudo /lib/systemd/systemd-sysv-install enable docker.service 2>/dev/null || true
+    # dockerd 只在启动时把 socket 属组设为 docker 组；首次启动若组还不存在，
+    # socket 会落成 root:root，普通用户即使进了 docker 组也无权限。这里兜底固定。
+    if $use_sudo test -S /var/run/docker.sock; then
+        $use_sudo chgrp docker /var/run/docker.sock 2>/dev/null || true
+        $use_sudo chmod g+rw /var/run/docker.sock 2>/dev/null || true
+    fi
 }
 
 extract_docker_binary() {
@@ -693,14 +699,34 @@ check_docker() {
 
 check_laradock() {
     msg step "Check laradock"
-    if [[ -d "$g_laradock_path" && -d "$g_laradock_path/.git" ]]; then
+    if [[ -d "$g_laradock_path" && -f "$g_laradock_path/docker-compose.yml" ]]; then
         msg time "$g_laradock_path exist."
         # (cd "$g_laradock_path" && git pull)
         return 0
     fi
-    msg step "Clone laradock to $g_laradock_path/"
-    mkdir -p "$g_laradock_path"
-    git clone -b main $g_url_laradock_git "$g_laradock_path"
+    if cmd_exists git; then
+        msg step "Clone laradock to $g_laradock_path/"
+        mkdir -p "$g_laradock_path"
+        git clone -b main $g_url_laradock_git "$g_laradock_path"
+    else
+        # 无 git（且通常无权限装系统包）时，从 gitee/github 下载源码归档解压（tar.gz，无需 unzip）
+        msg step "Download laradock archive to $g_laradock_path/ (git unavailable)"
+        mkdir -p "$g_laradock_path"
+        local tmp
+        tmp="$(mktemp -d)" || return 1
+        if ! $g_curl_opt "$g_url_laradock_archive" -o "$tmp/laradock.tar.gz"; then
+            msg red "Download laradock failed: $g_url_laradock_archive"
+            rm -rf "$tmp"
+            return 1
+        fi
+        tar -xzf "$tmp/laradock.tar.gz" -C "$g_laradock_path" --strip-components 1
+        ret=$?
+        rm -rf "$tmp"
+        if [ $ret -ne 0 ]; then
+            msg red "Extract laradock archive failed."
+            return $ret
+        fi
+    fi
 
     ## jdk image, uid is 1000.(see spring/Dockerfile)
     if [[ "$(stat -c %u "$g_laradock_path/spring")" != 1000 ]]; then
@@ -782,8 +808,13 @@ install_zsh() {
             msg warn "skip fzf install"
         else
             [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
-            # 中国环境把 install 脚本里的下载域名换成本机 CDN（镜像目录结构与 GitHub releases 一致）
-            "${IS_CHINA}" && sed -i "s|https://github.com/junegunn/fzf|$g_url_fly_cdn/fzf|g" "$HOME/.fzf/install"
+            # 中国环境把 install 脚本里的下载域名换成本机 CDN（镜像目录结构与 GitHub releases 一致），
+            # 再按 CDN latest.txt 覆盖脚本硬编码的版本（gitee 镜像与 GitHub release 不同步）
+            if "${IS_CHINA}"; then
+                sed -i "s|https://github.com/junegunn/fzf|$g_url_fly_cdn/fzf|g" "$HOME/.fzf/install"
+                fzf_ver=$($g_curl_opt "$g_url_fly_cdn/latest.txt" 2>/dev/null | awk -F= '$1=="fzf"{print $2}') || true
+                [ -n "$fzf_ver" ] && sed -i "s|^version=.*|version=$fzf_ver|" "$HOME/.fzf/install"
+            fi
             "$HOME/.fzf/install"
         fi
     fi
@@ -969,6 +1000,7 @@ mirror_fzf() {
         mirror_download "https://github.com/junegunn/fzf/releases/download/v${ver}/fzf-${ver}-linux_${ba}.tar.gz" \
             "$mirror_dir/fzf/releases/download/v${ver}/fzf-${ver}-linux_${ba}.tar.gz"
     done
+    mirror_write_latest fzf "$ver"
 }
 
 ## laradock 运行时镜像：镜像名从 compose 文件解析（MIRROR 已展开成完整名），
@@ -1303,7 +1335,7 @@ docker_service() {
     fi
     local logfile rc arg idx sleep_s failed=""
     logfile="${TMPDIR:-/tmp}/fly-docker-up.$$.log"
-    # 阿里云镜像仓库有速率限制：逐个服务启动，间隔随机 20-40 秒；单个服务失败最多重试 1 次
+    # 阿里云镜像仓库有速率限制：逐个服务启动，间隔随机 10-20 秒；单个服务失败最多重试 1 次
     for ((idx = 0; idx < ${#args[@]}; idx++)); do
         arg=${args[$idx]}
         ${arg_use_cdn_images:-false} && cdn_load_service_image "$arg"
@@ -1316,7 +1348,7 @@ docker_service() {
             fi
             msg warn "service [$arg] start failed, retry after random wait..."
             tail -n 30 "$logfile"
-            sleep_s=$((RANDOM % 21 + 20))
+            sleep_s=$((RANDOM % 11 + 10))
             msg cyan "wait ${sleep_s}s before retry..."
             sleep "$sleep_s"
         done
@@ -1326,9 +1358,9 @@ docker_service() {
             failed="$failed $arg"
         fi
         rm -f "$logfile"
-        # 起下一个前随机等 20-40 秒
+        # 起下一个前随机等 10-20 秒
         if [ $idx -lt $(( ${#args[@]} - 1 )) ] && [ $rc -eq 0 ]; then
-            sleep_s=$((RANDOM % 21 + 20))
+            sleep_s=$((RANDOM % 11 + 10))
             msg cyan "wait ${sleep_s}s before next service..."
             sleep "$sleep_s"
         fi
@@ -1369,7 +1401,7 @@ check_nginx() {
     # Ensure favicon exists
     local favicon="$g_laradock_html/favicon.ico"
     [ -f "$favicon" ] || $g_curl_opt -s -o "$favicon" "$g_url_fly_ico"
-    echo "INDEX Page: $(date)" >"$g_laradock_html/index.html"
+    echo "INDEX Page: $(date)" | $use_sudo tee "$g_laradock_html/index.html" || true
 
     # 读取 nginx 端口（本地 env_of：.env 优先，缺省看 defaults.env）
     local hp
@@ -1540,7 +1572,7 @@ Standalone components:
     select [mysql|php|java|node]
                             Interactively select service and version with fzf.
     offline-prepare         Prepare offline packages and docker image tars.
-    offline                 Install Docker and Laradock offline.
+    offline-install         Install Docker and Laradock offline.
     mirror <bucket>         Mirror docker files (get-docker.sh / static tgz / compose / buildx / fzf / runtime images) to OSS.
     switch <svc> <ver>      Switch one service's version and restart (mysql|php|java|node).
 
@@ -1640,7 +1672,7 @@ parse_command_args() {
             arg_need_docker=false
             [ -n "$2" ] && shift
             ;;
-        offline | install-offline)
+        offline-install | install-offline)
             arg_install_offline=true
             auto_mode=false
             arg_need_docker=false
@@ -1799,12 +1831,14 @@ main() {
 
     if "${IS_CHINA}"; then
         g_url_laradock_git=https://gitee.com/xiagw/laradock.git
+        g_url_laradock_archive=https://gitee.com/xiagw/laradock/repository/archive/main.tar.gz
         g_url_keys="$g_url_fly_cdn/xiagw.keys"
         g_sha_keys='e0cba5045051f1aef66f9696aa7a25e52c023e8cfbf1d4fb9aa6dc59c64bdefe'
         g_url_fzf="https://gitee.com/mirrors/fzf.git"
         g_url_ohmyzsh="https://gitee.com/mirrors/ohmyzsh.git"
     else
         g_url_laradock_git=https://github.com/xiagw/laradock.git
+        g_url_laradock_archive=https://codeload.github.com/xiagw/laradock/tar.gz/refs/heads/main
         g_url_keys='https://github.com/xiagw.keys'
         g_sha_keys='73996ee473eecd97199748358771d3e2241faa5c29b29f3aeb441e850d495356'
         g_url_fzf="https://github.com/junegunn/fzf.git"
