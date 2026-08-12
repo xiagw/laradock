@@ -1,8 +1,14 @@
 networks:
   frontend:
     driver: ${NETWORKS_DRIVER}
+    # ipam:
+    #   config:
+    #     - subnet: ${NETWORKS_FRONTEND_SUBNET:-10.20.0.0/24}
   backend:
     driver: ${NETWORKS_DRIVER}
+    # ipam:
+    #   config:
+    #     - subnet: ${NETWORKS_BACKEND_SUBNET:-10.20.1.0/24}
 volumes:
   arangodb:
     driver: ${VOLUMES_DRIVER}
@@ -358,7 +364,7 @@ include:
   - path: zookeeper/compose.yml
     project_directory: .
     env_file: zookeeper/defaults.env
-  ## 自定义新增服务与上游不一致
+  ## 自定义新增服务，上游无，尽量不改上游服务文件，
   - path: spring/compose.yml
     project_directory: .
     env_file: spring/defaults.env

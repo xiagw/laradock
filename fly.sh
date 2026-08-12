@@ -730,13 +730,7 @@ check_laradock() {
     fi
 
     ## jdk image, uid is 1000.(see spring/Dockerfile)
-    if [[ "$(stat -c %u "$g_laradock_path/spring")" != 1000 ]]; then
-        if $use_sudo chown 1000:1000 "$g_laradock_path/spring"*; then
-            msg time "OK: chown 1000:1000 $g_laradock_path/spring"
-        else
-            msg red "FAIL: chown 1000:1000 $g_laradock_path/spring"
-        fi
-    fi
+    ## spring/nodejs/golang 目录在 check_laradock_env 统一 mkdir + chown（clone 时还不存在，这里不处理）
 }
 
 check_laradock_env() {
@@ -746,6 +740,18 @@ check_laradock_env() {
         $use_sudo chown -R "$(id -u)":"$(id -g)" "$g_laradock_html"
         msg time "chown html to $(id -u):$(id -g)"
     fi
+
+    ## mysql 官方镜像 8.0.44 起，/docker-entrypoint-initdb.d 的读取在切换到 mysql 用户（uid 999）之后执行；
+    ## bind mount 源目录若是 root 私有权限（0600/0700），mysql 用户 ls 直接报 Permission denied 起不来。
+    ## 部署时统一规整为世界可读（目录 a+rX、文件去私权），新装/迁移都不再踩。
+    local mysql_initdb_dir="$g_laradock_path/mysql/docker-entrypoint-initdb.d"
+    $use_sudo mkdir -p "$mysql_initdb_dir"
+    $use_sudo chmod -R a+rX "$mysql_initdb_dir"
+
+    ## 新布局：web 内容统一在 www/ 下，laradock 仓库本体不再挂进 web 容器。
+    ## spring/nodejs/golang 容器内 uid=1000，html 归当前用户。
+    mkdir -p "$g_www_root"/html "$g_www_root"/spring "$g_www_root"/nodejs "$g_www_root"/golang
+    ${use_sudo:-} chown -R 1000:1000 "$g_www_root"/spring "$g_www_root"/nodejs "$g_www_root"/golang 2>/dev/null || true
 
     # 版本/密码写入 .env，交由 ./laradock set 处理（新版的各服务默认值在 <svc>/defaults.env）
     local args=()
@@ -765,6 +771,9 @@ check_laradock_env() {
     args+=(PHP_VERSION="$g_php_ver")
     args+=(SPRING_JDK_VERSION="$g_java_ver")
     args+=(NODE_VERSION="$g_node_ver")
+    ## 绝对路径写死 APP_CODE_PATH_HOST（随安装位置，数据盘可跟随），
+    ## 比相对路径更稳：多版本/extends 服务不会发生基准偏移。
+    args+=(APP_CODE_PATH_HOST="$g_www_root")
     "${IS_CHINA}" && args+=(CHANGE_SOURCE=true)
     "${IS_CHINA}" && args+=(MIRROR=registry.cn-hangzhou.aliyuncs.com/flyh5/)
 
@@ -965,8 +974,14 @@ mirror_plugins() {
     local compose_ver buildx_ver os ca ba exe ca_list url
     compose_ver="$(mirror_resolve_latest docker/compose || true)"
     buildx_ver="$(mirror_resolve_latest docker/buildx || true)"
-    [ -n "$compose_ver" ] || { msg warn "resolve compose latest failed, skip"; return; }
-    [ -n "$buildx_ver" ] || { msg warn "resolve buildx latest failed, skip"; return; }
+    [ -n "$compose_ver" ] || {
+        msg warn "resolve compose latest failed, skip"
+        return
+    }
+    [ -n "$buildx_ver" ] || {
+        msg warn "resolve buildx latest failed, skip"
+        return
+    }
     msg cyan "compose v${compose_ver} / buildx v${buildx_ver}"
 
     for os in $mirror_os; do
@@ -993,7 +1008,10 @@ mirror_plugins() {
 mirror_fzf() {
     local ver
     ver="$(mirror_resolve_latest junegunn/fzf || true)"
-    [ -n "$ver" ] || { msg warn "resolve fzf latest failed, skip"; return; }
+    [ -n "$ver" ] || {
+        msg warn "resolve fzf latest failed, skip"
+        return
+    }
     msg cyan "fzf v${ver}"
     for ca in x86_64 aarch64; do
         local ba
@@ -1009,8 +1027,14 @@ mirror_fzf() {
 ## 绕开阿里云镜像仓库限速与 Docker Hub 连通问题。
 ## 目录结构 d/images/<arch>/<镜像名转译>.tgz
 mirror_images() {
-    [ -d "$g_laradock_path" ] || { msg warn "skip images: no $g_laradock_path"; return; }
-    command -v docker >/dev/null 2>&1 || { msg warn "skip images: no docker on this host"; return; }
+    [ -d "$g_laradock_path" ] || {
+        msg warn "skip images: no $g_laradock_path"
+        return
+    }
+    command -v docker >/dev/null 2>&1 || {
+        msg warn "skip images: no docker on this host"
+        return
+    }
     local images img arch ba tar_name
     images=$(
         (cd "$g_laradock_path" && docker compose config 2>/dev/null) |
@@ -1018,7 +1042,10 @@ mirror_images() {
             sed -E 's/^[[:space:]]+image:[[:space:]]*//; s/"//g; s/^.[[:space:]]*$//' |
             sort -u
     )
-    [ -n "$images" ] || { msg warn "no images resolved from compose, skip"; return; }
+    [ -n "$images" ] || {
+        msg warn "no images resolved from compose, skip"
+        return
+    }
 
     for arch in x86_64 aarch64; do
         ba=$(sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/' <<<"$arch")
@@ -1132,6 +1159,37 @@ prepare_offline() {
         done
 
     write_docker_service "$offline_dir/docker.service"
+
+    ## 离线=零网络，单个归档自带整套环境：打包两个目录 —— docker/ 与 DATA_PATH_HOST 数据目录（默认 ~/.laradock/data）。
+    ## 以 docker 父目录为 -C：docker/ 与其下成员全用相对名，任意位置解压都保持同级
+    ## （解压到家目录即等于原位还原）；data 不在父目录下（不相交盘）才回退绝对成员，用 sudo tar -xzf -C / 还原。
+    ## .env 里绝对的是 APP_CODE_PATH_HOST（fly.sh 每次运行按安装位置重写，解压后跑一次收敛）。
+    msg time "Compress offline roots into a single archive"
+    local docker_dir data_dir base rel_data archive members
+    docker_dir="$(dirname "$g_laradock_path")"
+    data_dir=$(awk -F= '/^DATA_PATH_HOST=/{print $2; exit}' "$g_laradock_env" 2>/dev/null)
+    ## .env 里默认是 ~/ 相对（~/.laradock/data），必须展开成绝对路径才能命中 -d 判断
+    data_dir="${data_dir/#\~/$HOME}"
+    base="$(dirname "$docker_dir")"
+    archive="$base/offline.tgz"
+    members=("$(basename "$docker_dir")")
+    rel_data="${data_dir#"$base"/}"
+    if [[ -d "$data_dir" ]]; then
+        if [[ "$rel_data" != "$data_dir" ]]; then
+            ## data 在 docker 父目录之下：与 docker 同一 -C 用相对名
+            members+=("$rel_data")
+        else
+            ## 不相交盘：data 用绝对成员（tar 自动去掉带头斜杠）
+            members+=("$data_dir")
+        fi
+    fi
+
+    if tar -czf "$archive" -C "$base" --exclude='*/laradock/.git' "${members[@]}"; then
+        msg green "Offline archive: $archive"
+    else
+        rm -f "$archive"
+        msg warn "Compress offline package FAILED, skip archive"
+    fi
 
     msg green "Offline package prepared in: $offline_dir"
 }
@@ -1309,7 +1367,10 @@ cdn_load_service_image() {
     local svc="$1" img tgz target tmp
     img=$(cd "$g_laradock_path" && docker compose config 2>/dev/null |
         awk -v svc="^  ${svc}:" '$0 ~ svc {f=1;next} f && /^    image:/ {sub(/^    image:[[:space:]]*/,""); gsub(/"/,""); print; exit} f && !/^[[:space:]]/ {f=0}')
-    [ -n "$img" ] || { msg warn "cdn load: no image for service [$svc], skip"; return; }
+    [ -n "$img" ] || {
+        msg warn "cdn load: no image for service [$svc], skip"
+        return
+    }
     tgz="$(echo "$img" | tr '/:' '__').tgz"
     target="$g_url_fly_cdn/images/${OS[docker]}/$tgz"
     msg cyan "cdn load: $img <- $target"
@@ -1360,7 +1421,7 @@ docker_service() {
         fi
         rm -f "$logfile"
         # 起下一个前随机等 10-20 秒
-        if [ $idx -lt $(( ${#args[@]} - 1 )) ] && [ $rc -eq 0 ]; then
+        if [ $idx -lt $((${#args[@]} - 1)) ] && [ $rc -eq 0 ]; then
             sleep_s=$((RANDOM % 11 + 10))
             msg cyan "wait ${sleep_s}s before next service..."
             sleep "$sleep_s"
@@ -1536,7 +1597,10 @@ switch_service() {
     php) compose_svc=php-fpm key=PHP_VERSION ;;
     java | spring) compose_svc=spring key=SPRING_JDK_VERSION ;;
     node | nodejs) compose_svc=nodejs key=NODE_VERSION ;;
-    *) msg error "unknown service: $svc (mysql|php|java|node)"; return 1 ;;
+    *)
+        msg error "unknown service: $svc (mysql|php|java|node)"
+        return 1
+        ;;
     esac
     msg step "Switch $svc to version $ver"
     dco set "$key=$ver"
@@ -1547,10 +1611,10 @@ print_usage() {
     cat <<EOF
 Usage: $0 [parameters ...]
 
-Install services (default versions: mysql 8.4 / java 17 / php 8.4 / node 20):
-    mysql [mysql-<ver>]     Install MySQL (alias: mysql-8.4, mysql-5.7 ...).
+Install services (default versions: mysql 8.0 / java 17 / php 8.1 / node 20):
+    mysql [mysql-<ver>]     Install MySQL (alias: mysql-8.0, mysql-5.7 ...).
     java [java-<ver>]       Install OpenJDK (aliases: java-8, jdk, spring ...).
-    php [php-<ver>]         Install php-fpm (aliases: php-8.2, fpm ...).
+    php [php-<ver>]         Install php-fpm (aliases: php-8.1, fpm ...).
     node [node-<ver>]       Install Node.js (aliases: node-22, nodejs ...).
     redis                   Install Redis.
     nginx                   Install nginx.
@@ -1572,7 +1636,7 @@ Standalone components:
     ssl                     Copy SSL key files to nginx/ssl.
     select [mysql|php|java|node]
                             Interactively select service and version with fzf.
-    offline-prepare         Prepare offline packages and docker image tars.
+    offline-prepare         Prepare offline packages and docker image tars; bundle docker/ + data_dir/ into offline.tar.gz (zero-network).
     offline-install         Install Docker and Laradock offline.
     mirror <bucket>         Mirror docker files (get-docker.sh / static tgz / compose / buildx / fzf / runtime images) to OSS.
     switch <svc> <ver>      Switch one service's version and restart (mysql|php|java|node).
@@ -1808,9 +1872,9 @@ parse_command_args() {
         arg_ensure_base_dependence=true # Set to true when docker is needed
     fi
 
-    g_php_ver=${g_php_ver:-8.4}
+    g_php_ver=${g_php_ver:-8.1}
     g_java_ver=${g_java_ver:-17}
-    g_mysql_ver=${g_mysql_ver:-8.4}
+    g_mysql_ver=${g_mysql_ver:-8.0}
     g_node_ver=${g_node_ver:-20}
 
 }
@@ -1880,7 +1944,8 @@ main() {
     fi
 
     g_laradock_env="$g_laradock_path"/.env
-    g_laradock_html="$(dirname "$g_laradock_path")"/html
+    g_www_root="$(dirname "$g_laradock_path")"/www
+    g_laradock_html="$g_www_root"/html
 
     ## 一次性检测 root 权限 (整个文件只 check root 一次)
     ## 三种情况: root / 非root有sudo / 非root无sudo
