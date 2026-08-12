@@ -103,7 +103,8 @@ pkg_install() {
     case "$pm" in
     apt-get)
         if [[ "${pkg_updated:-0}" -ne 1 ]]; then
-            $use_sudo apt-get update -qq
+            msg time "Running apt-get update (fetching package index from mirrors)..."
+            $use_sudo apt-get update
             pkg_updated=1
         fi
         $use_sudo apt-get install -yqq "$@"
