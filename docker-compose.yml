@@ -797,7 +797,6 @@ services:
 ### Redis ################################################
     redis:
       restart: always
-      image: r.flyh5.cn/flyh5/redis:7-alpine
       build:
         context: ./redis
         args:

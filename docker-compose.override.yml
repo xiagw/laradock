@@ -26,7 +26,7 @@ services:
 
 ### NGINX Server #########################################
     nginx:
-      image: ${MIRROR}nginx:laradock
+      image: ${MIRROR}nginx:${NGINX_VERSION}-base
       restart: always
       build:
         context: ./nginx
@@ -240,7 +240,7 @@ services:
 
 ### Redis restart always ################################################
     redis:
-      image: ${MIRROR}redis:7-alpine
+      image: ${MIRROR}redis:${REDIS_VERSION}
       restart: always
       environment:
         - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
@@ -250,7 +250,7 @@ services:
 
 ### Redis nopass ################################################
     redis2:
-      image: ${MIRROR}redis:7-alpine
+      image: ${MIRROR}redis:${REDIS_VERSION}
       restart: always
       build:
         context: ./redis
