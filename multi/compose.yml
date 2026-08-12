@@ -1,3 +1,20 @@
+# Multi-service variants: alternate PHP versions + alternate JDK Spring builds.
+# 思路与上游的 ./docker-compose.multi-php.yml 一致：每个变体块只覆盖版本号
+# （PHP / JDK），基础定义通过 `extends` 继承，不重复维护 build args 列表。
+#
+# 不要直接加载本文件：由 ../docker-compose.yml 注入。
+# 递归 include 上游 multi-php/compose.yml（保留原样），再在此追加 spring-XX
+# 变体，作为"所有多版本服务"的单一入口。
+#
+# 追加新版本：复制一个 spring-XX 块，同步改服务名、SPRING_JDK_VERSION、
+# SPRING_APP_DIR 三处。
+
+include:
+  - path: ../multi-php/compose.yml
+    env_file:
+      - ../php-fpm/defaults.env
+      - ../workspace/defaults.env
+
 services:
 
     spring-11:

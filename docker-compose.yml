@@ -358,7 +358,7 @@ include:
   - path: zookeeper/compose.yml
     project_directory: .
     env_file: zookeeper/defaults.env
-  ## Custom Single-Service
+  ## 自定义新增服务与上游不一致
   - path: spring/compose.yml
     project_directory: .
     env_file: spring/defaults.env
@@ -374,10 +374,9 @@ include:
   - path: showdoc/compose.yml
     project_directory: .
     env_file: showdoc/defaults.env
-  ## Custom Multi-Service
-  - path: multi-php/compose.yml
+  ## 自定义单项目多版本服务配置
+  - path: multi/compose.yml
     env_file:
       - php-fpm/defaults.env
       - workspace/defaults.env
-  - path: multi-spring/compose.yml
-    env_file: spring/defaults.env
+      - spring/defaults.env
