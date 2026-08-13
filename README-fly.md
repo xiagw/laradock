@@ -2,7 +2,7 @@
 
 > **⚠️ 重要提示**：2026-08-13 之后安装的 laradock 一律使用 `main` 分支，`china` 分支不再维护升级。
 
-> main 分支本文档：`https://gitee.com/xiagw/laradock/raw/main/README-fly.md`
+> main 分支本文档：[https://gitee.com/xiagw/laradock/blob/main/README-fly.md](https://gitee.com/xiagw/laradock/blob/main/README-fly.md)
 
 
 ## 硬件/服务器/网络/域名配置要求
