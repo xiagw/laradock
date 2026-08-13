@@ -54,23 +54,23 @@ curl -fL https://gitee.com/xiagw/laradock/raw/main/fly.sh | bash
 ### 单机docker部署方式站点URL对应服务器目录说明
 | 站点/URL/目录                    | 对应服务器文件系统目录/(或容器内目录)                                      |
 |:---------------------------------|:--------------------------------------------------------------------|
-| example.com/             | $HOME/docker/html/                                                  |
+| example.com/             | $HOME/docker/www/html/                                                  |
 | 前端：(VUE/TS 等静态文件)          | 若开启静态内容的 CDN 则只需针对此目录开启                           |
-| example.com/s1/          | $HOME/docker/html/s1/                                               |
-| example.com/s2/          | $HOME/docker/html/s2/                                               |
-| example.com/static/      | $HOME/docker/html/static/                                           |
+| example.com/s1/          | $HOME/docker/www/html/s1/                                               |
+| example.com/s2/          | $HOME/docker/www/html/s2/                                               |
+| example.com/static/      | $HOME/docker/www/html/static/                                           |
 | 后端：(PHP)                       | （支持多个不同项目按目录区分）                                           |
-| example.com/tp/php-app01 | $HOME/docker/html/tp/php-app01                                      |
-| example.com/tp/php-app02 | $HOME/docker/html/tp/php-app02                                      |
-| example.com/tp/php-app03 | $HOME/docker/html/tp/php-app03                                      |
+| example.com/tp/php-app01 | $HOME/docker/www/html/tp/php-app01                                      |
+| example.com/tp/php-app02 | $HOME/docker/www/html/tp/php-app02                                      |
+| example.com/tp/php-app03 | $HOME/docker/www/html/tp/php-app03                                      |
 | 后端：(Jar)                       | （支持多个jar文件/log文件也在此）                                   |
-| example.com/uri/         | $HOME/docker/laradock/spring/                                       |
-| example.com/uri2/        | $HOME/docker/laradock/spring2/                                      |
-| example.com/             | $HOME/docker/html/  (服务器本机存储文件路径)(容器内为/var/www/html/) |
-| example.com/uploads/     | $HOME/docker/html/uploads/  (如果没有OSS，存放此处，spring内部为/var/www/html/uploads/) |
+| example.com/uri/         | $HOME/docker/www/spring/                                       |
+| example.com/uri2/        | $HOME/docker/www/spring2/                                      |
+| example.com/             | $HOME/docker/www/html/  (服务器本机存储文件路径)(容器内为/var/www/html/) |
+| example.com/uploads/     | $HOME/docker/www/html/uploads/  (如果没有OSS，存放此处，spring内部为/var/www/html/uploads/) |
 | 后端：(Nodejs)                    | （支持多个项目目录）（node_modules 不需要上传）                       |
-| example.com/node-uri/    | $HOME/docker/laradock/nodejs/        (容器内为/app/)                |
-| example.com/node-uri2/   | $HOME/docker/laradock/nodejs2/      (容器内为/app/)                 |
+| example.com/node-uri/    | $HOME/docker/www/nodejs/        (容器内为/app/)                |
+| example.com/node-uri2/   | $HOME/docker/www/nodejs2/      (容器内为/app/)                 |
 | Nginx：目录配置和日志              | （支持多个不同站点配置）                                            |
 | nginx conf 配置文件路径          | $HOME/docker/laradock/nginx/sites/{default.conf, router.inc}      |
 | nginx 日志文件存放路径           | $HOME/docker/laradock/logs/nginx/                                   |
@@ -94,7 +94,7 @@ cd $HOME/docker/laradock && docker compose up -d spring nginx       ## 启动服
 cd $HOME/docker/laradock && docker compose up -d nodejs nginx       ## 启动服务 Nodejs
 
 cd $HOME/docker/laradock && docker compose logs -f --tail 100 spring         ## java 查看容器日志最后 100 行
-cd $HOME/docker/laradock && tail -f spring/*.log              ## 查看文件夹内 spring/*.log 文件
+tail -f $HOME/docker/www/spring/*.log              ## 查看文件夹内 spring/*.log 文件
 
 ## 替换证书 Nginx SSL key: $HOME/docker/laradock/nginx/ssl/default.key
 cp -vf $HOME/example.com.key $HOME/docker/laradock/nginx/ssl/default.key
@@ -126,14 +126,14 @@ cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis
 ## redis 进入命令行操作(远程)
 cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -h'xxxxx' -a'zzzzzz' --no-auth-warning"
 
-## 非root账号文件上传：先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/laradock/spring
-# sudo mv $HOME/xxx.jar  $HOME/docker/laradock/spring/
-sudo chown -R $USER:$USER $HOME/docker/html/static $HOME/docker/html/tp    ## 恢复文件权限
-sudo chown -R 33:33 $HOME/docker/html/tp/runtime $HOME/docker/html/tp/*/runtime    ## PHP 容器内 uid=33
-sudo chown -R 33:33 $HOME/docker/html/upload_php       ## PHP 容器内 uid=33 对应容器内目录 /var/www/html/upload_php
-sudo chown -R 1000:1000 $HOME/docker/laradock/spring    ## Java 容器内 uid=1000
-sudo chown -R 1000:1000 $HOME/docker/html/uploads       ## Java 容器内 uid=1000 对应容器内目录 /var/www/html/uploads
-sudo chown -R 1000:1000 $HOME/docker/laradock/nodejs    ## Nodejs 容器内 uid=1000
+## 非root账号文件上传：先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/www/spring
+# sudo mv $HOME/xxx.jar  $HOME/docker/www/spring/
+sudo chown -R $USER:$USER $HOME/docker/www/html/static $HOME/docker/www/html/tp    ## 恢复文件权限
+sudo chown -R 33:33 $HOME/docker/www/html/tp/runtime $HOME/docker/www/html/tp/*/runtime    ## PHP 容器内 uid=33
+sudo chown -R 33:33 $HOME/docker/www/html/upload_php       ## PHP 容器内 uid=33 对应容器内目录 /var/www/html/upload_php
+sudo chown -R 1000:1000 $HOME/docker/www/spring    ## Java 容器内 uid=1000
+sudo chown -R 1000:1000 $HOME/docker/www/html/uploads       ## Java 容器内 uid=1000 对应容器内目录 /var/www/html/uploads
+sudo chown -R 1000:1000 $HOME/docker/www/nodejs    ## Nodejs 容器内 uid=1000
 
 ## 如果有额外独立的负载均衡，以及单台或多台服务器
 1. 设置负载均衡监听端口 80/443，指向服务器组（单台/多台）
