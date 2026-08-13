@@ -1401,12 +1401,15 @@ docker_service() {
     else
         msg cyan "如需拉取镜像（pull image），可能需要几分钟，请耐心等待..."
     fi
-    local logfile rc arg idx sleep_s failed=""
+    local logfile rc arg idx sleep_s failed="" img_local=false
     logfile="${TMPDIR:-/tmp}/fly-docker-up.$$.log"
     # 阿里云镜像仓库有速率限制：逐个服务启动，间隔随机 10-20 秒；单个服务失败最多重试 1 次
     for ((idx = 0; idx < ${#args[@]}; idx++)); do
         arg=${args[$idx]}
-        ${arg_use_cdn_images:-false} && cdn_load_service_image "$arg"
+        ## 镜像已在本地（docker compose images 只列本地已存在的镜像）→ cdn load 和限速 sleep 都跳过
+        img_local=false
+        dco images "$arg" 2>/dev/null | tail -n +2 | grep -q . && img_local=true
+        ${arg_use_cdn_images:-false} && ! $img_local && cdn_load_service_image "$arg"
         for ((try = 1; try <= 2; try++)); do
             msg cyan "[$((idx + 1))/${#args[@]}] start $arg (try $try) ..."
             dco start "$arg" >"$logfile" 2>&1
@@ -1416,7 +1419,7 @@ docker_service() {
             fi
             msg warn "service [$arg] start failed, retry after random wait..."
             tail -n 30 "$logfile"
-            sleep_s=$((RANDOM % 11 + 10))
+            sleep_s=$((RANDOM % 16 + 5))
             msg cyan "wait ${sleep_s}s before retry..."
             sleep "$sleep_s"
         done
@@ -1426,9 +1429,9 @@ docker_service() {
             failed="$failed $arg"
         fi
         rm -f "$logfile"
-        # 起下一个前随机等 10-20 秒
-        if [ $idx -lt $((${#args[@]} - 1)) ] && [ $rc -eq 0 ]; then
-            sleep_s=$((RANDOM % 11 + 10))
+        # 起下一个前随机等 10-20 秒（镜像已存在时 sleep=0，重复 run 不空等）
+        if [ $idx -lt $((${#args[@]} - 1)) ] && [ $rc -eq 0 ] && ! $img_local; then
+            sleep_s=$((RANDOM % 16 + 5))
             msg cyan "wait ${sleep_s}s before next service..."
             sleep "$sleep_s"
         fi
