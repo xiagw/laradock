@@ -1535,6 +1535,7 @@ get_env_info() {
     [[ -z "$nginx_ver" ]] && nginx_ver="unknown"
     echo "NGINX_VERSION=$nginx_ver"
     echo "NGINX_HOST_HTTP_PORT=$(env_of NGINX_HOST_HTTP_PORT)"
+    echo "NGINX_HOST_HTTPS_PORT=$(env_of NGINX_HOST_HTTPS_PORT)"
     echo
 
     echo "PHP_VERSION=$(env_of PHP_VERSION)"
