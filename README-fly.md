@@ -1,5 +1,10 @@
 [TOC]
 
+> **⚠️ 重要提示**：2026-08-13 之后安装的 laradock 一律使用 `main` 分支，`china` 分支不再维护升级。
+
+> main 分支本文档：`https://gitee.com/xiagw/laradock/raw/main/README-fly.md`
+
+
 ## 硬件/服务器/网络/域名配置要求
 | 项目          | 配置要求  |
 |:--------------|:-------------------------------------------------|
@@ -41,6 +46,7 @@
 ```
 
 ## 部署方式一：单机/多机docker-compose部署文档
+
 ```sh
 ## （可选项）设置代理： 假如服务器需要代理访问公网，则设置环境变量
 # export http_proxy=x.x.x.x:1080; export https_proxy=x.x.x.x:1080
