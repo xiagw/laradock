@@ -1530,8 +1530,9 @@ get_env_info() {
     echo "####  下列端口仅用于 SSH 端口转发映射（可能不同于标准端口）"
     echo
     local nginx_ver
-    nginx_ver="$(env_of NGINX_VERSION)"
-    [[ -z "$nginx_ver" ]] && nginx_ver="stable"
+    ## 从容器读实际 nginx 版本（nginx -v 输出到 stderr）；容器没起/没装则回退占位
+    nginx_ver="$(dco exec -T nginx nginx -v 2>&1 | sed -nE 's/^nginx version: nginx\/([0-9.]+).*/\1/p' | head -1)"
+    [[ -z "$nginx_ver" ]] && nginx_ver="unknown"
     echo "NGINX_VERSION=$nginx_ver"
     echo "NGINX_HOST_HTTP_PORT=$(env_of NGINX_HOST_HTTP_PORT)"
     echo
