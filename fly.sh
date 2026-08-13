@@ -751,6 +751,10 @@ check_laradock_env() {
     ## 新布局：web 内容统一在 www/ 下，laradock 仓库本体不再挂进 web 容器。
     ## spring/nodejs/golang 容器内 uid=1000，html 归当前用户。
     mkdir -p "$g_www_root"/html "$g_www_root"/spring "$g_www_root"/nodejs "$g_www_root"/golang
+    ## mkdir 继承 umask，服务器 umask 严格时（如 0077）会建出 0700 目录，
+    ## www 自身属 root，ftp/其他登录用户与容器（php-fpm=33、spring/nodejs=1000）都无法进入。
+    ## 显式放开 world 可读可进（a+rX），但只放开 r/traverse 不改写权限（自己属主任然可写）。
+    ${use_sudo:-} chmod -R a+rX "$g_www_root" 2>/dev/null || true
     ${use_sudo:-} chown -R 1000:1000 "$g_www_root"/spring "$g_www_root"/nodejs "$g_www_root"/golang 2>/dev/null || true
 
     # 版本/密码写入 .env，交由 ./laradock set 处理（新版的各服务默认值在 <svc>/defaults.env）
@@ -768,6 +772,8 @@ check_laradock_env() {
     fi
 
     args+=(MYSQL_VERSION="$g_mysql_ver")
+    args+=(MYSQL_DATABASE="$g_mysql_db")
+    args+=(MYSQL_USER="$g_mysql_user")
     args+=(PHP_VERSION="$g_php_ver")
     args+=(SPRING_JDK_VERSION="$g_java_ver")
     args+=(NODE_VERSION="$g_node_ver")
@@ -1875,6 +1881,8 @@ parse_command_args() {
     g_php_ver=${g_php_ver:-8.1}
     g_java_ver=${g_java_ver:-17}
     g_mysql_ver=${g_mysql_ver:-8.0}
+    g_mysql_db=${g_mysql_db:-defaultdb}
+    g_mysql_user=${g_mysql_user:-defaultdb}
     g_node_ver=${g_node_ver:-20}
 
 }
