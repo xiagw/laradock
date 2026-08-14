@@ -30,6 +30,12 @@ ENV PROTOCOL_TYPE=http
 ENV IS_CONTAINER=true
 ENV LINK_GIT=false
 ENV LINK_CI=false
+# ENV REDIS_INTERNAL=true
+# ENV PHP_SESSION_TYPE=redis
+# ENV PHP_SESSION_PATH=tcp://127.0.0.1:6379?auth=pass4Redis
+# ENV ZT_REDIS_HOST=127.0.0.1
+# ENV ZT_REDIS_PORT=6379
+# ENV ZT_REDIS_PASSWORD=pass4Redis
 
 COPY root/ /
 RUN sed -i "/template.*estimate/s/=.*/= '8';/" /apps/zentao/module/task/config.php

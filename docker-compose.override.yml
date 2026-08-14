@@ -655,6 +655,7 @@ services:
         - backend
 
     zentao:
+      image: hub.zentao.net/app/zentao:${ZT_VERSION}
       build:
         context: ./zentao
         args:
@@ -667,6 +668,11 @@ services:
           - ZT_MYSQL_PASSWORD=${ZT_MYSQL_PASSWORD}
           - ZT_MYSQL_DB=${ZT_MYSQL_DB}
           - ZT_APP_DOMAIN=${ZT_APP_DOMAIN}
+          - PHP_MAX_EXECUTION_TIME=120
+          - PHP_MEMORY_LIMIT=512M
+          - PHP_POST_MAX_SIZE=1024M
+          - PHP_UPLOAD_MAX_FILESIZE=1024M
+          - REDIS_INTERNAL=true
       ports:
         - 8080:80
       volumes:
@@ -1000,6 +1006,7 @@ services:
         - GITEA__database__NAME=${GITEA_DB_NAME}
         - GITEA__database__USER=${GITEA_DB_USER}
         - GITEA__database__PASSWD=${GITEA_DB_PASSWORD}
+        - GITEA__api__ENABLE_SWAGGER=false
         - LFS_START_SERVER=true
         - INSTALL_LOCK=true
         - DISABLE_REGISTRATION=true
