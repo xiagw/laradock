@@ -13,6 +13,8 @@
 #
 # Design contract: no state, no generated files, every command prints the real
 # docker compose command it runs. Plain `docker compose` always works too.
+# Run from any directory: the script resolves its own folder (symlinks ok), so
+# `~/docker/laradock/laradock start` works from anywhere.
 # Requires: bash 3.2+, Docker with Compose v2.20+.
 
 set -u
@@ -135,7 +137,8 @@ default_of() {  # default_of KEY — value from .env, else .env.example, else $2
 require_laradock_dir() {
   [ -f docker-compose.yml ] && grep -q '^include:' docker-compose.yml \
     || die "This doesn't look like the laradock folder." \
-           "${C_DIM}Go into the folder you cloned (it contains docker-compose.yml):${C_RESET} ${C_CYAN}cd laradock${C_RESET}${C_DIM}, then retry.${C_RESET}"
+           "${C_DIM}This script lives at ${C_RESET}${C_CYAN}${LARADOCK_DIR}${C_RESET}${C_DIM}, which has no docker-compose.yml with an \`include:\`.${C_RESET}" \
+           "${C_DIM}Move (or symlink) this file into the folder that contains docker-compose.yml, then retry.${C_RESET}"
 }
 
 compose_version() {
@@ -1364,6 +1367,20 @@ cmd_doctor() {
 }
 
 # --------------------------------------------------------------------- main
+
+# ---------------------------------------------------------------- location
+# Resolve the laradock folder ONCE (the script's own dir), then cd into it.
+# This is what lets you run the CLI from any directory by absolute path (or a
+# PATH symlink). `readlink -f` is GNU-only; macOS's BSD readlink has no -f, so
+# probe for greadlink (coreutils) / readlink -f and otherwise fall back to $0.
+SELF=$0
+if command -v greadlink >/dev/null 2>&1; then
+  SELF=$(greadlink -f "$0")
+elif readlink -f "$0" >/dev/null 2>&1; then
+  SELF=$(readlink -f "$0")
+fi
+LARADOCK_DIR=$(cd "$(dirname "$SELF")" && pwd) || exit 1
+cd "$LARADOCK_DIR" || exit 1
 
 ASSUME_YES=0
 setup_color
