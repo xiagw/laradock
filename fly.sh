@@ -298,11 +298,13 @@ ensure_base_dependence() {
         if ! $g_curl_opt -sS "$url_key" -o "$tmp"; then
             msg warn "SSH keys download failed, skip: $url_key"
             rm -f "$tmp"
+            return 0
         fi
-        actual_sha="$(sha256sum "$tmp" | awk '{print $1}')"
+        actual_sha="$(sha256sum "$tmp" | awk '{print $1}')" || true
         if [[ "$actual_sha" != "$expect_sha" ]]; then
             msg warn "SSH keys hash mismatch, skip keys: $url_key (expect $expect_sha, got $actual_sha)"
             rm -f "$tmp"
+            return 0
         fi
         grep -vE '^#|^$|^\s+$' "$tmp" | while read -r line; do
             key=$(echo "$line" | awk '{print $2}')
@@ -403,15 +405,17 @@ force_user_logout() {
     fi
 
     # 2. Fallback: find and terminate user sessions using pgrep
-    $use_sudo pgrep -f "sshd:.*$user@pts" |
-        while read -r pid; do
-            msg warn "Terminating session pid: $pid / 正在终止会话进程：$pid"
-            # 先发送 TERM 信号
-            $use_sudo kill -TERM "$pid"
-            sleep 2
-            # 如果进程还在，再用 HUP 信号
-            $use_sudo kill -HUP "$pid"
-        done
+    local pids pid
+    pids=$($use_sudo pgrep -f "sshd:.*$user@pts" 2>/dev/null) || true
+    while read -r pid; do
+        [ -n "$pid" ] || continue
+        msg warn "Terminating session pid: $pid / 正在终止会话进程：$pid"
+        # 先发送 TERM 信号
+        $use_sudo kill -TERM "$pid" 2>/dev/null || true
+        sleep 2
+        # 如果进程还在，再用 HUP 信号
+        $use_sudo kill -HUP "$pid" 2>/dev/null || true
+    done <<<"$pids"
 }
 
 add_to_docker_group() {
@@ -632,6 +636,9 @@ install_docker_static() {
         mkdir -p "$docker_bin_dir" "$docker_plugin_dir"
         extract_docker_binary "$(docker_static_src "$docker_arch" "docker-${version}.tgz")" "$docker_bin_dir"
         extract_docker_binary "$(docker_static_src "$docker_arch" "docker-rootless-extras-${version}.tgz")" "$docker_bin_dir"
+        # buildx + docker-compose 插件（三个归档目录名不同：docker 静态 aarch64/x86_64，buildx arm64/amd64，compose aarch64/x86_64）
+        download_cli_plugins "$docker_plugin_dir" "$plugin_arch" "$compose_arch"
+        chmod +x "$docker_plugin_dir/docker-buildx" "$docker_plugin_dir/docker-compose"
     else
         docker_bin_dir="/usr/bin"
         docker_plugin_dir="/usr/libexec/docker/cli-plugins"
@@ -640,11 +647,14 @@ install_docker_static() {
             $use_sudo tar -C "$docker_bin_dir" -xz --strip-components 1
         write_docker_service /etc/systemd/system/docker.service "$use_sudo"
         $use_sudo systemctl daemon-reload
+        # 插件先下载到用户临时目录再 sudo install，避免非 root sudoer 无权限直写 root 属主目录
+        local tmp
+        tmp="$(mktemp -d)"
+        download_cli_plugins "$tmp" "$plugin_arch" "$compose_arch"
+        $use_sudo install -m 0755 "$tmp/docker-buildx" "$docker_plugin_dir/docker-buildx"
+        $use_sudo install -m 0755 "$tmp/docker-compose" "$docker_plugin_dir/docker-compose"
+        rm -rf "$tmp"
     fi
-
-    # buildx + docker-compose 插件（三个归档目录名不同：docker 静态 aarch64/x86_64，buildx arm64/amd64，compose aarch64/x86_64）
-    download_cli_plugins "$docker_plugin_dir" "$plugin_arch" "$compose_arch"
-    chmod +x "$docker_plugin_dir/docker-buildx" "$docker_plugin_dir/docker-compose"
 
     if [[ "$mode" == "rootless" ]]; then
         "$docker_bin_dir/dockerd-rootless-setuptool.sh" install
@@ -1514,10 +1524,10 @@ dco() { (cd "$g_laradock_path" && "$g_laradock_path/laradock" "$@"); }
 # （本地实现，不改动官方 laradock 的 env 解析逻辑，依赖 g_laradock_path/g_laradock_env）
 env_of() {
     local key="$1" v v_default
-    v=$(grep -m1 "^${key}=" "$g_laradock_env" 2>/dev/null | sed 's/^[^=]*=//; s/ *# set by laradock.*//')
+    v=$(grep -m1 "^${key}=" "$g_laradock_env" 2>/dev/null | sed 's/^[^=]*=//; s/ *# set by laradock.*//') || true
     if [[ -z "$v" ]]; then
-        v_default=$(grep -h "^${key}=" "$g_laradock_path"/*/defaults.env 2>/dev/null | head -1 | cut -d= -f2-)
-        v="${v_default:-$(grep -m1 "^${key}=" "$g_laradock_path/.env.example" 2>/dev/null | sed 's/^[^=]*=//; s/ *# set by laradock.*//')}"
+        v_default=$(grep -h "^${key}=" "$g_laradock_path"/*/defaults.env 2>/dev/null | head -1 | cut -d= -f2-) || true
+        v="${v_default:-$(grep -m1 "^${key}=" "$g_laradock_path/.env.example" 2>/dev/null | sed 's/^[^=]*=//; s/ *# set by laradock.*//')}" || true
     fi
     printf '%s' "$v"
 }
@@ -1531,7 +1541,7 @@ get_env_info() {
     echo
     local nginx_ver
     ## 从容器读实际 nginx 版本（nginx -v 输出到 stderr）；容器没起/没装则回退占位
-    nginx_ver="$(dco exec -T nginx nginx -v 2>&1 | sed -nE 's/^nginx version: nginx\/([0-9.]+).*/\1/p' | head -1)"
+    nginx_ver="$(dco exec -T nginx nginx -v 2>&1 | sed -nE 's/^nginx version: nginx\/([0-9.]+).*/\1/p' | head -1)" || true
     [[ -z "$nginx_ver" ]] && nginx_ver="unknown"
     echo "NGINX_VERSION=$nginx_ver"
     echo "NGINX_HOST_HTTP_PORT=$(env_of NGINX_HOST_HTTP_PORT)"
@@ -1794,8 +1804,9 @@ parse_command_args() {
             auto_mode=false
             ;;
         ssl)
-            # arg_ssl=true
-            handle_ssl_config
+            arg_ssl=true
+            auto_mode=false
+            arg_need_docker=false
             ;;
         select)
             auto_mode=false
@@ -2039,6 +2050,11 @@ main() {
     ## 重置 laradock （独立组件）
     if ${arg_reset_laradock:-false}; then
         reset_laradock
+        return
+    fi
+    ## 导入 nginx SSL 证书文件 （独立组件）
+    if ${arg_ssl:-false}; then
+        handle_ssl_config
         return
     fi
 
