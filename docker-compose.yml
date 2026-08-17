@@ -1614,14 +1614,14 @@ services:
           gitlab_rails['usage_ping_enabled'] = false
           gitlab_rails['sentry_enabled'] = false
           ## GitLab KAS
-          gitlab_kas['enable'] = false
-          gitlab_rails['gitlab_kas_enabled'] = false
+          # gitlab_kas['enable'] = false
+          # gitlab_rails['gitlab_kas_enabled'] = false
           ## Terraform
-          gitlab_rails['terraform_state_enabled'] = false
+          # gitlab_rails['terraform_state_enabled'] = false
           ## Kerberos 文档说EE only,但是默认值为 true
-          gitlab_rails['kerberos_enabled'] = false
+          # gitlab_rails['kerberos_enabled'] = false
           ## Sentinel
-          sentinel['enable'] = false
+          # sentinel['enable'] = false
           ## 禁用 PUMA 集群模式
           puma['worker_processes'] = 0
           puma['min_threads'] = 1

@@ -178,7 +178,6 @@ add_to_docker_group() {
     echo '############################################'
     sleep 5
     _force_user_logout "$USER"
-    need_logout=true
     exit 0
 }
 
@@ -869,7 +868,7 @@ mysql_shell() {
     cd "$g_laradock_path"
     check_docker_compose
     source <(grep -E '^MYSQL_DATABASE=|^MYSQL_USER=|^MYSQL_PASSWORD=|^MYSQL_ROOT_PASSWORD=' "$g_laradock_env")
-    local mysql_user=${1:-$MYSQL_USER}
+    local mysql_user=${arg_mysql_user:-$MYSQL_USER}
     local mysql_password
     mysql_password=$([ "$mysql_user" = root ] && echo "$MYSQL_ROOT_PASSWORD" || echo "$MYSQL_PASSWORD")
     $dco exec mysql bash -c "LANG=C.UTF-8 MYSQL_PWD=$mysql_password mysql --no-defaults -u$mysql_user $MYSQL_DATABASE"
@@ -880,17 +879,6 @@ redis_shell() {
     check_docker_compose
     redis_pass=$(awk -F= '/^REDIS_PASSWORD=/ {print $2}' "$g_laradock_env")
     $dco exec redis bash -c "REDISCLI_AUTH=$redis_pass redis-cli --no-auth-warning"
-}
-
-_upgrade_java() {
-    $g_curl_opt $g_url_fly_cdn/spring.tar.gz | tar -C "$g_laradock_path"/ vzx
-    $dco stop spring
-    $dco rm -f
-    $dco up -d spring
-}
-
-_upgrade_php() {
-    $g_curl_opt $g_url_fly_cdn/tp.tar.gz | tar -C "$g_laradock_html"/ vzx
 }
 
 reset_laradock() {
@@ -928,6 +916,7 @@ Usage: $0 [parameters ...]
 Parameters:
     -h, --help          Show this help message.
     -v, --version       Show version info.
+    auto                Install all services (default when no args).
     info                Get MySQL/Redis user/pass info.
     redis               Install Redis.
     mysql               Install MySQL [default 8.0].
@@ -956,16 +945,14 @@ EOF
 
 parse_command_args() {
     args=()
-    if [ "$#" -eq 0 ]; then
-        auto_mode=true
-        arg_check_nginx=true
-        arg_check_php=true
-        arg_check_java=true
-        arg_need_docker=true
-    fi
+    RUN=()
+    [ "$#" -eq 0 ] && set -- auto
 
     while [ "$#" -gt 0 ]; do
         case "${1}" in
+        auto)
+            # 显式 auto 与无参数等价，走默认全流程
+            ;;
         redis)
             args+=(redis)
             set_sysctl=true
@@ -998,98 +985,73 @@ parse_command_args() {
         svn | usvn)
             args+=(usvn)
             ;;
-        upgrade)
-            [[ "${args[*]}" == *php-fpm* ]] && arg_upgrade_php=true
-            [[ "${args[*]}" == *spring* ]] && arg_upgrade_java=true
-            auto_mode=false
-            arg_need_docker=false
-            ;;
         not-china | not-cn | ncn | github)
             IS_CHINA=false
             aliyun_mirror=false
             ;;
         install-docker-without-aliyun)
             aliyun_mirror=false
-            arg_check_docker=true
             ;;
         zsh | install-zsh)
-            arg_install_zsh=true
-            arg_check_timezone=true
-            arg_check_dependence=true
+            RUN+=(check_dependence _install_zsh)
             auto_mode=false
-            arg_need_docker=false
             ;;
         acme | install-acme)
-            arg_install_acme=true
-            arg_domain="$2"
+            RUN+=(_install_acme)
             auto_mode=false
-            arg_need_docker=false
             [ -n "$2" ] && shift
             ;;
         trzsz | install-trzsz)
-            arg_install_trzsz=true
-            arg_check_timezone=true
-            arg_check_dependence=true
+            RUN+=(check_dependence install_trzsz check_docker _check_timezone)
             auto_mode=false
-            arg_need_docker=false
             ;;
         lsync | lsyncd | install-lsyncd)
-            arg_install_lsyncd=true
-            arg_check_dependence=true
+            RUN+=(check_dependence install_lsyncd)
             auto_mode=false
-            arg_need_docker=false
             ;;
         wg | wireguard | install-wg)
-            arg_install_wg=true
-            arg_check_dependence=true
+            RUN+=(check_dependence install_wg)
             auto_mode=false
-            arg_need_docker=false
             ;;
         offline-prepare | prepare-offline)
-            arg_prepare_offline=true
+            RUN+=(prepare_offline)
             auto_mode=false
-            arg_need_docker=false
             [ -n "$2" ] && shift
             ;;
         offline | install-offline)
-            arg_install_offline=true
+            RUN+=(install_offline)
             auto_mode=false
-            arg_need_docker=false
             ;;
         info)
-            arg_env_info=true
+            RUN+=(check_docker get_env_info)
             auto_mode=false
-            arg_need_docker=false
             ;;
         mysql-cli)
-            arg_mysql_cli=true
+            RUN+=(check_docker mysql_shell)
             arg_mysql_user="$2"
             auto_mode=false
             [ -z "$2" ] || shift
             ;;
         redis-cli)
-            arg_redis_cli=true
+            RUN+=(check_docker redis_shell)
             auto_mode=false
             ;;
         test)
-            arg_check_nginx=true
-            arg_check_php=true
+            RUN+=(check_dependence check_docker check_laradock check_laradock_env docker_service check_nginx check_php_fpm check_spring)
             auto_mode=false
             ;;
         reset | clean | clear)
-            arg_reset_laradock=true
+            RUN+=(check_dependence check_docker reset_laradock)
             auto_mode=false
             ;;
         key)
             arg_insert_key=true
             ;;
         ssl)
-            # arg_ssl=true
             _handle_ssl_config
             ;;
         cdn | refresh)
             shift
-            arg_need_docker=false
             auto_mode=false
             _refresh_cdn "$@"
             return
@@ -1138,14 +1100,6 @@ parse_command_args() {
                 ;;
             esac
 
-            # 设置必要的标志
-            arg_check_dependence=true
-            arg_check_docker=true
-            arg_check_laradock=true
-            arg_check_laradock_env=true
-            arg_start_docker_service=true
-            arg_pull_image=true
-
             # 根据选择的组件设置安装参数
             case "$service" in
             mysql) args=(mysql) ;;
@@ -1153,6 +1107,7 @@ parse_command_args() {
             java) args=(spring) ;;
             node) args=(nodejs) ;;
             esac
+            RUN+=(check_dependence check_docker check_laradock check_laradock_env docker_service)
             ;;
         *)
             _usage
@@ -1161,33 +1116,22 @@ parse_command_args() {
         shift
     done
 
-    # auto mode
+    # auto mode: 无参数默认全流程
     if [ "${auto_mode:-true}" = true ]; then
         if [ ${#args[@]} -eq 0 ]; then
             args+=(redis mysql php-fpm spring nginx)
             echo -e "\033[0;33mEN: Using default args: [${args[*]}]\033[0m"
             echo -e "\033[0;33mCN: 没有提供任何参数，将使用默认参数: [${args[*]}]\033[0m"
         fi
-        arg_check_dependence=true # Set to true for auto mode
+        RUN+=(check_dependence check_docker check_laradock check_laradock_env docker_service check_nginx check_php_fpm check_spring)
     fi
     [ "${args[*]}" ] && echo "The final args: ${args[*]}"
-
-    ## need docker provider
-    if [ "${arg_need_docker:-true}" = true ]; then
-        arg_check_docker=true
-        arg_check_laradock=true
-        arg_check_laradock_env=true
-        arg_start_docker_service=true
-        arg_pull_image=true
-        arg_check_dependence=true # Set to true when docker is needed
-    fi
 
     IS_CHINA=${IS_CHINA:-true}
     g_php_ver=${g_php_ver:-8.1}
     g_java_ver=${g_java_ver:-8}
     g_mysql_ver=${g_mysql_ver:-8.0}
     g_node_ver=${g_node_ver:-20}
-
 }
 
 get_common() {
@@ -1283,82 +1227,10 @@ main() {
         has_root_priv=false
     fi
 
-    if ${arg_install_acme:-false}; then
-        _install_acme "$arg_domain"
-        return
-    fi
-
-    ${arg_check_dependence:-false} && check_dependence
-
-    # These installations don't need docker compose, but need basic dependencies
-    ${arg_install_trzsz:-false} && install_trzsz
-    if ${arg_install_zsh:-false}; then
-        _install_zsh
-        return
-    fi
-    if ${arg_install_lsyncd:-false}; then
-        install_lsyncd
-        return
-    fi
-    if ${arg_install_wg:-false}; then
-        install_wg
-        return
-    fi
-    if ${arg_prepare_offline:-false}; then
-        prepare_offline
-        return
-    fi
-    if ${arg_install_offline:-false}; then
-        install_offline
-        return
-    fi
-    if ${arg_upgrade_php:-false}; then
-        _upgrade_php
-        return
-    fi
-
-    # Operations that need docker compose
-    if ${arg_upgrade_java:-false}; then
-        _upgrade_java
-        return
-    fi
-
-    if ${arg_env_info:-false}; then
-        get_env_info
-        return
-    fi
-
-    if ${arg_mysql_cli:-false}; then
-        mysql_shell "$arg_mysql_user"
-        return
-    fi
-    if ${arg_redis_cli:-false}; then
-        redis_shell
-        return
-    fi
-
-    ## install docker, add normal user (not root) to group "docker", re-login
-    ${arg_check_docker:-true} && check_docker
-    ${need_logout:-false} && return
-
-    if ${arg_reset_laradock:-false}; then
-        reset_laradock
-        return
-    fi
-
-    ${arg_check_timezone:-false} && _check_timezone
-
-    ${arg_check_laradock:-false} && check_laradock
-
-    ${arg_check_laradock_env:-false} && check_laradock_env
-
-    ${arg_start_docker_service:-false} && docker_service
-
-    ${arg_check_nginx:-false} && check_nginx
-
-    ${arg_check_php:-false} && check_php_fpm
-
-    ${arg_test_java:-false} && check_spring
+    ## 按 parse_command_args 决定的 RUN 数组顺序执行
+    for fn in "${RUN[@]}"; do
+        "$fn"
+    done
 
     echo "END"
 }
