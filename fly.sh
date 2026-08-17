@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # vim: set ft=sh ts=4 sw=4 et:
-# shellcheck disable=SC1090
+# shellcheck disable=SC1090,SC1091
 
 ## 本文件功能说明：
 ## 1. 探测发行版/架构/版本（全局 OS 数组，一次性查询，后续各处取用）
@@ -11,9 +11,7 @@
 ## 5. 启动服务、冒烟检查（nginx/php-fpm/spring/redis/mysql）
 ## 6. 服务管理统一委托给 laradock 自带的 ./laradock（start/info/db/logs/enter/rebuild）
 ## 7. 独立组件：zsh / trzsz / wg / lsyncd / acme / ssl / offline / info / mysql-cli / redis-cli / reset
-## 8. 开机自启：docker 服务、时区、系统内核参数
-
-## 自包含：以下工具函数从公共库 common.sh 内联，不再依赖下载外部脚本
+## 8. 开机自启：docker 服务、系统内核参数
 
 ## 全局关联数组 OS：发行版/版本/架构等系统信息，一次性探测后各处取用
 declare -A OS=()
@@ -167,15 +165,6 @@ detect_os_info() {
     msg time "Your distribution is ${OS[id]} ${OS[version]}, ARCH is ${OS[arch]}."
 }
 
-## 架构不支持时 detect_os_info 只警告不强退；真正需要架构名的安装/插件流程用本函数把关
-os_require_arch() {
-    local target="${2:-docker}"
-    [[ -n "${OS[$target]}" ]] || {
-        msg red "Unsupported arch for $1: ${OS[arch]}"
-        return 1
-    }
-}
-
 # 纯存在检查
 cmd_exists() { command -v "$1" &>/dev/null; }
 
@@ -236,18 +225,6 @@ gen_password() {
         esac
     done
     echo "$password_rand"
-}
-
-ensure_timezone() {
-    ## change UTC to CST
-    local time_zone='Asia/Shanghai'
-    msg step "Check timezone $time_zone."
-    if timedatectl show --property=Timezone --value | grep -q "^$time_zone$"; then
-        msg time "Timezone is already set to $time_zone."
-    else
-        msg time "Setting timezone to $time_zone."
-        $use_sudo timedatectl set-timezone "$time_zone"
-    fi
 }
 
 install_acme_official() {
@@ -1242,6 +1219,7 @@ install_offline() {
     $use_sudo systemctl daemon-reload
     $use_sudo systemctl restart docker.service
 
+    # shellcheck disable=SC2086 # use_sudo 必须裸写：root 时为空、否则为 sudo，靠空白分词
     find "$offline_dir" -maxdepth 1 -name "*.tar" -type f -print0 -exec $use_sudo docker load -i '{}' \;
 
     cd "$g_laradock_path" || exit 1
@@ -1391,7 +1369,9 @@ cdn_load_service_image() {
     target="$g_url_fly_cdn/images/${OS[docker]}/$tgz"
     msg cyan "cdn load: $img <- $target"
     tmp="${TMPDIR:-/tmp}/fly-cdn-load.$$.tgz"
-    if $g_curl_opt "$target" -o "$tmp" && docker load -q -i "$tmp" >/dev/null 2>&1; then
+    if $g_curl_opt "$target" -o "$tmp" &&
+        docker load -q -i "$tmp" >/dev/null 2>&1 &&
+        docker image inspect "$img" >/dev/null 2>&1; then
         msg green "cdn load ok: $img"
     else
         msg warn "cdn load failed (service [$svc] 走正常 pull/重试): $img"
@@ -1610,8 +1590,8 @@ reset_laradock() {
 # 切换单个服务版本并重启（只写 .env + docker compose up，不重装/不 rebuild）
 # 用法: ./fly.sh switch <mysql|php|java|node> <ver>
 switch_service() {
-    local svc="${1:?Usage: ./fly.sh switch <mysql|php|java|node> <ver>}"
-    local ver="${2:?Usage: ./fly.sh switch <mysql|php|java|node> <ver>}"
+    local svc="${arg_switch_svc:?Usage: ./fly.sh switch <mysql|php|java|node> <ver>}"
+    local ver="${arg_switch_ver:?Usage: ./fly.sh switch <mysql|php|java|node> <ver>}"
     local compose_svc key
     case "$svc" in
     mysql) compose_svc=mysql key=MYSQL_VERSION ;;
@@ -1676,16 +1656,14 @@ EOF
 
 parse_command_args() {
     args=()
-    if [ "$#" -eq 0 ]; then
-        auto_mode=true
-        arg_check_nginx=true
-        arg_check_php=true
-        arg_check_java=true
-        arg_need_docker=true
-    fi
+    RUN=()
+    [ "$#" -eq 0 ] && set -- auto
 
     while [ "$#" -gt 0 ]; do
         case "${1}" in
+        auto)
+            # 显式 auto 与无参数等价，走默认全流程
+            ;;
         redis)
             args+=(redis)
             set_sysctl=true
@@ -1720,93 +1698,76 @@ parse_command_args() {
             IS_CHINA=false
             ;;
         install-docker-without-aliyun)
-            arg_check_docker=true
+            # 无参数等价 auto：默认流程本就安装 docker（get.docker.com 中国环境自带阿里云镜像）
             ;;
         zsh | install-zsh)
-            arg_install_zsh=true
-            arg_ensure_timezone=true
-            arg_ensure_base_dependence=true
+            RUN+=(ensure_base_dependence install_zsh)
             auto_mode=false
-            arg_need_docker=false
             ;;
         acme | install-acme)
-            arg_install_acme=true
-            arg_domain="$2"
+            RUN+=(install_acme)
             auto_mode=false
-            arg_need_docker=false
             [ -n "$2" ] && shift
             ;;
         trzsz | install-trzsz)
-            arg_install_trzsz=true
-            arg_ensure_timezone=true
+            RUN+=(install_trzsz)
             auto_mode=false
-            arg_need_docker=false
             ;;
         lsync | lsyncd | install-lsyncd)
-            arg_install_lsyncd=true
+            RUN+=(install_lsyncd)
             auto_mode=false
-            arg_need_docker=false
             ;;
         wg | wireguard | install-wg)
-            arg_install_wg=true
+            RUN+=(install_wg)
             auto_mode=false
-            arg_need_docker=false
             ;;
         offline-prepare | prepare-offline)
-            arg_prepare_offline=true
+            RUN+=(prepare_offline)
             auto_mode=false
-            arg_need_docker=false
             [ -n "$2" ] && shift
             ;;
         offline-install | install-offline)
-            arg_install_offline=true
+            RUN+=(install_offline)
             auto_mode=false
-            arg_need_docker=false
             ;;
         mirror)
-            arg_mirror=true
+            RUN+=(mirror_docker)
             arg_mirror_bucket="$2"
             auto_mode=false
-            arg_need_docker=false
             [ -n "$2" ] && shift
             ;;
         switch)
-            arg_switch=true
             arg_switch_svc="$2"
             arg_switch_ver="$3"
+            RUN+=(switch_service)
             auto_mode=false
-            arg_need_docker=false
             [ -n "$2" ] && shift
             [ -n "$2" ] && shift
             ;;
         info)
-            arg_env_info=true
+            RUN+=(get_env_info)
             auto_mode=false
-            arg_need_docker=false
             ;;
         mysql-cli)
-            arg_mysql_cli=true
-            arg_mysql_user="$2"
+            RUN+=(check_docker mysql_shell)
             auto_mode=false
             [ -z "$2" ] || shift
             ;;
         redis-cli)
-            arg_redis_cli=true
+            RUN+=(check_docker redis_shell)
             auto_mode=false
             ;;
         test)
-            arg_check_nginx=true
-            arg_check_php=true
+            RUN+=(ensure_base_dependence check_docker check_laradock check_laradock_env docker_service check_nginx check_php_fpm check_spring)
             auto_mode=false
             ;;
         reset | clean | clear)
-            arg_reset_laradock=true
+            RUN+=(reset_laradock)
             auto_mode=false
             ;;
         ssl)
-            arg_ssl=true
+            RUN+=(handle_ssl_config)
             auto_mode=false
-            arg_need_docker=false
             ;;
         select)
             auto_mode=false
@@ -1852,13 +1813,6 @@ parse_command_args() {
                 ;;
             esac
 
-            # 设置必要的标志
-            arg_ensure_base_dependence=true
-            arg_check_docker=true
-            arg_check_laradock=true
-            arg_check_laradock_env=true
-            arg_start_docker_service=true
-
             # 根据选择的组件设置安装参数
             case "$service" in
             mysql) args=(mysql) ;;
@@ -1866,6 +1820,7 @@ parse_command_args() {
             java) args=(spring) ;;
             node) args=(nodejs) ;;
             esac
+            RUN+=(ensure_base_dependence check_docker check_laradock check_laradock_env docker_service)
             ;;
         *)
             print_usage
@@ -1874,25 +1829,16 @@ parse_command_args() {
         shift
     done
 
-    # auto mode
+    # auto mode: 无参数默认全流程
     if [ "${auto_mode:-true}" = true ]; then
         if [ ${#args[@]} -eq 0 ]; then
             args+=(redis mysql php-fpm spring nginx)
-            echo -e "\033[0;33mEN: Using default args: [${args[*]}]\033[0m"
-            echo -e "\033[0;33mCN: 没有提供任何参数，将使用默认参数: [${args[*]}]\033[0m"
+            msg warn "EN: Using default args: [${args[*]}]"
+            msg warn "CN: 没有提供任何参数，将使用默认参数: [${args[*]}]"
         fi
-        arg_ensure_base_dependence=true # Set to true for auto mode
+        RUN+=(ensure_base_dependence check_docker check_laradock check_laradock_env docker_service check_nginx check_php_fpm check_spring)
     fi
     [ "${args[*]}" ] && echo "The final args: ${args[*]}"
-
-    ## need docker provider
-    if [ "${arg_need_docker:-true}" = true ]; then
-        arg_check_docker=true
-        arg_check_laradock=true
-        arg_check_laradock_env=true
-        arg_start_docker_service=true
-        arg_ensure_base_dependence=true # Set to true when docker is needed
-    fi
 
     g_php_ver=${g_php_ver:-8.1}
     g_java_ver=${g_java_ver:-17}
@@ -1933,9 +1879,6 @@ main() {
         g_url_fzf="https://github.com/junegunn/fzf.git"
         g_url_ohmyzsh="https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     fi
-
-    ## 统一探测发行版/版本/架构一次，存入全局关联数组 OS，后续各处按需取用
-    detect_os_info
 
     ## 确定 laradock 的安装目录:
     ## 默认在已登录shell的当前目录下安装 docker/laradock
@@ -1985,103 +1928,13 @@ main() {
         has_root_priv=false
     fi
 
-    ## 独立组件（不依赖 base 依赖检查，各自 return）
-    ## 安装 acme （独立组件）
-    if ${arg_install_acme:-false}; then
-        install_acme "$arg_domain"
-        return
-    fi
-    ## 安装 trzsz （独立组件）
-    if ${arg_install_trzsz:-false}; then
-        install_trzsz
-        return
-    fi
-    ## 安装 zsh （独立组件，包含 SSH 公钥等基础依赖：一键配好熟悉的工作环境）
-    if ${arg_install_zsh:-false}; then
-        ${arg_ensure_base_dependence:-false} && ensure_base_dependence
-        install_zsh
-        return
-    fi
-    ## 安装 lsyncd （独立组件）
-    if ${arg_install_lsyncd:-false}; then
-        install_lsyncd
-        return
-    fi
-    ## 安装 wg （独立组件）
-    if ${arg_install_wg:-false}; then
-        install_wg
-        return
-    fi
-    ## 准备离线包 （独立组件）
-    if ${arg_prepare_offline:-false}; then
-        prepare_offline
-        return
-    fi
-    ## 镜像 docker 文件到 OSS （独立组件）
-    if ${arg_mirror:-false}; then
-        mirror_docker
-        return
-    fi
-    ## 切换单个服务版本 （独立组件）
-    if ${arg_switch:-false}; then
-        switch_service "$arg_switch_svc" "$arg_switch_ver"
-        return
-    fi
-    ## 安装离线包 （独立组件）
-    if ${arg_install_offline:-false}; then
-        install_offline
-        return
-    fi
-    ## 环境信息 （独立组件）
-    if ${arg_env_info:-false}; then
-        get_env_info
-        return
-    fi
-    ## mysql 客户端 （独立组件）
-    if ${arg_mysql_cli:-false}; then
-        mysql_shell "$arg_mysql_user"
-        return
-    fi
-    ## redis 客户端 （独立组件）
-    if ${arg_redis_cli:-false}; then
-        redis_shell
-        return
-    fi
-    ## 重置 laradock （独立组件）
-    if ${arg_reset_laradock:-false}; then
-        reset_laradock
-        return
-    fi
-    ## 导入 nginx SSL 证书文件 （独立组件）
-    if ${arg_ssl:-false}; then
-        handle_ssl_config
-        return
-    fi
+    ## 统一探测发行版/版本/架构一次，存入全局关联数组 OS，后续各处按需取用
+    detect_os_info
 
-    ## docker/laradock 流程所需的基础依赖检查
-    ${arg_ensure_base_dependence:-false} && ensure_base_dependence
-
-    ## 检查 docker 是否安装 及依赖
-    if ${arg_check_docker:-true}; then
-        check_docker
-    fi
-    ## 检查时区
-    ${arg_ensure_timezone:-false} && ensure_timezone
-    ## 检查 laradock 是否安装
-    ${arg_check_laradock:-false} && check_laradock
-    ## 检查 laradock 环境
-    ${arg_check_laradock_env:-false} && check_laradock_env
-    ## 启动 docker 服务
-    ${arg_start_docker_service:-false} && docker_service
-
-    ## 检查 nginx 运行是否正常
-    ${arg_check_nginx:-false} && check_nginx
-    ## 检查 php-fpm 运行是否正常
-    ${arg_check_php:-false} && check_php_fpm
-    ## 检查 mysql
-    # ${arg_check_mysql:-false} && check_mysql
-    ## 检查 spring 运行是否正常
-    ${arg_check_java:-false} && check_spring
+    ## 按 parse_command_args 决定的 RUN 数组顺序执行（每个命令显式列出所需的函数序列）
+    for fn in "${RUN[@]}"; do
+        "$fn"
+    done
 
     echo "END"
 }
