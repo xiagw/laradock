@@ -1709,7 +1709,109 @@ ${ports_yaml}
 
     msg time "App dir created: $g_www_root/$name"
     msg time "Now: ./fly.sh rebuild $name  或直接 ./laradock up -d $name"
-    msg time "nginx: 在 $g_laradock_path/nginx/sites/router.inc 增加 location /$name -> http://$name:8080"
+    write_nginx_inc "$name" "$svc"
+}
+
+# 生成单实例 nginx 站点配置 <name>.inc 到 nginx/sites/（挂载为 /etc/nginx/conf.d，
+# 由 default.conf 的 include conf.d/*.inc; 自动引入）。已存在则跳过，不覆盖手动修改。
+write_nginx_inc() {
+    local name="$1" svc="$2"
+    local inc_file="$g_laradock_path/nginx/sites/${name}.inc"
+    [ -d "$(dirname "$inc_file")" ] || {
+        msg warn "no $(dirname "$inc_file") directory, skip nginx inc"
+        return 0
+    }
+    if [ -f "$inc_file" ]; then
+        msg warn "nginx inc exists, skip: $inc_file"
+        return 0
+    fi
+    case "$svc" in
+    spring | java)
+        cat >"$inc_file" <<EOF
+## ${name}
+location /${name} {
+    proxy_pass http://${name}:8080;
+}
+location /${name}-ui {
+    proxy_pass http://${name}:8081;
+}
+EOF
+        ;;
+    nodejs | node)
+        cat >"$inc_file" <<EOF
+## ${name}
+location /${name} {
+    proxy_pass http://${name}:8080;
+}
+EOF
+        ;;
+    *)
+        msg warn "unknown service [$svc], skip nginx inc"
+        return 0
+        ;;
+    esac
+    msg time "nginx inc generated: $inc_file"
+    reload_nginx
+}
+
+# 扫描 multi/compose.yml 中所有 spring-*/nodejs-* 服务，为缺失的生成 <name>.inc。
+# 用法: ./fly.sh nginx-gen
+nginx_inc_gen() {
+    local multi_file="$g_laradock_path/multi/compose.yml"
+    local running name svc kind
+    # 优先只对正在运行的服务生成（docker compose ps --status running），
+    # docker 不可用时回退到扫描 multi/compose.yml 中所有 spring-*/nodejs-* 定义。
+    running=$(dco ps --services --status running 2>/dev/null | grep -E '^(spring|nodejs)-' || true)
+    if [ -n "$running" ]; then
+        while read -r name; do
+            [ -n "$name" ] || continue
+            if grep -qE "^\s+${name}:" "$multi_file" 2>/dev/null; then
+                kind=$(awk -v n="$name" '
+                    $0 ~ "^    " n ":" {inblock=1; next}
+                    inblock && /^[^ ]/ {inblock=0}
+                    inblock && kind == "" {
+                        if ($0 ~ /\.\.\/spring/ || $0 ~ /amazoncorretto/) kind="spring"
+                        else if ($0 ~ /\.\.\/nodejs/) kind="nodejs"
+                    }
+                    END {print kind}
+                ' "$multi_file")
+            else
+                # 未定义在 multi/compose.yml（如默认 spring/nodejs 服务），按名推断
+                case "$name" in
+                nodejs*) kind=nodejs ;;
+                spring*) kind=spring ;;
+                *) continue ;;
+                esac
+            fi
+            [ -n "$kind" ] && write_nginx_inc "$name" "$kind"
+        done <<<"$running"
+        return 0
+    fi
+
+    # docker 不可用：扫描配置中全部 spring-*/nodejs-* 服务
+    [ -f "$multi_file" ] || {
+        msg warn "no $multi_file, skip"
+        return 0
+    }
+    while read -r name kind; do
+        [ -n "$name" ] || continue
+        write_nginx_inc "$name" "$kind"
+    done < <(awk '
+        /^    [a-z0-9][a-z0-9_-]*:$/ {
+            if (name != "" && (name ~ /^spring-/ || name ~ /^nodejs-/)) print name, kind
+            name = $0; sub(/:$/, "", name); sub(/^[[:space:]]*/, "", name)
+            kind = ""
+            inblock = 1
+            next
+        }
+        inblock && kind == "" {
+            if ($0 ~ /\.\.\/spring/ || $0 ~ /amazoncorretto/) kind = "spring"
+            else if ($0 ~ /\.\.\/nodejs/) kind = "nodejs"
+        }
+        END {
+            if (name != "" && (name ~ /^spring-/ || name ~ /^nodejs-/)) print name, kind
+        }
+    ' "$multi_file")
 }
 
 print_usage() {
@@ -1748,6 +1850,8 @@ Standalone components:
     add <spring|nodejs> <name> [ver] [host_port]
                             Add one more instance of the same version to multi/compose.yml
                             (e.g. ./fly.sh add spring spring-17a 17 8082; omit host_port to skip host port mapping).
+    nginx-gen               Generate missing <name>.inc for every spring-*/nodejs-* service
+                            in multi/compose.yml (auto-included by conf.d/*.inc).
 
 Options:
     cdn-images (also cdn)   With a service install/start: load runtime image tgz from
@@ -1862,6 +1966,10 @@ parse_command_args() {
             [ -n "$2" ] && shift
             [ -n "$2" ] && shift
             [ -n "$2" ] && shift
+            ;;
+        nginx-gen)
+            RUN+=(nginx_inc_gen)
+            auto_mode=false
             ;;
         info)
             RUN+=(get_env_info)

@@ -1,4 +1,6 @@
 *.conf
 !default.conf
-
+*.inc
+!router.inc
+!security.inc
 ssl/
