@@ -42,12 +42,8 @@
 
 ## 安装/部署方式：单机/多机docker-compose/docker swarm部署文档
 ```sh
-## （可选项）设置代理： 假如服务器需要代理访问公网，则设置环境变量
-# export http_proxy=x.x.x.x:1080; export https_proxy=x.x.x.x:1080
-## 云助手部署： Aliyun - ECS - 云助手(左下角) - 实例(右侧) - 执行命令 （复制以下命令，超时时间1500秒）
-## 1. 默认安装路径， $HOME/docker/laradock 或 $PWD/docker/laradock
-## 2. 默认部署环境， docker/nginx-1.2x/redis-7.x/mysql-8.0/php-8.1/openjdk-8
-## 手动/自动部署：
+## 设置代理（可选项）： 假如服务器需要代理访问公网，则设置环境变量 export http_proxy=x.x.x.x:1080; export https_proxy=x.x.x.x:1080
+## 云助手部署（可选项）： Aliyun - ECS - 云助手(左下角) - 实例(右侧) - 执行命令 （复制以下命令，超时时间1500秒）
 curl -fL https://gitee.com/xiagw/laradock/raw/main/fly.sh | bash
 ```
 
@@ -81,7 +77,7 @@ curl -fL https://gitee.com/xiagw/laradock/raw/main/fly.sh | bash
 
 ### 操作docker容器简要方式/查看日志
 ```sh
-## ！！！ 必须进入此目录执行 docker compose 命令 ！！！
+## ⚠️⚠️⚠️ 必须进入此目录执行 docker compose 系列命令 ⚠️⚠️⚠️
 cd $HOME/docker/laradock  ## 或 ## cd $PWD/docker/laradock
 cd $HOME/docker/laradock && bash fly.sh info    ## 查看服务器本机集成的 mysql/redis 信息
 
@@ -126,20 +122,20 @@ cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis
 ## redis 进入命令行操作(远程)
 cd $HOME/docker/laradock && docker compose exec redis bash -c "LANG=C.UTF8 redis-cli -h'xxxxx' -a'zzzzzz' --no-auth-warning"
 
-## 非root账号文件上传：先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/www/spring
-# sudo mv $HOME/xxx.jar  $HOME/docker/www/spring/
+sudo mv $HOME/xxx.jar  $HOME/docker/www/spring/    ## 非root账号文件上传：先上传文件到 $HOME/xxx.jar，然后再转移到 $HOME/docker/www/spring
 sudo chown -R $USER:$USER $HOME/docker/www/html/static $HOME/docker/www/html/tp    ## 恢复文件权限
 sudo chown -R 33:33 $HOME/docker/www/html/tp/runtime $HOME/docker/www/html/tp/*/runtime    ## PHP 容器内 uid=33
 sudo chown -R 33:33 $HOME/docker/www/html/upload_php       ## PHP 容器内 uid=33 对应容器内目录 /var/www/html/upload_php
 sudo chown -R 1000:1000 $HOME/docker/www/spring    ## Java 容器内 uid=1000
 sudo chown -R 1000:1000 $HOME/docker/www/html/uploads       ## Java 容器内 uid=1000 对应容器内目录 /var/www/html/uploads
 sudo chown -R 1000:1000 $HOME/docker/www/nodejs    ## Nodejs 容器内 uid=1000
-
-## 如果有额外独立的负载均衡，以及单台或多台服务器
-1. 设置负载均衡监听端口 80/443，指向服务器组（单台/多台）
-2. 若有安全组或防火墙则需设置安全组开放 80/443
-
 ```
+
+### 如果有额外独立的负载均衡，以及单台或多台服务器
+- 设置负载均衡监听端口 80/443，指向服务器组（单台/多台）
+- 若有安全组或防火墙则需设置安全组开放 80/443
+
+
 
 ## K8S集群部署指南
 
@@ -170,7 +166,7 @@ kubectl -n dev get pods,svc
 
 
 ## 不适合/不支持部署到Windows服务器
-1. Windows 服务器不适合安装redis，Windows 兼容性较差，以及与docker兼容性/性能较差，不适合使用Windows服务器
+- Windows 服务器不适合安装redis，Windows 兼容性较差，以及与docker兼容性/性能较差，不适合使用Windows服务器
 
 
 ## 域名配置与ICP备案要求
@@ -198,12 +194,12 @@ kubectl -n dev get pods,svc
 
 ### 服务器连接
 1. 获取必要信息：服务器IP、用户名和认证方式（密码或SSH密钥）
-2. 配置连接：
+1. 配置连接：
    - Host：输入服务器IP
    - Port：默认22
    - Username：输入用户名
    - 认证方式：选择密码或SSH密钥
-3. 建立连接：点击Login（首次连接需确认服务器指纹）（点击 `Accept and Save`）
+1. 建立连接：点击Login（首次连接需确认服务器指纹）（点击 `Accept and Save`）
 
 ### 文件传输
 - Terminal：点击`New terminal console`打开命令行界面

@@ -60,10 +60,10 @@ check_root() {
     *)
         if sudo -l -U "$USER" &>/dev/null; then
             use_sudo=sudo
-            echo "Not root but has sudo privileges."
+            msg orange "⚠️  Not root but has sudo privileges / 非 root 但有 sudo 权限"
         else
-            msg error "Permission denied: $USER lacks sudo privileges"
-            echo "Action required: Configure sudo access via visudo"
+            msg error "⛔ Permission denied: $USER lacks sudo privileges / 权限不足"
+            msg warn "🔧 Action required: Configure sudo access via visudo"
             return 1
         fi
         ;;
@@ -74,7 +74,7 @@ check_root() {
         return 0
     fi
 
-    msg error "Failed to detect package manager."
+    msg error "⛔ Failed to detect package manager / 未检测到支持的包管理器."
     return 1
 }
 
