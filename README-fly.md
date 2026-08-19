@@ -104,10 +104,12 @@ cd $HOME/docker/laradock && docker compose logs -f --tail 100 nginx       ## ngi
 ## 1. 创建 spring/.java_opts 文件，内容: export JAVA_OPTS="java -Xms1g -Xmx1g"
 
 ## 新增 spring 或 nodejs 容器：
-## 1. 复制文件夹 spring/ 到新文件夹，例如 spring3（nodejs 同理）
-## 2. 修改 docker-compose.override.yml，复制 spring 段落到新段落，改名，例如 spring3（nodejs 同理）
-## 3. 复制镜像: docker tag laradock-spring laradock-spring3
-## 4. 修改 nginx 配置文件 router.inc（nodejs 同理）
+## 1. 用 fly.sh 一键新增（单版本多实例）： ./fly.sh add spring spring-17a 17 8082
+##    （svc: spring|nodejs；name 即服务名和应用目录；[ver] 默认 spring=17/nodejs=20；[host_port] 省略则不映射端口）
+## 2. 手动方式：新建文件夹，例如 spring-17a/（nodejs 同理，如 nodejs-20a），内含 compose.yml + defaults.env
+## 3. compose.yml 用 extends 继承 spring 服务，覆盖 SPRING_APP_DIR、端口等（参考 multi/compose.yml）
+## 4. 在根目录 docker-compose.yml 的 include 区追加一项（path 指到 spring-17a/compose.yml，env_file 指到 spring-17a/defaults.env）
+## 5. 修改 nginx 配置文件 router.inc（nodejs 同理）
 
 ## 命令行导入数据库文件：
 ## 1. db.sql文件存放目录/文件名: $HOME/.laradock/data/mysqlbak/db.sql

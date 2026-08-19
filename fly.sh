@@ -1612,6 +1612,106 @@ switch_service() {
     dco up -d "$compose_svc"
 }
 
+# 单版本多实例：给 spring/nodejs 追加一个完整 compose 服务块到 multi/compose.yml
+# （完整复制、不用 extends，避免继承的 ports 合并冲突），并创建应用目录。
+# 用法: ./fly.sh add <spring|nodejs> <name> [ver] [host_port]
+#   name     服务名，如 spring-17a / nodejs-20a（同时是 www 下的应用目录名）
+#   ver      版本，默认 spring=17 / nodejs=20
+#   host_port 可选宿主端口；省略则不映射端口（仅容器网络互访）。
+#             spring 映射 <port>:8080 和 <port+1>:8081；nodejs 映射 <port>:8080
+add_service_instance() {
+    local svc="${arg_add_svc:?Usage: ./fly.sh add <spring|nodejs> <name> [ver] [host_port]}"
+    local name="${arg_add_name:?Usage: ./fly.sh add <spring|nodejs> <name> [ver] [host_port]}"
+    local ver="${arg_add_ver:-}" host_port="${arg_add_port:-}"
+    local multi_file="$g_laradock_path/multi/compose.yml"
+    local block ports_yaml=""
+
+    case "$svc" in
+    spring | java)
+        ver="${ver:-17}"
+        ;;
+    nodejs | node)
+        ver="${ver:-20}"
+        ;;
+    *)
+        msg error "unknown service: $svc (spring|nodejs)"
+        return 1
+        ;;
+    esac
+
+    if [[ ! "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
+        msg error "invalid service name: $name"
+        return 1
+    fi
+    if grep -q "^    ${name}:" "$multi_file" 2>/dev/null; then
+        msg warn "service [$name] already exists in $multi_file, skip"
+        return 0
+    fi
+
+    if [ -n "$host_port" ]; then
+        if [[ ! "$host_port" =~ ^[0-9]+$ ]]; then
+            msg error "host_port must be a number: $host_port"
+            return 1
+        fi
+        if [[ "$svc" == spring || "$svc" == java ]]; then
+            ports_yaml="      ports:
+        - \"${host_port}:8080\"
+        - \"$((host_port + 1)):8081\""
+        else
+            ports_yaml="      ports:
+        - \"${host_port}:8080\""
+        fi
+    fi
+
+    if [[ "$svc" == spring || "$svc" == java ]]; then
+        block="    ${name}:
+      image: \${MIRROR}amazoncorretto:${ver}-base
+      build:
+        context: ../spring
+        args:
+          - SPRING_JDK_VERSION=${ver}
+      environment:
+        - JAVA_OPTS=\${SPRING_JAVA_OPTS}
+        - SPRING_WORKDIR=\${SPRING_WORKDIR}
+        - SPRING_APP_DIR=${name}
+        - SPRING_JAR=\${SPRING_JAR}
+        - SPRING_AUTO_DETECT=\${SPRING_AUTO_DETECT}
+      working_dir: \${SPRING_WORKDIR}
+${ports_yaml}
+      volumes:
+        - \${APP_CODE_PATH_HOST}/${name}:\${SPRING_WORKDIR}\${APP_CODE_CONTAINER_FLAG}
+      networks:
+        - frontend
+        - backend"
+    else
+        block="    ${name}:
+      image: \${MIRROR}node:${ver}-base
+      build:
+        context: ../nodejs
+        args:
+          - NODE_VERSION=${ver}
+      environment:
+        - NODE_VERSION=${ver}
+${ports_yaml}
+      volumes:
+        - \${APP_CODE_PATH_HOST}/${name}:/app
+      networks:
+        - frontend
+        - backend"
+    fi
+
+    msg step "Add service [$name] ($svc v${ver}) to multi/compose.yml"
+    printf '\n%s\n' "$block" >>"$multi_file"
+
+    # 应用目录：spring/nodejs 容器内 uid=1000
+    mkdir -p "$g_www_root/$name"
+    ${use_sudo:-} chown -R 1000:1000 "$g_www_root/$name" 2>/dev/null || true
+
+    msg time "App dir created: $g_www_root/$name"
+    msg time "Now: ./fly.sh rebuild $name  或直接 ./laradock up -d $name"
+    msg time "nginx: 在 $g_laradock_path/nginx/sites/router.inc 增加 location /$name -> http://$name:8080"
+}
+
 print_usage() {
     cat <<EOF
 Usage: $0 [parameters ...]
@@ -1645,6 +1745,9 @@ Standalone components:
     offline-install         Install Docker and Laradock offline.
     mirror <bucket>         Mirror docker files (get-docker.sh / static tgz / compose / buildx / fzf / runtime images) to OSS.
     switch <svc> <ver>      Switch one service's version and restart (mysql|php|java|node).
+    add <spring|nodejs> <name> [ver] [host_port]
+                            Add one more instance of the same version to multi/compose.yml
+                            (e.g. ./fly.sh add spring spring-17a 17 8082; omit host_port to skip host port mapping).
 
 Options:
     cdn-images (also cdn)   With a service install/start: load runtime image tgz from
@@ -1745,6 +1848,18 @@ parse_command_args() {
             arg_switch_ver="$3"
             RUN+=(switch_service)
             auto_mode=false
+            [ -n "$2" ] && shift
+            [ -n "$2" ] && shift
+            ;;
+        add)
+            arg_add_svc="$2"
+            arg_add_name="$3"
+            arg_add_ver="$4"
+            arg_add_port="$5"
+            RUN+=(add_service_instance)
+            auto_mode=false
+            [ -n "$2" ] && shift
+            [ -n "$2" ] && shift
             [ -n "$2" ] && shift
             [ -n "$2" ] && shift
             ;;
