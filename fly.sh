@@ -52,13 +52,21 @@ msg() {
 }
 
 check_root() {
+    ## is_root 只表示"真的是 root"（check_root 对 sudo 用户也返回成功）
+    ## has_root_priv 表示 root 或有 sudo
+    is_root=false
+    has_root_priv=false
     ${already_check_root:-false} && return 0
     case "$(id -u)" in
     0)
+        is_root=true
+        has_root_priv=true
         unset use_sudo
         ;;
     *)
         if sudo -l -U "$USER" &>/dev/null; then
+            is_root=false
+            has_root_priv=true
             use_sudo=sudo
             msg orange "⚠️  Not root but has sudo privileges / 非 root 但有 sudo 权限"
         else
@@ -2144,16 +2152,7 @@ main() {
     ## 一次性检测 root 权限 (整个文件只 check root 一次)
     ## 三种情况: root / 非root有sudo / 非root无sudo
     ## is_root 只表示"真的是 root"（check_root 对 sudo 用户也返回成功）
-    if check_root; then
-        [ "$(id -u)" -eq 0 ] && is_root=true || is_root=false
-        has_root_priv=true
-    elif sudo -n true 2>/dev/null; then
-        is_root=false
-        has_root_priv=true
-    else
-        is_root=false
-        has_root_priv=false
-    fi
+    check_root || true
 
     ## 统一探测发行版/版本/架构一次，存入全局关联数组 OS，后续各处按需取用
     detect_os_info
