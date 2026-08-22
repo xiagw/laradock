@@ -772,6 +772,7 @@ check_laradock_env() {
         args+=(MYSQL_ROOT_PASSWORD="$(gen_password)")
         args+=(REDIS_PASSWORD="$(gen_password)")
         args+=(GITLAB_ROOT_PASSWORD="$(gen_password)")
+        args+=(GITLAB_POSTGRES_PASSWORD="$(gen_password)")
     fi
 
     args+=(MYSQL_VERSION="$g_mysql_ver")
@@ -788,7 +789,7 @@ check_laradock_env() {
 
     # ./laradock set 会把 KEY=VALUE 打到屏幕，含密码；输出层脱敏
     dco set "${args[@]}" 2>&1 |
-        sed -E 's/(MYSQL_ROOT_PASSWORD|MYSQL_PASSWORD|REDIS_PASSWORD|GITLAB_ROOT_PASSWORD)=[^[:space:]]*/\1=******/g'
+        sed -E 's/(MYSQL_ROOT_PASSWORD|MYSQL_PASSWORD|REDIS_PASSWORD|GITLAB_ROOT_PASSWORD|GITLAB_POSTGRES_PASSWORD)=[^[:space:]]*/\1=******/g'
     return "${PIPESTATUS[0]}"
 }
 
