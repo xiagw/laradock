@@ -1,6 +1,7 @@
 services:
 
     gitlab:
+      image: ${MIRROR}gitlab-ce:latest
       build:
         context: ./gitlab
       environment:

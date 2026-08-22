@@ -1,6 +1,7 @@
 services:
 
     postgres:
+      image: ${MIRROR}postgres:${POSTGRES_VERSION}
       restart: always
       build:
         context: ./postgres
