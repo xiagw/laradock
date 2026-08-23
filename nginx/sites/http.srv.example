@@ -11,15 +11,15 @@
 map $http_host $backend {
     hostnames;
     default upstream_gitlab;
-    doc.example.cn upstream_showdoc;
-    docs.example.cn upstream_showdoc;
-    z.example.cn upstream_zentao;
-    zen.example.cn upstream_zentao;
-    git.example.cn upstream_gitlab;
-    gitea.example.cn upstream_gitea;
-    ssl.example.cn upstream_ssl;
-    met.example.cn upstream_meet;
-    jum.example.cn upstream_jump;
+    doc.example.cn          upstream_showdoc;
+    docs.example.cn         upstream_showdoc;
+    z.example.cn            upstream_zentao;
+    zen.example.cn          upstream_zentao;
+    git.example.cn          upstream_gitlab;
+    gitea.example.cn        upstream_gitea;
+    ssl.example.cn          upstream_ssl;
+    met.example.cn          upstream_meet;
+    jum.example.cn          upstream_jump;
 }
 
 server {
