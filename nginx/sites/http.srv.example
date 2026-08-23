@@ -1,0 +1,115 @@
+# upstream upstream_showdoc { server showdoc:80; }
+# upstream upstream_zentao { server zentao:80; }
+# upstream upstream_ping { server piping:8080; }
+# upstream upstream_gitea { server gitea:3000; }
+# upstream upstream_gitlab { server gitlab:80; }
+# upstream upstream_registry { server gitlab:5050; }
+# upstream upstream_ssl { server domainadmin:8000; }
+# upstream upstream_meet { server 192.168.44.12:8080; }
+# upstream upstream_jump { server 192.168.44.12:8088; }
+
+map $http_host $backend {
+    hostnames;
+    default upstream_gitlab;
+    doc.example.cn upstream_showdoc;
+    docs.example.cn upstream_showdoc;
+    z.example.cn upstream_zentao;
+    zen.example.cn upstream_zentao;
+    git.example.cn upstream_gitlab;
+    gitea.example.cn upstream_gitea;
+    ssl.example.cn upstream_ssl;
+    met.example.cn upstream_meet;
+    jum.example.cn upstream_jump;
+}
+
+server {
+    listen *:80;
+    listen *:443 ssl;
+    http2 on;
+
+    server_name
+    doc.example.com
+    docs.example.com
+    zen.example.com
+    z.example.com
+    gitea.example.com
+    ssl.example.com
+    met.example.com
+    jum.example.com
+    ;
+
+    root $root_path;
+    index index.html index.htm;
+    ssl_certificate $ssl_key.pem;
+    ssl_certificate_key $ssl_key.key;
+    # http 跳 https
+    if ($scheme = http) { return 301 https://$host$request_uri; }
+    access_log  /var/log/nginx/zen_access.log;
+    error_log   /var/log/nginx/zen_error.log error;
+    location / {
+      proxy_pass  http://$backend;
+    }
+}
+
+server {
+    # gitlab 反代 vhost（域名见上方 map $http_host $backend）
+    # IPv6 监听不能带 ipv6only=on（主 server 已独占该选项），与 [::]:443 共存即可
+    listen 80;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+
+    server_name git.example.com;
+
+    ssl_certificate $ssl_key.pem;
+    ssl_certificate_key $ssl_key.key;
+    # http 跳 https
+    # git push/pull 大提交 / LFS 上传
+    client_max_body_size 250m;
+    # git 请求耗时长，放大超时（官方建议值）
+    proxy_connect_timeout 300;
+    proxy_read_timeout 3600;
+    proxy_send_timeout 300;
+    access_log /var/log/nginx/gitlab_access.log;
+    error_log /var/log/nginx/gitlab_error.log error;
+    if ($scheme = http) { return 301 https://$host$request_uri; }
+    location / {
+        proxy_pass http://$backend;
+        proxy_redirect off;
+        proxy_http_version 1.1;
+        # git http 传输不缓冲，实时流式转发
+        proxy_request_buffering off;
+        proxy_buffering off;
+        # 官方要求必须转发给 gitlab 的头（外置 nginx 终结 https，标记为 https）
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Ssl on;
+        proxy_set_header X-Forwarded-Port $server_port;
+    }
+}
+
+server {
+    listen 80;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+
+    server_name registry.example.com;
+
+    ssl_certificate $ssl_key.pem;
+    ssl_certificate_key $ssl_key.key;
+    client_max_body_size 250m;
+    proxy_connect_timeout 300;
+    proxy_read_timeout 3600;
+    if ($scheme = http) { return 301 https://$host$request_uri; }
+    location / {
+        proxy_pass http://$backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Ssl on;
+    }
+}

@@ -12,6 +12,8 @@ services:
         - ${POSTGRES_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
       ports:
         - "${POSTGRES_PORT}:5432"
+      # gitlab 导入 structure.sql 单事务建几千张表，默认 max_locks_per_transaction=64 锁表爆 out of shared memory，扩大到 6400（gitlab 官方建议值）
+      command: postgres -c max_locks_per_transaction=6400
       environment:
         - POSTGRES_DB=${POSTGRES_DB}
         - POSTGRES_USER=${POSTGRES_USER}
