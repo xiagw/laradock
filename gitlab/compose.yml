@@ -15,7 +15,8 @@ services:
           postgresql['enable'] = false
           # gitlab_rails['trusted_proxies'] = ['caddy','nginx','apache2']
           gitlab_rails['trusted_proxies'] = ['172.0.0.0/8']
-          gitlab_rails['redis_host'] = 'redis'
+          ## ---- 外部redis/postgres
+          gitlab_rails['redis_host'] = '${REDIS_HOST}'
           gitlab_rails['redis_database'] = 1
           gitlab_rails['redis_password'] = '${REDIS_PASSWORD}'
           gitlab_rails['db_host'] = '${GITLAB_POSTGRES_HOST}'
@@ -24,10 +25,12 @@ services:
           gitlab_rails['db_database'] = '${GITLAB_POSTGRES_DB}'
           gitlab_rails['initial_root_password'] = '${GITLAB_ROOT_PASSWORD}'
           gitlab_rails['gitlab_shell_ssh_port'] = ${GITLAB_HOST_SSH_PORT}
+          ## ---- 默认新项目禁用 CI/CD
+          # gitlab_rails['gitlab_default_projects_features_builds'] = false
           ## ---- 资源优化（GitLab 官方 memory-constrained 文档）----
           ## Kubernetes Agent Server，不用 k8s 就关
           # gitlab_kas['enable'] = false
-          ## 监控/指标全家桶关闭（省 ~300MB）
+          ## ---- 监控/指标全家桶关闭（省 ~300MB） ----
           alertmanager['enable'] = false
           prometheus['enable'] = false
           prometheus_monitoring['enable'] = false
@@ -41,7 +44,7 @@ services:
           puma['worker_processes'] = 0
           ## Sidekiq 并发默认 20 → 10
           sidekiq['concurrency'] = 10
-          ## registry config
+          ## ---- 启用内部 registry 存放 image
           registry['enable'] = true
           registry_nginx['enable'] = false
           registry_external_url 'https://registry.example.com'
