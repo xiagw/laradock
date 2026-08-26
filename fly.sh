@@ -1418,7 +1418,7 @@ docker_service() {
         ${arg_use_cdn_images:-false} && ! $img_local && cdn_load_service_image "$arg"
         for ((try = 1; try <= 2; try++)); do
             msg cyan "[$((idx + 1))/${#args[@]}] start $arg (try $try) ..."
-            dco up -d "$arg"
+            dco up -d "$arg" --quiet-pull
             rc=$?
             if [ $rc -eq 0 ] || [ $try -eq 2 ]; then
                 break
@@ -1618,7 +1618,7 @@ switch_service() {
     esac
     msg step "Switch $svc to version $ver"
     dco set "$key=$ver"
-    dco up -d "$compose_svc"
+    dco up -d "$compose_svc" --quiet-pull
 }
 
 # 单版本多实例：给 spring/nodejs 追加一个完整 compose 服务块到 multi/compose.yml
