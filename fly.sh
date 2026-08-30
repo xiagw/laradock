@@ -828,12 +828,15 @@ install_zsh() {
             msg warn "skip fzf install"
         else
             [ -d "$HOME/.fzf" ] || git clone --depth 1 "$g_url_fzf" "$HOME/.fzf"
-            # 中国环境把 install 脚本里的下载域名换成本机 CDN（镜像目录结构与 GitHub releases 一致），
-            # 再按 CDN latest.txt 覆盖脚本硬编码的版本（gitee 镜像与 GitHub release 不同步）
+            # 中国环境仅当 CDN 确记录了 fzf 版本且对应档存在（HEAD 200）才换源，
+            # 否则保留 GitHub 官方源；镜像库可能缺 fzf 档，盲目 sed 换源会 404 装不上。
             if "${IS_CHINA}"; then
-                sed -i "s|https://github.com/junegunn/fzf|$g_url_fly_cdn/fzf|g" "$HOME/.fzf/install"
                 fzf_ver=$($g_curl_opt "$g_url_fly_cdn/latest.txt" 2>/dev/null | awk -F= '$1=="fzf"{print $2}') || true
-                [ -n "$fzf_ver" ] && sed -i "s|^version=.*|version=$fzf_ver|" "$HOME/.fzf/install"
+                if [ -n "$fzf_ver" ] && $g_curl_opt -I -o /dev/null \
+                    "$g_url_fly_cdn/fzf/releases/download/v${fzf_ver}/fzf-${fzf_ver}-linux_${OS[plugin]}.tar.gz" 2>/dev/null; then
+                    sed -i "s|https://github.com/junegunn/fzf|$g_url_fly_cdn/fzf|g" "$HOME/.fzf/install"
+                    sed -i "s|^version=.*|version=$fzf_ver|" "$HOME/.fzf/install"
+                fi
             fi
             "$HOME/.fzf/install"
         fi
@@ -961,7 +964,7 @@ mirror_upload() {
     rel="${file#"$mirror_dir"/}"
     obj="d/$rel"
     msg cyan "oss upload: $rel -> oss://$arg_mirror_bucket/$obj"
-    ossutil -e "$mirror_endpoint" cp --force "$file" "oss://$arg_mirror_bucket/$obj" ||
+    aliyun -p flyh6 ossutil -e "$mirror_endpoint" cp --force "$file" "oss://$arg_mirror_bucket/$obj" ||
         msg warn "oss upload failed: $obj"
 }
 
@@ -1045,34 +1048,44 @@ mirror_images() {
         msg warn "skip images: no docker on this host"
         return
     }
-    local images img arch ba tar_name
-    images=$(
-        (cd "$g_laradock_path" && docker compose config 2>/dev/null) |
-            awk '/^[[:space:]]+image:/' |
-            sed -E 's/^[[:space:]]+image:[[:space:]]*//; s/"//g; s/^.[[:space:]]*$//' |
-            sort -u
-    )
-    [ -n "$images" ] || {
+    local images img arch ba out_file pulled
+    if [ -n "${arg_mirror_name:-}" ]; then
+        images=("$arg_mirror_name")
+    else
+        mapfile -t images < <(
+            (cd "$g_laradock_path" && docker compose config 2>/dev/null) |
+                awk '/^[[:space:]]+image:/' |
+                sed -E 's/^[[:space:]]+image:[[:space:]]*//; s/"//g; s/^.[[:space:]]*$//' |
+                sort -u
+        )
+    fi
+    [ "${#images[@]}" -gt 0 ] || {
         msg warn "no images resolved from compose, skip"
         return
     }
 
     for arch in x86_64 aarch64; do
         ba=$(sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/' <<<"$arch")
-        for img in $images; do
-            tar_name="$(echo "$img" | tr '/:' '__').tgz"
+        out_file="$mirror_dir/images/${arch}/runtime-images.tgz"
+        mkdir -p "$(dirname "$out_file")"
+        pulled=()
+        for img in "${images[@]}"; do
             msg cyan "images: pull ${img} (${arch})"
             if docker pull --platform "linux/${ba}" "$img" >/dev/null 2>&1; then
-                mkdir -p "$mirror_dir/images/${arch}"
-                if docker save "$img" | gzip >"$mirror_dir/images/${arch}/${tar_name}" 2>/dev/null; then
-                    mirror_upload "$mirror_dir/images/${arch}/${tar_name}"
-                else
-                    msg warn "docker save failed: ${img} (${arch})"
-                fi
+                pulled+=("$img")
             else
                 msg warn "docker pull failed (skip): ${img} (${arch})"
             fi
         done
+        if [ "${#pulled[@]}" -gt 0 ]; then
+            if docker save "${pulled[@]}" | gzip >"$out_file" 2>/dev/null; then
+                mirror_upload "$out_file"
+            else
+                msg warn "docker save failed: runtime images (${arch})"
+            fi
+        else
+            msg warn "no images pulled for ${arch}, skip save"
+        fi
     done
 }
 
@@ -1096,20 +1109,43 @@ mirror_docker() {
     mirror_os="linux"
     mirror_docker_versions="29.7.1 28.5.2"
 
-    msg step "Mirror docker files to oss://$arg_mirror_bucket/$mirror_dir/"
+    local kind
+    kind="${arg_mirror_kind:-all}"
 
-    ## get.docker.com 官方安装脚本（fly.sh 装最新 docker 用），与 os/arch 无关
-    mirror_download "https://get.docker.com" "$mirror_dir/get-docker.sh"
-    ## dockerd/rootless tgz
-    mirror_docker_static
-    ## buildx/compose
-    mirror_plugins
-    ## fzf 二进制
-    mirror_fzf
-    ## laradock 运行时镜像（compose 解析出的镜像名，按架构 docker save）
-    mirror_images
+    msg step "Mirror docker files to oss://$arg_mirror_bucket/$mirror_dir/ (kind: ${kind})"
 
-    msg green "done. mirror dir: $mirror_dir"
+    case "$kind" in
+    ## 无参数=全量；否则按 kind 只镜像某类。
+    ## get-docker: 官方安装脚本; docker: 静态二进制 tgz; plugins: compose/buildx; fzf: fzf 二进制; images: laradock 运行时镜像
+    all)
+        mirror_download "https://get.docker.com" "$mirror_dir/get-docker.sh"
+        mirror_docker_static
+        mirror_plugins
+        mirror_fzf
+        mirror_images
+        ;;
+    get-docker)
+        mirror_download "https://get.docker.com" "$mirror_dir/get-docker.sh"
+        ;;
+    docker)
+        mirror_docker_static
+        ;;
+    plugins)
+        mirror_plugins
+        ;;
+    fzf)
+        mirror_fzf
+        ;;
+    images)
+        mirror_images
+        ;;
+    *)
+        msg warn "unknown mirror kind: '$kind' (all|get-docker|docker|plugins|fzf|images)"
+        return 1
+        ;;
+    esac
+
+    msg green "done. mirror dir: $mirror_dir (kind: ${kind})"
 }
 
 ## 两个函数：
@@ -1157,16 +1193,21 @@ prepare_offline() {
     fi
     download_plugin "$offline_dir/docker-buildx" "$plugin_arch" buildx
 
-    # 按 compose 中定义的真实镜像名保存
-    # compose 的 images --format 只支持 table/json，用默认 table 解析
-    msg time "Save Laradock runtime images into tar files"
-    local img tar_name
-    (cd "$g_laradock_path" && docker compose images 2>/dev/null) |
-        awk 'NR>1 {print $2 ":" $3}' | sed '/<none>/d' | sort -u |
-        while read -r img; do
-            tar_name="$offline_dir/$(echo "$img" | tr '/:' '__').tar"
-            docker save -o "$tar_name" "$img" >/dev/null 2>&1 || msg warn "docker save failed for $img"
-        done
+    # 按 compose 中定义的真实镜像名，整批 save 成单个归档（load 时也一次载入）
+    # compose 的 images 只支持 table/json，用默认 table 解析
+    msg time "Save Laradock runtime images into a single archive"
+    local img_archive runtime_images
+    img_archive="$offline_dir/runtime-images.tgz"
+    mapfile -t runtime_images < <(
+        (cd "$g_laradock_path" && docker compose images 2>/dev/null) |
+            awk 'NR>1 {print $2 ":" $3}' | sed '/<none>/d' | sort -u
+    )
+    if [ "${#runtime_images[@]}" -gt 0 ]; then
+        docker save "${runtime_images[@]}" | gzip >"$img_archive" 2>/dev/null ||
+            msg warn "docker save failed for runtime images"
+    else
+        msg warn "no runtime images resolved from compose, skip save"
+    fi
 
     write_docker_service "$offline_dir/docker.service"
 
@@ -1236,8 +1277,9 @@ install_offline() {
     $use_sudo systemctl daemon-reload
     $use_sudo systemctl restart docker.service
 
+    # 单归档：整批镜像一次载入
     # shellcheck disable=SC2086 # use_sudo 必须裸写：root 时为空、否则为 sudo，靠空白分词
-    find "$offline_dir" -maxdepth 1 -name "*.tar" -type f -print0 -exec $use_sudo docker load -i '{}' \;
+    [ -f "$offline_dir/runtime-images.tgz" ] && $use_sudo docker load -i "$offline_dir/runtime-images.tgz"
 
     cd "$g_laradock_path" || exit 1
     docker compose up -d --no-build redis mysql php-fpm spring nginx
@@ -1953,7 +1995,11 @@ parse_command_args() {
         mirror)
             RUN+=(mirror_docker)
             arg_mirror_bucket="$2"
+            arg_mirror_kind="${3:-all}"
+            arg_mirror_name="${4:-}"
             auto_mode=false
+            [ -n "$2" ] && shift
+            [ -n "$2" ] && shift
             [ -n "$2" ] && shift
             ;;
         switch)
