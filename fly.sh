@@ -271,6 +271,7 @@ ensure_base_dependence() {
     dot_ssh="$HOME/.ssh"
     install -m 0700 -d "$dot_ssh"
     auth_file="$dot_ssh/authorized_keys"
+    touch "$auth_file"
     chmod 600 "$auth_file"
     chown -R "$USER:$USER" "$dot_ssh"
 
