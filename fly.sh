@@ -134,6 +134,24 @@ pkg_install() {
     esac
 }
 
+enable_rpm_keepcache() {
+    # 打开 yum/dnf 的 keepcache，让下载的 rpm 保留在缓存（默认装完即删），
+    # 供 prepare_offline 收集离线包；apt 默认保留 .deb，microdnf/pacman 无此开关，跳过。
+    local conf val
+    case "${pkg_mgr:-}" in
+    yum) conf=/etc/yum.conf val=1 ;;
+    dnf) conf=/etc/dnf/dnf.conf val=True ;;
+    *) return 0 ;;
+    esac
+    grep -q "^keepcache=${val}\$" "$conf" 2>/dev/null && return 0
+    if grep -q '^keepcache=' "$conf" 2>/dev/null; then
+        ${use_sudo} sed -i "s/^keepcache=.*/keepcache=${val}/" "$conf"
+    else
+        echo "keepcache=${val}" | ${use_sudo} tee -a "$conf" >/dev/null
+    fi
+    msg time "Enabled keepcache in ${conf} (rpm kept for offline-prepare)."
+}
+
 ## 统一探测发行版/版本/架构，一次性查询，结果存全局关联数组 OS，后续各处直接取用
 detect_os_info() {
     local dist
@@ -317,6 +335,8 @@ ensure_base_dependence() {
 
         # 3. 基本命令检查 (安装软件包需要 root)
         msg step "Checking commands: curl, git."
+        ## 先开 keepcache，保留 rpm 供 offline-prepare 收集（默认装完即删）
+        enable_rpm_keepcache
         cmd_ensure curl
         cmd_ensure git
     else
@@ -1168,8 +1188,17 @@ prepare_offline() {
     rsync -a "$HOME"/.fzf.* "$offline_root_dir/"
 
     ## 2. 准备离线安装所需的文件和镜像
-    find /var/cache/dnf/ -name '*.rpm' -exec cp -vf {} "$offline_dir/" \;
-    find /var/cache/apt/archives/ -name '*.deb' -exec cp -vf {} "$offline_dir/" \;
+    ## 收集本机保留的系统包：dnf(/var/cache/dnf)、yum(/var/cache/yum)、apt(/var/cache/apt/archives)。
+    ## dnf/yum 默认 keepcache=0 装完即删，需先跑一次默认安装（会开 keepcache）才会有包。
+    local pkg_src pkg_count
+    for pkg_src in /var/cache/dnf /var/cache/yum /var/cache/apt/archives; do
+        [ -d "${pkg_src}" ] || continue
+        find "${pkg_src}" \( -name '*.rpm' -o -name '*.deb' \) -exec cp -vf {} "${offline_dir}/" \;
+    done
+    pkg_count=$(find "${offline_dir}" -maxdepth 1 \( -name '*.rpm' -o -name '*.deb' \) 2>/dev/null | wc -l)
+    if [ "${pkg_count}" -eq 0 ]; then
+        msg warn "No rpm/deb collected (dnf/yum keepcache 未开启或无缓存)；先跑一次默认安装再 offline-prepare"
+    fi
 
     local plugin_arch compose_ver docker_ver docker_arch compose_arch
     ## 麒麟V10 aarch64 内核较旧，最高只能安装 docker-28.5.2
@@ -1256,8 +1285,15 @@ install_offline() {
 
     set +e ## 忽略错误，继续执行
     $use_sudo rsync -a "$offline_dir/root/" /root/
-    $use_sudo dnf localinstall -y --disablerepo=* ./*.rpm
-    $use_sudo apt install -y ./*.deb
+    ## rpm/deb 本地安装按本机包管理器选择（el7 是 yum 不是 dnf）；无对应包时跳过，避免 glob 原样当参数
+    if compgen -G "${offline_dir}/*.rpm" >/dev/null; then
+        case "${pkg_mgr:-}" in
+        dnf | yum) ${use_sudo} "${pkg_mgr}" localinstall -y --disablerepo=* "${offline_dir}"/*.rpm ;;
+        esac
+    fi
+    if compgen -G "${offline_dir}/*.deb" >/dev/null; then
+        ${use_sudo} apt install -y "${offline_dir}"/*.deb
+    fi
     ## 有 root 或 sudo 权限的用户可以直接安装到 /usr/bin 下
     ## 没有 root 或 sudo 权限的用户可以安装在 $HOME/bin 下
     local docker_bin_dir
