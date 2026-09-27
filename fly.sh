@@ -502,19 +502,56 @@ extract_docker_binary() {
 }
 
 # 插件最新版本号：中国环境优先读 CDN 的 latest.txt（mirror-docker.sh 写入），
-# 否则查 GitHub 的 releases/latest；失败自动回退另一源
+# 否则查 GitHub 的 releases/latest；失败自动回退另一源。
+# 调用方用 "$(...)" 取值，函数内 msg 一律重定向到 stderr，避免污染返回值。
 plugin_version() {
     local repo="$1" plugin="$2" v=""
     local api_url="https://github.com/${repo}/releases/latest"
     local latest_txt="$g_url_fly_cdn/latest.txt"
     if "${IS_CHINA}"; then
+        msg cyan "query ${plugin} version: ${latest_txt}" >&2
         v=$($g_curl_opt "$latest_txt" 2>/dev/null | awk -F= -v k="$plugin" '$1==k{gsub(/[^0-9.]/,"",$2); print $2; exit}') || v=""
-        [ -n "$v" ] || v=$($g_curl_opt "$api_url" | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | head -n1) || v=""
+        if [ -z "$v" ]; then
+            msg cyan "query ${plugin} version: ${api_url}" >&2
+            v=$($g_curl_opt "$api_url" | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | head -n1) || v=""
+        fi
     else
+        msg cyan "query ${plugin} version: ${api_url}" >&2
         v=$($g_curl_opt "$api_url" | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | head -n1) || v=""
-        [ -n "$v" ] || v=$($g_curl_opt "$latest_txt" 2>/dev/null | awk -F= -v k="$plugin" '$1==k{gsub(/[^0-9.]/,"",$2); print $2; exit}') || v=""
+        if [ -z "$v" ]; then
+            msg cyan "query ${plugin} version: ${latest_txt}" >&2
+            v=$($g_curl_opt "$latest_txt" 2>/dev/null | awk -F= -v k="$plugin" '$1==k{gsub(/[^0-9.]/,"",$2); print $2; exit}') || v=""
+        fi
+    fi
+    if [ -z "$v" ] && "${IS_CHINA}"; then
+        msg warn "无法解析 ${plugin} 版本（依赖 GitHub API，国内常失败）：可重试，或在 CDN latest.txt 补一行 ${plugin}=<版本>" >&2
     fi
     echo "$v"
+}
+
+# GitHub 国内经常连不上（空响应/超时）。只在下载失败或要回退到 GitHub 时提示，避免刷屏。
+warn_github_unstable() {
+    "${IS_CHINA:-true}" || return 0
+    case "$1" in
+    *github.com*) msg warn "GitHub 国内访问不稳定（空响应/超时常见）：可重试，或把该文件镜像到 CDN 后走 CDN" ;;
+    esac
+}
+
+# 下载文件并打印 URL；给了备用源时失败自动回退（中国环境 CDN↔GitHub）。
+# 下载统一走这里，保证每个 curl 前都能看到 URL，404/空响应可定位。
+download_to() {
+    local url="$1" dest="$2" alt="${3:-}"
+    msg cyan "download: $url"
+    if $g_curl_opt "$url" -o "$dest"; then
+        return 0
+    fi
+    if [ -z "$alt" ]; then
+        warn_github_unstable "$url"
+        return 1
+    fi
+    msg warn "download failed, fallback: $alt"
+    warn_github_unstable "$alt"
+    $g_curl_opt "$alt" -o "$dest"
 }
 
 download_plugin() {
@@ -536,11 +573,12 @@ download_plugin() {
     esac
     gh_url="https://github.com/${repo}/releases/download/v${v}/$(basename "$cdn_file")"
     cdn_url="$g_url_fly_cdn/${cdn_file}"
+    msg cyan "${plugin}: v${v}"
     # 中国环境优先 CDN（GitHub 可能不通），其它优先 GitHub；失败自动回退
     if "${IS_CHINA:-true}"; then
-        $g_curl_opt "$cdn_url" -o "$dest" || $g_curl_opt "$gh_url" -o "$dest"
+        download_to "$cdn_url" "$dest" "$gh_url"
     else
-        $g_curl_opt "$gh_url" -o "$dest" || $g_curl_opt "$cdn_url" -o "$dest"
+        download_to "$gh_url" "$dest" "$cdn_url"
     fi
 }
 
@@ -976,6 +1014,7 @@ mirror_download() {
         mirror_upload "$file"
     else
         msg warn "download failed, skip: $url"
+        warn_github_unstable "$url"
     fi
 }
 
@@ -1110,10 +1149,16 @@ mirror_images() {
     done
 }
 
-## 更新/新增 latest.txt 中某个 key 的值（格式 KEY=version，供 fly.sh 离线取版本号）
+## 更新/新增远端 latest.txt 中某个 key 的值（格式 KEY=version，供 fly.sh 离线取版本号）。
+## 先拉回远端再改，避免用本地残缺文件整份覆盖，把别的 key（compose/buildx/fzf）冲掉。
 mirror_write_latest() {
-    local key="$1" ver="$2" latest="$mirror_dir/latest.txt"
+    local key="$1" ver="$2" latest="$mirror_dir/latest.txt" obj="d/latest.txt"
     mkdir -p "$(dirname "$latest")"
+    if aliyun -p flyh6 ossutil -e "$mirror_endpoint" cp --force "oss://$arg_mirror_bucket/$obj" "$latest" >/dev/null 2>&1; then
+        msg cyan "pull: oss://$arg_mirror_bucket/$obj -> $latest"
+    else
+        msg warn "pull $obj failed (首次/不可达)，按本地内容合并: $latest"
+    fi
     if [ -f "$latest" ] && grep -q "^${key}=" "$latest"; then
         sed -i.bak "s|^${key}=.*|${key}=${ver}|" "$latest" && rm -f "$latest.bak"
     else
@@ -1201,25 +1246,33 @@ prepare_offline() {
     fi
 
     local plugin_arch compose_ver docker_ver docker_arch compose_arch
-    ## 麒麟V10 aarch64 内核较旧，最高只能安装 docker-28.5.2
+    ## 麒麟V10 aarch64 内核较旧，最高只能安装 docker-28.5.2；compose 也一并钉版
+    ## （新版未在老内核上验证，先不动）。其余发行版不钉 compose，取最新。
     if [[ "${OS[id]}" == *kylin* ]] && [[ "${OS[arch]}" =~ aarch64|arm64 ]]; then
         docker_ver=28.5.2
         compose_ver=v2.40.3
     else
         docker_ver=29.7.1
-        compose_ver=v5.4.0
+        compose_ver=""
     fi
     docker_arch="${OS[docker]}"
     plugin_arch="${OS[plugin]}"
     compose_arch="${OS[compose]}"
-    $g_curl_opt "$(docker_static_src "$docker_arch" "docker-${docker_ver}.tgz")" -o "$offline_dir/docker-${docker_ver}.tgz"
-    $g_curl_opt "$(docker_static_src "$docker_arch" "docker-rootless-extras-${docker_ver}.tgz")" -o "$offline_dir/docker-rootless-extras-${docker_ver}.tgz"
-    # compose 固定版本离线包：中国环境优先 CDN 镜像，失败回退 GitHub
-    if "${IS_CHINA}"; then
-        $g_curl_opt "$g_url_fly_cdn/docker/compose/releases/download/${compose_ver}/docker-compose-linux-${compose_arch}" -o "$offline_dir/docker-compose" ||
-            $g_curl_opt "https://github.com/docker/compose/releases/download/${compose_ver}/docker-compose-linux-${compose_arch}" -o "$offline_dir/docker-compose"
+    download_to "$(docker_static_src "$docker_arch" "docker-${docker_ver}.tgz")" \
+        "$offline_dir/docker-${docker_ver}.tgz"
+    download_to "$(docker_static_src "$docker_arch" "docker-rootless-extras-${docker_ver}.tgz")" \
+        "$offline_dir/docker-rootless-extras-${docker_ver}.tgz"
+    if [ -n "${compose_ver}" ]; then
+        ## compose_ver 非空 = kylin 钉版：CDN 优先，失败回退 GitHub
+        local compose_file="docker/compose/releases/download/${compose_ver}/docker-compose-linux-${compose_arch}"
+        if "${IS_CHINA}"; then
+            download_to "$g_url_fly_cdn/${compose_file}" "$offline_dir/docker-compose" "https://github.com/${compose_file}"
+        else
+            download_to "https://github.com/${compose_file}" "$offline_dir/docker-compose" "$g_url_fly_cdn/${compose_file}"
+        fi
     else
-        $g_curl_opt "https://github.com/docker/compose/releases/download/${compose_ver}/docker-compose-linux-${compose_arch}" -o "$offline_dir/docker-compose"
+        ## 与在线安装一致：解析最新 compose（CDN latest.txt → GitHub API），CDN 下载失败回退 GitHub
+        download_plugin "$offline_dir/docker-compose" "$compose_arch" compose
     fi
     download_plugin "$offline_dir/docker-buildx" "$plugin_arch" buildx
 

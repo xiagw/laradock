@@ -3,6 +3,10 @@ services:
     nginx:
       image: ${MIRROR}nginx:stable-alpine-base
       restart: always
+      ## >>>> CentOS 7.9 需要设置此项
+      # security_opt:
+      #   - seccomp=unconfined
+      ## <<<<
       build:
         context: ./nginx
         args:
