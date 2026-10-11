@@ -1004,9 +1004,17 @@ mirror_resolve_latest() {
         awk -F'"' '/"tag_name"/{print $4; exit}' | sed 's/^v//'
 }
 
-# 下载到 mirror_dir/<path>，成功后上传 OSS；失败跳过（不 die，让其它项继续）
+# 下载到 mirror_dir/<path>，成功后上传 OSS；失败跳过（不 die，让其它项继续）。
+# 版本化路径（含版本号，内容不可变）默认按 CDN 是否已有来跳过下载+上传；
+# refresh=true 用于文件名固定但内容会变的对象（如 get-docker.sh）；MIRROR_FORCE=true 全量强制。
 mirror_download() {
-    local url="$1" file="$2"
+    local url="$1" file="$2" refresh="${3:-false}"
+    local rel="${file#"$mirror_dir"/}"
+    if [ "${MIRROR_FORCE:-false}" != true ] && [ "${refresh}" != true ] &&
+        $g_curl_opt -I "$g_url_fly_cdn/$rel" -o /dev/null 2>/dev/null; then
+        msg cyan "skip (already on CDN): $rel"
+        return 0
+    fi
     mkdir -p "$(dirname "$file")"
     msg cyan "download: $url"
     if $g_curl_opt "$url" -o "$file"; then
@@ -1096,6 +1104,17 @@ mirror_fzf() {
 }
 
 ## laradock 运行时镜像：镜像名从 compose 文件解析（MIRROR 已展开成完整名），
+# 取某服务在 compose 解析结果里的 image（mirror_images / cdn_load_service_image 共用）
+compose_service_image() {
+    local svc="$1"
+    (cd "$g_laradock_path" && docker compose config 2>/dev/null) |
+        awk -v svc="^  ${svc}:" '
+            $0 ~ svc {f=1; next}
+            f && /^    image:/ {sub(/^    image:[[:space:]]*/,""); gsub(/"/,""); print; exit}
+            f && !/^[[:space:]]/ {f=0}
+        '
+}
+
 ## 按架构 pull 后 docker save 成 tgz 上传 CDN，目标机 docker load -i 即可用，
 ## 绕开阿里云镜像仓库限速与 Docker Hub 连通问题。
 ## 目录结构 d/images/<arch>/<镜像名转译>.tgz
@@ -1108,16 +1127,19 @@ mirror_images() {
         msg warn "skip images: no docker on this host"
         return
     }
-    local images img arch ba out_file pulled
+    local images img arch ba out_file pulled svc
     if [ -n "${arg_mirror_name:-}" ]; then
         images=("$arg_mirror_name")
     else
-        mapfile -t images < <(
-            (cd "$g_laradock_path" && docker compose config 2>/dev/null) |
-                awk '/^[[:space:]]+image:/' |
-                sed -E 's/^[[:space:]]+image:[[:space:]]*//; s/"//g; s/^.[[:space:]]*$//' |
-                sort -u
-        )
+        ## 只镜像默认部署集的服务镜像（compose 里其它定义用不到，不拉）
+        local svcs=(redis mysql php-fpm spring nginx)
+        images=()
+        for svc in "${svcs[@]}"; do
+            img="$(compose_service_image "$svc")"
+            [ -n "$img" ] && images+=("$img")
+        done
+        mapfile -t images < <(printf '%s\n' "${images[@]}" | sed '/^$/d' | sort -u)
+        msg cyan "images (default set): ${images[*]}"
     fi
     [ "${#images[@]}" -gt 0 ] || {
         msg warn "no images resolved from compose, skip"
@@ -1152,12 +1174,17 @@ mirror_images() {
 ## 更新/新增远端 latest.txt 中某个 key 的值（格式 KEY=version，供 fly.sh 离线取版本号）。
 ## 先拉回远端再改，避免用本地残缺文件整份覆盖，把别的 key（compose/buildx/fzf）冲掉。
 mirror_write_latest() {
-    local key="$1" ver="$2" latest="$mirror_dir/latest.txt" obj="d/latest.txt"
+    local key="$1" ver="$2" latest="$mirror_dir/latest.txt" obj="d/latest.txt" cur
     mkdir -p "$(dirname "$latest")"
     if aliyun -p flyh6 ossutil -e "$mirror_endpoint" cp --force "oss://$arg_mirror_bucket/$obj" "$latest" >/dev/null 2>&1; then
         msg cyan "pull: oss://$arg_mirror_bucket/$obj -> $latest"
     else
         msg warn "pull $obj failed (首次/不可达)，按本地内容合并: $latest"
+    fi
+    cur=$(grep -m1 "^${key}=" "$latest" 2>/dev/null | cut -d= -f2-) || cur=""
+    if [ "${cur}" = "${ver}" ]; then
+        msg cyan "${key}=${ver} unchanged, skip upload"
+        return 0
     fi
     if [ -f "$latest" ] && grep -q "^${key}=" "$latest"; then
         sed -i.bak "s|^${key}=.*|${key}=${ver}|" "$latest" && rm -f "$latest.bak"
@@ -1184,14 +1211,14 @@ mirror_docker() {
     ## 无参数=全量；否则按 kind 只镜像某类。
     ## get-docker: 官方安装脚本; docker: 静态二进制 tgz; plugins: compose/buildx; fzf: fzf 二进制; images: laradock 运行时镜像
     all)
-        mirror_download "https://get.docker.com" "$mirror_dir/get-docker.sh"
+        mirror_download "https://get.docker.com" "$mirror_dir/get-docker.sh" true
         mirror_docker_static
         mirror_plugins
         mirror_fzf
         mirror_images
         ;;
     get-docker)
-        mirror_download "https://get.docker.com" "$mirror_dir/get-docker.sh"
+        mirror_download "https://get.docker.com" "$mirror_dir/get-docker.sh" true
         ;;
     docker)
         mirror_docker_static
@@ -1508,8 +1535,7 @@ EOF
 ## 归档约定：d/images/<arch>/<镜像名: /: 转译__.tgz>，与 mirror_images 的产物一致
 cdn_load_service_image() {
     local svc="$1" img tgz target tmp
-    img=$(cd "$g_laradock_path" && docker compose config 2>/dev/null |
-        awk -v svc="^  ${svc}:" '$0 ~ svc {f=1;next} f && /^    image:/ {sub(/^    image:[[:space:]]*/,""); gsub(/"/,""); print; exit} f && !/^[[:space:]]/ {f=0}')
+    img="$(compose_service_image "$svc")"
     [ -n "$img" ] || {
         msg warn "cdn load: no image for service [$svc], skip"
         return
