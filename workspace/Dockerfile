@@ -69,15 +69,16 @@ RUN PECL_BIN="$(command -v pecl)"; \
       > "$PECL_BIN"; \
     chmod +x "$PECL_BIN"
 
-# always run apt update when start and after add new source list, then clean up at end.
+# The base image already has the PECL channel definition. Do not refresh it during builds:
+# its endpoint can intermittently return HTML instead of the XML PECL expects.
+# Always run apt update when start and after adding a new source list, then clean up at end.
 RUN set -xe; \
     if [ ${WORKSPACE_ALLOW_RELEASE_INFO_CHANGE} = true ]; then \
       APT_GET_UPDATE_OPTIONS="--allow-releaseinfo-change"; \
     else \
       APT_GET_UPDATE_OPTIONS=""; \
     fi; \
-    apt-get update -yqq ${APT_GET_UPDATE_OPTIONS} && \
-    pecl channel-update pecl.php.net && \
+    apt-get update -yqq ${APT_GET_UPDATE_OPTIONS}; \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "0" ]; then \
       groupmod --new-name laradock -g ${PGID} ubuntu; \
       usermod --login laradock -u ${PUID} --move-home --home /home/laradock ubuntu; \
@@ -754,11 +755,11 @@ ARG INSTALL_IONCUBE=false
 RUN if [ ${INSTALL_IONCUBE} = true ]; then \
     if [ ${LARADOCK_PHP_VERSION} != "8.5" ] \
       && [ ${LARADOCK_PHP_VERSION} != "8.0" ]; then \
-      # Install the php ioncube loader. downloads.ioncube.com's TLS cert expired 2026-07-11, so -k
-      # is required to fetch at all; the pinned SHA-256 then guarantees integrity so a MITM cannot
-      # swap in a malicious loader (mismatch aborts the build). Revert both when their cert renews.
-      curl -fSL -k --http1.1 --retry 5 --retry-delay 2 --retry-all-errors -o /tmp/ioncube_loaders_lin_x86-64.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
-      && echo "e2193a63a87e2388a71854b0114de4fc71e2e40bcf0794faf74bb562691e5b62  /tmp/ioncube_loaders_lin_x86-64.tar.gz" | sha256sum -c - \
+      # Verify the vendor's TLS certificate and pinned SHA-256 before installing.
+      # The hash detects unexpected changes to the vendor's mutable archive.
+      # Update the pin only after authenticating a replacement archive.
+      curl -fSL --http1.1 --retry 5 --retry-delay 2 --retry-all-errors -o /tmp/ioncube_loaders_lin_x86-64.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
+      && echo "739962bd012e77ee82bf01f77a9641f050e4be057f0a5d1a95fe59ce11fd62ba  /tmp/ioncube_loaders_lin_x86-64.tar.gz" | sha256sum -c - \
       && tar zxpf /tmp/ioncube_loaders_lin_x86-64.tar.gz -C /tmp \
       && mv /tmp/ioncube/ioncube_loader_lin_${LARADOCK_PHP_VERSION}.so $(php -r "echo ini_get('extension_dir');")/ioncube_loader.so \
       && echo "zend_extension=ioncube_loader.so" >> /etc/php/${LARADOCK_PHP_VERSION}/mods-available/ioncube.ini \

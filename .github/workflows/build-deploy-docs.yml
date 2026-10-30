@@ -28,13 +28,16 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Install DocuSource Dependencies
-        run: npm install
+      - name: Enable Yarn
+        run: corepack enable
+
+      - name: Install documentation dependencies
+        run: yarn install --frozen-lockfile --non-interactive
 
       - name: Build DocuSource Site
-        run: npm run build
+        run: yarn build
 
       - name: Deploy DocuSource Site to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

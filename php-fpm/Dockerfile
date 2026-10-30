@@ -41,6 +41,19 @@ RUN if [ "$LARADOCK_PHP_VERSION" = "7.1" ] || [ ${LARADOCK_PHP_VERSION} = "7.2" 
       /etc/apt/sources.list; \
 fi
 
+# PHP 7.4 uses an EOL Debian Bullseye base. Pinning a snapshot keeps package
+# metadata and binaries consistent instead of following removed moving repositories.
+RUN if [ "${LARADOCK_PHP_VERSION}" = "7.4" ]; then \
+    printf '%s\n' \
+      'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20260831T000000Z/ bullseye main' \
+      'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20260831T000000Z/ bullseye-updates main' \
+      'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20260831T000000Z/ bullseye-security main' \
+      > /etc/apt/sources.list && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean && \
+    apt-get -o Acquire::Check-Valid-Until=false update; \
+fi
+
 # pecl.php.net downloads intermittently truncate on CI (Fastly/HTTP flakiness), breaking
 # `pecl install` with "unable to unpack". Wrap pecl once so every install retries after clearing
 # the partial-download cache; all pecl call sites below become resilient with no other changes.
@@ -712,11 +725,11 @@ ARG INSTALL_IONCUBE=false
 RUN if [ ${INSTALL_IONCUBE} = true ]; then \
     if [ ${LARADOCK_PHP_VERSION} != "8.5" ] \
       && [ ${LARADOCK_PHP_VERSION} != "8.0" ]; then \
-      # Install the php ioncube loader. downloads.ioncube.com's TLS cert expired 2026-07-11, so -k
-      # is required to fetch at all; the pinned SHA-256 then guarantees integrity so a MITM cannot
-      # swap in a malicious loader (mismatch aborts the build). Revert both when their cert renews.
-      curl -fSL -k --http1.1 --retry 5 --retry-delay 2 --retry-all-errors -o /tmp/ioncube_loaders_lin_x86-64.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
-      && echo "e2193a63a87e2388a71854b0114de4fc71e2e40bcf0794faf74bb562691e5b62  /tmp/ioncube_loaders_lin_x86-64.tar.gz" | sha256sum -c - \
+      # Verify the vendor's TLS certificate and pinned SHA-256 before installing.
+      # The hash detects unexpected changes to the vendor's mutable archive.
+      # Update the pin only after authenticating a replacement archive.
+      curl -fSL --http1.1 --retry 5 --retry-delay 2 --retry-all-errors -o /tmp/ioncube_loaders_lin_x86-64.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
+      && echo "739962bd012e77ee82bf01f77a9641f050e4be057f0a5d1a95fe59ce11fd62ba  /tmp/ioncube_loaders_lin_x86-64.tar.gz" | sha256sum -c - \
       && tar zxpf /tmp/ioncube_loaders_lin_x86-64.tar.gz -C /tmp \
       && mv /tmp/ioncube/ioncube_loader_lin_${LARADOCK_PHP_VERSION}.so $(php -r "echo ini_get('extension_dir');")/ioncube_loader.so \
       && printf "zend_extension=ioncube_loader.so\n" > $PHP_INI_DIR/conf.d/0ioncube.ini \
