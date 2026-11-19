@@ -843,8 +843,13 @@ check_laradock_env() {
     ## 绝对路径写死 APP_CODE_PATH_HOST（随安装位置，数据盘可跟随），
     ## 比相对路径更稳：多版本/extends 服务不会发生基准偏移。
     args+=(APP_CODE_PATH_HOST="$g_www_root")
-    "${IS_CHINA}" && args+=(CHANGE_SOURCE=true)
-    "${IS_CHINA}" && args+=(MIRROR=registry.cn-hangzhou.aliyuncs.com/flyh5/)
+    if "${IS_CHINA}"; then
+        args+=(CHANGE_SOURCE=true)
+        args+=(MIRROR=registry.cn-hangzhou.aliyuncs.com/flyh5/)
+    else
+        ## 非中国区不用镜像仓库：显式写空值，避免 compose 报 "MIRROR variable is not set"
+        args+=(MIRROR=)
+    fi
 
     # ./laradock set 会把 KEY=VALUE 打到屏幕，含密码；输出层脱敏
     dco set "${args[@]}" 2>&1 |
@@ -1875,7 +1880,7 @@ ${ports_yaml}
     ${use_sudo:-} chown -R 1000:1000 "$g_www_root/$name" 2>/dev/null || true
 
     msg time "App dir created: $g_www_root/$name"
-    msg time "Now: ./fly.sh rebuild $name  或直接 ./laradock up -d $name"
+    msg time "Now: ./fly.sh rebuild $name  或直接 ./laradock up $name"
     write_nginx_inc "$name" "$svc"
 }
 

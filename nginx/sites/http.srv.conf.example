@@ -1,9 +1,19 @@
+# Docker 内置 DNS；GitLab / registry 用 resolve，容器未启动也不会导致 nginx 启动失败。
+resolver 127.0.0.11 valid=10s ipv6=off;
+
+# 其它 upstream 默认注释：静态解析，容器必须先起来；需要时再取消注释。
 # upstream upstream_showdoc { server showdoc:80; }
 # upstream upstream_zentao { server zentao:80; }
 # upstream upstream_ping { server piping:8080; }
 # upstream upstream_gitea { server gitea:3000; }
-# upstream upstream_gitlab { server gitlab:80; }
-# upstream upstream_registry { server gitlab:5050; }
+upstream upstream_gitlab {
+    zone upstream_gitlab 64k;
+    server gitlab:80 resolve;
+}
+upstream upstream_registry {
+    zone upstream_registry 64k;
+    server gitlab:5050 resolve;
+}
 # upstream upstream_ssl { server domainadmin:8000; }
 # upstream upstream_meet { server 192.168.44.12:8080; }
 # upstream upstream_jump { server 192.168.44.12:8088; }
@@ -11,15 +21,16 @@
 map $http_host $backend {
     hostnames;
     default upstream_gitlab;
-    doc.example.cn          upstream_showdoc;
-    docs.example.cn         upstream_showdoc;
-    z.example.cn            upstream_zentao;
-    zen.example.cn          upstream_zentao;
-    git.example.cn          upstream_gitlab;
-    gitea.example.cn        upstream_gitea;
-    ssl.example.cn          upstream_ssl;
-    met.example.cn          upstream_meet;
-    jum.example.cn          upstream_jump;
+    doc.example.com          upstream_showdoc;
+    docs.example.com         upstream_showdoc;
+    z.example.com            upstream_zentao;
+    zen.example.com          upstream_zentao;
+    git.example.com          upstream_gitlab;
+    registry.example.com     upstream_registry;
+    gitea.example.com        upstream_gitea;
+    ssl.example.com          upstream_ssl;
+    met.example.com          upstream_meet;
+    jum.example.com          upstream_jump;
 }
 
 server {
@@ -87,6 +98,8 @@ server {
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Ssl on;
         proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
     }
 }
 

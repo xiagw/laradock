@@ -7,15 +7,16 @@ services:
       environment:
         GITLAB_OMNIBUS_CONFIG: |
           external_url '${GITLAB_DOMAIN_NAME}'
-          redis['enable'] = false
-          nginx['listen_https'] = false
-          nginx['listen_port'] = 80
-          # nginx['custom_gitlab_server_config'] = "set_real_ip_from 172.0.0.0/8;
-          nginx['custom_gitlab_server_config'] = "set_real_ip_from 172.0.0.0/8;\nreal_ip_header X-Real-IP;\nreal_ip_recursive on;"\nreal_ip_header X-Real-IP;\nreal_ip_recursive on;"
-          postgresql['enable'] = false
+          gitlab_rails['nginx']['listen_https'] = false
+          gitlab_rails['nginx']['listen_port'] = 80
+          # gitlab_rails['nginx']['custom_gitlab_server_config'] = "set_real_ip_from 172.0.0.0/8;
+          gitlab_rails['nginx']['custom_gitlab_server_config'] = "set_real_ip_from ${GITLAB_TRUSTED_PROXIES};\nreal_ip_header X-Real-IP;\nreal_ip_recursive on;"
           # gitlab_rails['trusted_proxies'] = ['caddy','nginx','apache2']
-          gitlab_rails['trusted_proxies'] = ['172.0.0.0/8']
-          ## ---- 外部redis/postgres
+          gitlab_rails['trusted_proxies'] = ['${GITLAB_TRUSTED_PROXIES}']
+          ## 禁用容器内部 redis/postgres
+          redis['enable'] = false
+          postgresql['enable'] = false
+          ## 启用外部 redis/postgres
           gitlab_rails['redis_host'] = '${REDIS_HOST}'
           gitlab_rails['redis_database'] = 1
           gitlab_rails['redis_password'] = '${REDIS_PASSWORD}'
@@ -29,7 +30,7 @@ services:
           # gitlab_rails['gitlab_default_projects_features_builds'] = false
           ## ---- 资源优化（GitLab 官方 memory-constrained 文档）----
           ## Kubernetes Agent Server，不用 k8s 就关
-          # gitlab_kas['enable'] = false
+          gitlab_kas['enable'] = false
           ## ---- 监控/指标全家桶关闭（省 ~300MB） ----
           alertmanager['enable'] = false
           prometheus['enable'] = false
@@ -41,13 +42,13 @@ services:
           puma['exporter_enabled'] = false
           sidekiq['metrics_enabled'] = false
           ## Puma 单进程模式（省 100-400MB，小团队足够）
-          puma['worker_processes'] = 0
+          puma['worker_processes'] = 2
           ## Sidekiq 并发默认 20 → 10
           sidekiq['concurrency'] = 10
           ## ---- 启用内部 registry 存放 image
           registry['enable'] = true
-          registry_nginx['enable'] = false
-          registry_external_url 'https://registry.example.com'
+          registry['nginx']['enable'] = false
+          registry_external_url '${GITLAB_REGISTRY_EXTERNAL_URL}'
           registry['registry_http_addr'] = "0.0.0.0:5050"
       volumes:
         - ${DATA_PATH_HOST}/gitlab/config:/etc/gitlab
@@ -55,7 +56,7 @@ services:
         - ${GITLAB_HOST_LOG_PATH}:/var/log/gitlab
       ports:
         - "${GITLAB_HOST_HTTP_PORT}:80"
-        - "${GITLAB_HOST_HTTPS_PORT}:443"
+        # - "${GITLAB_HOST_HTTPS_PORT}:443"
         - "${GITLAB_HOST_SSH_PORT}:22"
         - "5050:5050"
       networks:
@@ -63,6 +64,8 @@ services:
       depends_on:
         - redis
         - postgres
+      ## 容器停止时间最大2分钟
+      stop_grace_period: 2m
       logging:
         driver: json-file
         options:
