@@ -210,10 +210,20 @@ set_mirror() {
     local url_mirror f
     case ${1:-none} in
     os)
+        ## 只改 URI 的 host，并把 host 前的前缀（cn./ftp./old-releases. 等）一起吃掉。
+        ## 直接 s@archive.ubuntu.com@mirrors.ustc.edu.cn@ 会把 cn.archive.ubuntu.com
+        ## 改成 cn.mirrors.ustc.edu.cn（不存在的主机），apt 直接 404/DNS 失败。
+        ## [A-Za-z0-9.-]* 不包含 /，不会越过 host 吞掉路径。
+        ## ports.ubuntu.com 不能这样换：USTC 对应路径是 /ubuntu-ports/，不是 /ubuntu/。
         url_mirror="mirrors.ustc.edu.cn"
         for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apk/repositories; do
             [ -f "$f" ] || continue
-            $use_sudo sed -i -e "s@deb.debian.org@${url_mirror}@g" -e "s@archive.ubuntu.com@${url_mirror}@g" -e "s@dl-cdn.alpinelinux.org@${url_mirror}@g" "$f"
+            $use_sudo sed -E -i \
+                -e "s@(https?://)[A-Za-z0-9.-]*deb\.debian\.org@\1${url_mirror}@g" \
+                -e "s@(https?://)[A-Za-z0-9.-]*archive\.ubuntu\.com@\1${url_mirror}@g" \
+                -e "s@(https?://)[A-Za-z0-9.-]*security\.debian\.org@\1${url_mirror}@g" \
+                -e "s@(https?://)[A-Za-z0-9.-]*dl-cdn\.alpinelinux\.org@\1${url_mirror}@g" \
+                "$f"
         done
         ;;
     composer)
