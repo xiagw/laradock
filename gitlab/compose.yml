@@ -5,6 +5,9 @@ services:
       build:
         context: ./gitlab
       environment:
+        ## ---- 禁止日志写到 docker log
+        GITLAB_SKIP_TAIL_LOGS: "true"
+        GITLAB_LOG_LEVEL: "warn"
         GITLAB_OMNIBUS_CONFIG: |
           external_url '${GITLAB_DOMAIN_NAME}'
           gitlab_rails['nginx']['listen_https'] = false
@@ -13,10 +16,7 @@ services:
           gitlab_rails['nginx']['custom_gitlab_server_config'] = "set_real_ip_from ${GITLAB_TRUSTED_PROXIES};\nreal_ip_header X-Real-IP;\nreal_ip_recursive on;"
           # gitlab_rails['trusted_proxies'] = ['caddy','nginx','apache2']
           gitlab_rails['trusted_proxies'] = ['${GITLAB_TRUSTED_PROXIES}']
-          ## 禁用容器内部 redis/postgres
-          redis['enable'] = false
-          postgresql['enable'] = false
-          ## 启用外部 redis/postgres
+          ## ---- 启用外部 redis/postgres，禁用容器内部 redis/postgres 时需要注释以下内容
           gitlab_rails['redis_host'] = '${REDIS_HOST}'
           gitlab_rails['redis_database'] = 1
           gitlab_rails['redis_password'] = '${REDIS_PASSWORD}'
@@ -41,9 +41,9 @@ services:
           postgres_exporter['enable'] = false
           puma['exporter_enabled'] = false
           sidekiq['metrics_enabled'] = false
-          ## Puma 单进程模式（省 100-400MB，小团队足够）
+          ## ---- Puma 单进程模式（省 100-400MB，小团队足够）
           puma['worker_processes'] = 2
-          ## Sidekiq 并发默认 20 → 10
+          ## ---- Sidekiq 并发默认 20 → 10
           sidekiq['concurrency'] = 10
           ## ---- 启用内部 registry 存放 image
           registry['enable'] = true
@@ -64,8 +64,8 @@ services:
       depends_on:
         - redis
         - postgres
-      ## 容器停止时间最大2分钟
-      stop_grace_period: 2m
+      ## 容器停止时间最大3分钟
+      stop_grace_period: 3m
       logging:
         driver: json-file
         options:
